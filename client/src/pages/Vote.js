@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
-import backgroundVideo from '../bilder/336667194693640196 (2).mp4'; // Your mp4 here
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import backgroundVideo from '../bilder/Forest witout lights.mp4';
+import AnimationSection from '../components/info';
 
-// 1) Global styles: reset margins, etc.
+// Global styles
 const GlobalStyle = createGlobalStyle`
   * {
     margin: 0;
@@ -11,44 +12,36 @@ const GlobalStyle = createGlobalStyle`
   }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    overflow: hidden;
-    background: #000; /* Fallback if needed */
+    background: #000;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 `;
 
-// 2) Page Container
+// Side- og bakgrunnskomponenter
 const PageContainer = styled.div`
   position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
 `;
 
-// 3) A starry background that always stays behind everything.
-//    This example uses a small "box-shadow" trick to scatter some stars.
-//    Feel free to add more star coordinates for higher density.
 const StarryBackground = styled.div`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: #000; 
-  overflow: hidden;
-  z-index: 0; /* Behind video & overlay */
-
-  /* Pseudo-element with star "dots" via box-shadow. Expand as needed. */
+  background: #01161c;
+  z-index: 0;
+  
   &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    /* A single tiny dot that will be copied by box-shadow across the screen: */
     width: 1px;
     height: 1px;
     background: transparent;
-    
-    /* Each pair (x y #color) represents one 'star'. Add as many as you like. */
     box-shadow: 
       30px 90px #fff,
       80px 150px #fff,
@@ -63,7 +56,6 @@ const StarryBackground = styled.div`
   }
 `;
 
-// 4) The background video that we will fade out
 const BackgroundVideo = styled.video`
   position: absolute;
   top: 0;
@@ -71,80 +63,99 @@ const BackgroundVideo = styled.video`
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 1; /* Above the starry background */
-
-  /* Fade out transition when the 'fadeOut' prop becomes true */
+  z-index: 1;
   opacity: ${({ fadeOut }) => (fadeOut ? 0 : 1)};
   transition: opacity 2s ease;
 `;
 
-// 5) A dark semi-transparent overlay that is ALWAYS visible
-//    (making the background appear more “black” from the start)
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  /* Adjust opacity to taste—closer to 1 means darker */
-  background-color: rgba(0, 0, 0, 0.3);
-  z-index: 2; /* Over the video */
+  background-color: rgba(66, 64, 64, 0.1);
+  z-index: 2;
 `;
 
-// 6) Your text/content, placed above the overlay
+// Innhold- og layoutkomponenter
 const ContentWrapper = styled.div`
   position: relative;
-  z-index: 3; /* Above the dark overlay */
+  z-index: 3;
   width: 100%;
   height: 100%;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 `;
 
-// The large "VOTE" text
-const VoteText = styled.h1`
+// Keyframes for bokstav-animasjon (oppover bevegelse)
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+// Container for "VOTE" – animerer hver bokstav for seg
+const VoteTextContainer = styled.h1`
   font-size: 10rem;
   color: #ffffff;
-  text-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 
-               0 0 30px rgba(0, 255, 255, 0.6);
+  text-shadow: 0 0 20px rgba(121, 121, 121, 0.8),
+               0 0 30px rgba(121, 121, 121, 0.8);
   font-family: 'Cinzel', serif;
   line-height: 1.2;
   letter-spacing: 0.5rem;
   margin-bottom: 2rem;
-
-  &::before {
-    content: 'Whisper Studio';
-    display: block;
-    font-size: 3rem;
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-    margin-bottom: 10px;
-  }
-
+  display: flex;
+  
   span {
-    display: block;
-    font-size: 2rem;
-    color: rgba(200, 200, 200, 0.8);
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    animation: ${fadeInUp} 0.5s ease forwards;
   }
 `;
 
-// A Download button
+// Ekstra tekst og knapp – vises etter at videoen er ferdig
+const ExtraContent = styled.div`
+  text-align: center;
+  color: #ffffff;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
+`;
+
+const WhisperStudioHeader = styled.h2`
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+  font-family: 'Cinzel', serif;
+  margin-bottom: 1rem;
+`;
+
+const UnderText = styled.span`
+  font-size: 2rem;
+  color: rgba(200, 200, 200, 0.8);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  display: block;
+`;
+
 const DownloadButton = styled.button`
   margin-top: 2rem;
   padding: 1rem 2rem;
   font-size: 1.5rem;
   font-family: 'Cinzel', serif;
   color: #ffffff;
-  background-color: #008080; 
+  background-color: #008080;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease, opacity 1s ease;
+  opacity: ${({ show }) => (show ? 1 : 0)};
 
   &:hover {
     background-color: #0a9396;
@@ -152,65 +163,118 @@ const DownloadButton = styled.button`
   }
 `;
 
+const PageWrapper = styled.div`
+  display: block;
+`;
+
 const VotePage = () => {
   const videoRef = useRef(null);
-  // Whether the video has started fading out
   const [fadeOutVideo, setFadeOutVideo] = useState(false);
+  const [showExtra, setShowExtra] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(null);
 
+  // Bokstavene for "VOTE"
+  const voteLetters = 'VOTE'.split('');
+
+  // Kalkuler dynamiske delays slik at siste bokstav (E) vises rett før videoen fader ut.
+  const getDelay = (index) => {
+    if (!videoDuration) {
+      // Fallback: 0s, 0.5s, 1s, 1.5s
+      return `${index * 0.5}s`;
+    }
+    const totalAnimationTime = videoDuration - 1; // siste bokstav vises 1 sekund før slutten
+    const delay = (totalAnimationTime / (voteLetters.length - 1)) * index;
+    return `${delay}s`;
+  };
+
+  // Sett videoDuration når metadata er lastet inn
+  useEffect(() => {
+    const handleLoadedMetadata = () => {
+      if (videoRef.current) {
+        setVideoDuration(videoRef.current.duration);
+      }
+    };
+
+    const videoElem = videoRef.current;
+    if (videoElem) {
+      videoElem.addEventListener('loadedmetadata', handleLoadedMetadata);
+    }
+
+    return () => {
+      if (videoElem) {
+        videoElem.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      }
+    };
+  }, []);
+
+  // Overvåk videoens tid for å trigge fade-out rett før den avsluttes
   useEffect(() => {
     const handleTimeUpdate = () => {
       if (!videoRef.current) return;
-
       const { currentTime, duration } = videoRef.current;
       const timeLeft = duration - currentTime;
-
-      // Fade the video out 3s before it ends (adjust as desired)
       if (timeLeft <= 1 && !fadeOutVideo) {
         setFadeOutVideo(true);
       }
     };
 
-    const videoElement = videoRef.current;
-    if (videoElement) {
-      videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    const videoElem = videoRef.current;
+    if (videoElem) {
+      videoElem.addEventListener('timeupdate', handleTimeUpdate);
     }
 
     return () => {
-      if (videoElement) {
-        videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      if (videoElem) {
+        videoElem.removeEventListener('timeupdate', handleTimeUpdate);
       }
     };
+  }, [fadeOutVideo]);
+
+  // Når videoen har faded ut, vis den ekstra teksten (Whisper Studio, undertekst og knapp)
+  useEffect(() => {
+    if (fadeOutVideo) {
+      const timer = setTimeout(() => {
+        setShowExtra(true);
+      }, 2000); // 2 sekund tilsvarer videoens fade-out transition
+      return () => clearTimeout(timer);
+    }
   }, [fadeOutVideo]);
 
   return (
     <>
       <GlobalStyle />
-      <PageContainer>
-        {/* 1) Starry background behind everything */}
-        <StarryBackground />
+      <PageWrapper>
+        <PageContainer>
+          <StarryBackground />
+          <BackgroundVideo
+            ref={videoRef}
+            src={backgroundVideo}
+            autoPlay
+            muted
+            playsInline
+            fadeOut={fadeOutVideo}
+          />
+          <DarkOverlay />
+          <ContentWrapper>
+            {/* "VOTE" animeres bokstav for bokstav */}
+            <VoteTextContainer>
+              {voteLetters.map((letter, index) => (
+                <span key={index} style={{ animationDelay: getDelay(index) }}>
+                  {letter}
+                </span>
+              ))}
+            </VoteTextContainer>
+            {/* Ekstra tekst og knapp vises først etter at videoen er ferdig */}
+            <ExtraContent show={showExtra}>
+              <WhisperStudioHeader>Whisper Studio</WhisperStudioHeader>
+              <UnderText>Veil of the Eldertrees</UnderText>
+            </ExtraContent>
+            <DownloadButton show={showExtra}>DOWNLOAD</DownloadButton>
+          </ContentWrapper>
+        </PageContainer>
 
-        {/* 2) The video on top, which will fade out near the end */}
-        <BackgroundVideo
-          ref={videoRef}
-          src={backgroundVideo}
-          autoPlay
-          muted
-          playsInline
-          fadeOut={fadeOutVideo}
-        />
-
-        {/* 3) A dark overlay ALWAYS visible over the video */}
-        <DarkOverlay />
-
-        {/* 4) Your text content at the top layer */}
-        <ContentWrapper>
-          <VoteText>
-            VOTE
-            <span>Veil of the Eldertrees</span>
-          </VoteText>
-          <DownloadButton>DOWNLOAD</DownloadButton>
-        </ContentWrapper>
-      </PageContainer>
+        <AnimationSection />
+      </PageWrapper>
     </>
   );
 };
