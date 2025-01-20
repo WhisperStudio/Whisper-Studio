@@ -14,9 +14,35 @@ const GlobalStyle = createGlobalStyle`
 const Container = styled.div`
   /* Sørger for at vi har en lang side for scrolling */
   min-height: 200vh;
-  background: #0b1b20; /* Bakgrunnen er svart */
-  padding: 50px;
   position: relative;
+  overflow: hidden; /* Sikrer at videoen ikke stikker utenfor */
+`;
+
+const BackgroundVideo = styled.video`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Sørger for at videoen dekker hele bakgrunnen */
+  z-index: 0;
+  pointer-events: none; /* Hindrer interaksjon med videoen */
+`;
+
+const DarkOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to bottom, 
+    rgba(0, 0, 0, 0.8) 0%, 
+    rgba(0, 0, 0, 0.7) 5%,
+    rgba(0, 0, 0, 0.6) 10%,
+    rgba(0, 0, 0, 0.0) 15%
+  );
+  z-index: 2;
 `;
 
 /* Felles stil for alle elementer */
@@ -29,6 +55,7 @@ const Box = styled.div`
   will-change: transform, opacity;
   position: relative;
   margin: 120px 0; /* Mer plass over og under hver boks */
+  z-index: 3; /* Plasser innhold over bakgrunn og overlay */
 
   /* Juster plassering basert på tekst, bilde eller video */
   ${props =>
@@ -77,18 +104,10 @@ const VideoBox = styled(Box)`
   }
 `;
 
-/* Startposisjon basert på om boksen skal animeres fra høyre eller venstre */
-const AnimatedBox = styled(Box)`
-  transform: ${props =>
-    props.align === 'left' ? 'translateX(-50px)' : 'translateX(50px)'};
-`;
-
 function ScrollAnimation() {
-  // Referanser for hvert element
   const elementRefs = useRef([]);
   elementRefs.current = [];
 
-  // State for synligheten til hvert element (seks elementer)
   const [visibleItems, setVisibleItems] = useState(new Array(6).fill(false));
 
   const addToRefs = (el) => {
@@ -109,7 +128,6 @@ function ScrollAnimation() {
                 updated[index] = true;
                 return updated;
               });
-              // Unobserve for å forhindre at elementet trigges flere ganger
               observer.unobserve(entry.target);
             }
           }
@@ -124,21 +142,15 @@ function ScrollAnimation() {
     };
   }, []);
 
-  /*
-    Data for elementene:
-    - type: "text" for tekstbokser, "image" for bildebokser og "video" for videobokser
-    - align: bestemmer hvilken side elementet skal vises fra (left/right)
-  */
   const elementsData = [
     {
       type: 'text',
-      text: `Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. 
-             Maecenas sed diam eget risus varius blandit sit amet non magna.`,
+      text: `Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.`,
       align: 'right',
     },
     {
-      type: 'video', // Endret type til 'video'
-      video: video1, // mp4-videoen
+      type: 'video',
+      video: video1,
       alt: 'Forest with lights video',
       align: 'left',
     },
@@ -150,9 +162,7 @@ function ScrollAnimation() {
     },
     {
       type: 'text',
-      text: `Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
-             eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, 
-             sunt in culpa qui officia deserunt mollit anim id est laborum.`,
+      text: `Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.`,
       align: 'left',
     },
     {
@@ -163,7 +173,7 @@ function ScrollAnimation() {
     },
     {
       type: 'text',
-      text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed posuere consectetur est at lobortis.`,
+      text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
       align: 'left',
     },
   ];
@@ -171,7 +181,10 @@ function ScrollAnimation() {
   return (
     <>
       <GlobalStyle />
+
       <Container>
+        <BackgroundVideo src={video1} autoPlay muted loop />
+        <DarkOverlay />
         {elementsData.map((el, index) => {
           if (el.type === 'text') {
             return (
@@ -203,14 +216,7 @@ function ScrollAnimation() {
                 align={el.align}
                 className={visibleItems[index] ? 'active' : ''}
               >
-                <video
-                  src={el.video}
-                  alt={el.alt}
-                  controls
-                  autoPlay
-                  muted
-                  loop
-                />
+                <video src={el.video} alt={el.alt} controls autoPlay muted loop />
               </VideoBox>
             );
           }
