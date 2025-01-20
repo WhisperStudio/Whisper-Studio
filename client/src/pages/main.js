@@ -131,6 +131,9 @@ const CustomCursor = styled.div`
   position: fixed;
   pointer-events: none;
   z-index: 9999;
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const ScrollSection = styled.div`
