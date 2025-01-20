@@ -293,24 +293,6 @@ function App() {
               <CardDescription>Check out our newest features and improvements.</CardDescription>
             </CardContent>
           </NewsCard>
-          <NewsCard>
-            <CardContent>
-              <CardTitle>Community Spotlight</CardTitle>
-              <CardDescription>Highlighting our amazing player community.</CardDescription>
-            </CardContent>
-          </NewsCard>
-          <NewsCard>
-            <CardContent>
-              <CardTitle>Upcoming Event</CardTitle>
-              <CardDescription>Join us for a special in-game event next week!</CardDescription>
-            </CardContent>
-          </NewsCard>
-          <GameCard>
-            <CardContent>
-              <CardTitle>Character Showcase</CardTitle>
-              <CardDescription>Meet the new characters joining the V.O.T.E universe.</CardDescription>
-            </CardContent>
-          </GameCard>
         </CardGrid>
       </ScrollSection>
     </>
