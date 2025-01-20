@@ -129,6 +129,10 @@ function App() {
     };
   }, []);
 
+  const handlePlayNowClick = () => {
+    window.location.href = '/vote';
+  };
+
   return (
     <AppContainer>
       <GlobalStyle />
@@ -136,9 +140,9 @@ function App() {
       <BackgroundContainer image={backgroundImage} />
       <ContentContainer>
         <Header />
-        <TitleContainer>V.O.T:E</TitleContainer>
+        <TitleContainer>V.O.T.E</TitleContainer>
         <ButtonContainer>
-          <PlayButton>Play Now</PlayButton>
+          <PlayButton onClick={handlePlayNowClick}>Play Now</PlayButton>
           <WatchTrailerButton>Watch Trailer</WatchTrailerButton>
         </ButtonContainer>
       </ContentContainer>
