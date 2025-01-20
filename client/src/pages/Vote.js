@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
-import backgroundVideo from '../bilder/Forest witout lights.mp4';
+import backgroundVideo from '../images/Forest witout lights.mp4';
 import AnimationSection from '../components/info';
+import Header from '../components/header'; // Juster banen om nødvendig
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -18,7 +19,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Side- og bakgrunnskomponenter
+// Bakgrunnskomponenter
 const PageContainer = styled.div`
   position: relative;
   width: 100vw;
@@ -64,8 +65,6 @@ const BackgroundVideo = styled.video`
   height: 100%;
   object-fit: cover;
   z-index: 1;
-  opacity: ${({ fadeOut }) => (fadeOut ? 0 : 1)};
-  transition: opacity 2s ease;
 `;
 
 const DarkOverlay = styled.div`
@@ -78,19 +77,23 @@ const DarkOverlay = styled.div`
   z-index: 2;
 `;
 
-// Innhold- og layoutkomponenter
+// Innholdslag – holder alt over videoen
 const ContentWrapper = styled.div`
   position: relative;
   z-index: 3;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 `;
 
-// Keyframes for bokstav-animasjon (oppover bevegelse)
+// Container for VOTE-teksten – alltid midt på skjermen
+const VoteContainer = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+`;
+
+// Animasjonskeyframes for VOTE-bokstavene
 const fadeInUp = keyframes`
   from {
     opacity: 0;
@@ -102,17 +105,14 @@ const fadeInUp = keyframes`
   }
 `;
 
-// Container for "VOTE" – animerer hver bokstav for seg
-const VoteTextContainer = styled.h1`
+// VOTE-teksten – animeres bokstav for bokstav
+const VoteText = styled.h1`
   font-size: 10rem;
   color: #ffffff;
-  text-shadow: 0 0 20px rgba(121, 121, 121, 0.8),
-               0 0 30px rgba(121, 121, 121, 0.8);
   font-family: 'Cinzel', serif;
-  line-height: 1.2;
   letter-spacing: 0.5rem;
-  margin-bottom: 2rem;
   display: flex;
+  gap: 0.5rem;
   
   span {
     opacity: 0;
@@ -120,31 +120,55 @@ const VoteTextContainer = styled.h1`
   }
 `;
 
-// Ekstra tekst og knapp – vises etter at videoen er ferdig
-const ExtraContent = styled.div`
-  text-align: center;
-  color: #ffffff;
+// TopOverlay – for "Whisper Studio", plassert 12rem over VOTE
+const TopOverlay = styled.div`
+  position: absolute;
+  top: calc(50% - 12rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
   opacity: ${({ show }) => (show ? 1 : 0)};
   transition: opacity 1s ease;
 `;
 
-const WhisperStudioHeader = styled.h2`
+const TopText = styled.h2`
   font-size: 3rem;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
   font-family: 'Cinzel', serif;
-  margin-bottom: 1rem;
+  color: rgba(200, 200, 200, 0.8);
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+`;
+
+// UnderOverlay – for "Veil of the Eldertrees", plassert 12rem under VOTE
+const UnderOverlay = styled.div`
+  position: absolute;
+  top: calc(50% + 10rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
 `;
 
 const UnderText = styled.span`
   font-size: 2rem;
+  font-family: 'Cinzel', serif;
   color: rgba(200, 200, 200, 0.8);
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
   display: block;
 `;
 
+// DownloadOverlay – for DOWNLOAD-knappen, plassert 12rem under UnderOverlay
+const DownloadOverlay = styled.div`
+  position: absolute;
+  top: calc(50% + 24rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
+`;
+
 const DownloadButton = styled.button`
-  margin-top: 2rem;
   padding: 1rem 2rem;
   font-size: 1.5rem;
   font-family: 'Cinzel', serif;
@@ -154,9 +178,8 @@ const DownloadButton = styled.button`
   border-radius: 5px;
   cursor: pointer;
   text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-  transition: background-color 0.3s ease, transform 0.3s ease, opacity 1s ease;
-  opacity: ${({ show }) => (show ? 1 : 0)};
-
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  
   &:hover {
     background-color: #0a9396;
     transform: scale(1.05);
@@ -169,20 +192,20 @@ const PageWrapper = styled.div`
 
 const VotePage = () => {
   const videoRef = useRef(null);
-  const [fadeOutVideo, setFadeOutVideo] = useState(false);
-  const [showExtra, setShowExtra] = useState(false);
+  const [showWhisper, setShowWhisper] = useState(false);
+  const [showUnder, setShowUnder] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
 
-  // Bokstavene for "VOTE"
+  // Bokstavene for VOTE
   const voteLetters = 'VOTE'.split('');
 
-  // Kalkuler dynamiske delays slik at siste bokstav (E) vises rett før videoen fader ut.
+  // Kalkuler dynamiske delays slik at bokstavene animeres med litt mellomrom
   const getDelay = (index) => {
     if (!videoDuration) {
-      // Fallback: 0s, 0.5s, 1s, 1.5s
       return `${index * 0.5}s`;
     }
-    const totalAnimationTime = videoDuration - 1; // siste bokstav vises 1 sekund før slutten
+    const totalAnimationTime = videoDuration - 1; // siste bokstav animeres 1 sekund før videoen stopper
     const delay = (totalAnimationTime / (voteLetters.length - 1)) * index;
     return `${delay}s`;
   };
@@ -199,7 +222,6 @@ const VotePage = () => {
     if (videoElem) {
       videoElem.addEventListener('loadedmetadata', handleLoadedMetadata);
     }
-
     return () => {
       if (videoElem) {
         videoElem.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -207,14 +229,33 @@ const VotePage = () => {
     };
   }, []);
 
-  // Overvåk videoens tid for å trigge fade-out rett før den avsluttes
+  /* 
+    For en mykere stopp: Når videoen nærmer seg slutten reduserer vi playbackRate (slow-motion).
+    Når det er mindre enn 0.5 sekunder igjen, stopper vi videoen og triggere sekvensiell visning:
+      1. Først vises Whisper Studio.
+      2. Etter 500 ms vises Veil of the Eldertrees.
+      3. Etter ytterligere 500 ms vises DOWNLOAD-knappen.
+  */
   useEffect(() => {
     const handleTimeUpdate = () => {
-      if (!videoRef.current) return;
-      const { currentTime, duration } = videoRef.current;
-      const timeLeft = duration - currentTime;
-      if (timeLeft <= 1 && !fadeOutVideo) {
-        setFadeOutVideo(true);
+      if (!videoRef.current || !videoDuration) return;
+      const { currentTime, playbackRate } = videoRef.current;
+      const timeLeft = videoDuration - currentTime;
+
+      if (timeLeft <= 2 && playbackRate !== 0.3) {
+        videoRef.current.playbackRate = 0.3;
+      }
+
+      if (timeLeft <= 0.5) {
+        videoRef.current.pause();
+        // Start sekvensiell visning med en liten forsinkelse mellom hvert steg
+        setShowWhisper(true);
+        setTimeout(() => {
+          setShowUnder(true);
+          setTimeout(() => {
+            setShowDownload(true);
+          }, 500);
+        }, 500);
       }
     };
 
@@ -222,27 +263,17 @@ const VotePage = () => {
     if (videoElem) {
       videoElem.addEventListener('timeupdate', handleTimeUpdate);
     }
-
     return () => {
       if (videoElem) {
         videoElem.removeEventListener('timeupdate', handleTimeUpdate);
       }
     };
-  }, [fadeOutVideo]);
-
-  // Når videoen har faded ut, vis den ekstra teksten (Whisper Studio, undertekst og knapp)
-  useEffect(() => {
-    if (fadeOutVideo) {
-      const timer = setTimeout(() => {
-        setShowExtra(true);
-      }, 2000); // 2 sekund tilsvarer videoens fade-out transition
-      return () => clearTimeout(timer);
-    }
-  }, [fadeOutVideo]);
+  }, [videoDuration]);
 
   return (
     <>
       <GlobalStyle />
+      <Header />
       <PageWrapper>
         <PageContainer>
           <StarryBackground />
@@ -252,27 +283,31 @@ const VotePage = () => {
             autoPlay
             muted
             playsInline
-            fadeOut={fadeOutVideo}
           />
           <DarkOverlay />
           <ContentWrapper>
-            {/* "VOTE" animeres bokstav for bokstav */}
-            <VoteTextContainer>
-              {voteLetters.map((letter, index) => (
-                <span key={index} style={{ animationDelay: getDelay(index) }}>
-                  {letter}
-                </span>
-              ))}
-            </VoteTextContainer>
-            {/* Ekstra tekst og knapp vises først etter at videoen er ferdig */}
-            <ExtraContent show={showExtra}>
-              <WhisperStudioHeader>Whisper Studio</WhisperStudioHeader>
+            {/* VOTE-teksten vises alltid midt på skjermen */}
+            <VoteContainer>
+              <VoteText>
+                {voteLetters.map((letter, index) => (
+                  <span key={index} style={{ animationDelay: getDelay(index) }}>
+                    {letter}
+                  </span>
+                ))}
+              </VoteText>
+            </VoteContainer>
+            {/* Overlays som dukker opp sekvensielt */}
+            <TopOverlay show={showWhisper}>
+              <TopText>Whisper Studio</TopText>
+            </TopOverlay>
+            <UnderOverlay show={showUnder}>
               <UnderText>Veil of the Eldertrees</UnderText>
-            </ExtraContent>
-            <DownloadButton show={showExtra}>DOWNLOAD</DownloadButton>
+            </UnderOverlay>
+            <DownloadOverlay show={showDownload}>
+              <DownloadButton>DOWNLOAD</DownloadButton>
+            </DownloadOverlay>
           </ContentWrapper>
         </PageContainer>
-
         <AnimationSection />
       </PageWrapper>
     </>
