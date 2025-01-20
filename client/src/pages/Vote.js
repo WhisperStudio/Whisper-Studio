@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
-import backgroundVideo from '../bilder/Forest witout lights.mp4';
+import backgroundVideo from '../images/Forest witout lights.mp4';
 import AnimationSection from '../components/info';
 import Header from '../components/header'; // Juster banen om nødvendig
 
