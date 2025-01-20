@@ -6,29 +6,39 @@ import video1 from '../images/Forest with lights.mp4';
 import bilde2 from '../images/placeholder.com-1280x720.webp';
 import bilde3 from '../images/placeholder.com-1280x720.webp';
 
-// GlobalStyle for å importere skrifttypen (Great Vibes som ligner Basston Script)
+// GlobalStyle – her kan du legge til globale stiler om ønskelig
 const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+  
+  body {
+    margin: 0;
+    padding: 0;
+  }
 `;
 
 const Container = styled.div`
-  /* Sørger for at vi har en lang side for scrolling */
+  /* Lang side for scrolling */
   min-height: 200vh;
   position: relative;
-  overflow: hidden; /* Sikrer at videoen ikke stikker utenfor */
+  overflow: hidden; /* Hindrer at videoen stikker ut */
+  background: #0d0d0d;
 `;
 
+// Bakgrunnsvideoen (Denne forblir øverst i bakgrunnen)
 const BackgroundVideo = styled.video`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  object-fit: cover; /* Sørger for at videoen dekker hele bakgrunnen */
+  height: 40%;
+  object-fit: cover;
   z-index: 0;
-  pointer-events: none; /* Hindrer interaksjon med videoen */
+  pointer-events: none;
+  transition: filter 1s ease-out, opacity 2s ease-out;
+  filter: ${(props) => (props.isFading ? 'brightness(0.5) grayscale(50%)' : 'none')};
 `;
 
+// DarkOverlay med gradient
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -37,15 +47,14 @@ const DarkOverlay = styled.div`
   height: 100%;
   background: linear-gradient(
     to bottom, 
-    rgba(0, 0, 0, 0.8) 0%, 
-    rgba(0, 0, 0, 0.7) 5%,
-    rgba(0, 0, 0, 0.6) 10%,
-    rgba(0, 0, 0, 0.0) 15%
+    rgba(0, 0, 0, 1) 0%, 
+    rgba(0, 0, 0, 0.8) 15%,
+    rgba(0, 0, 0, 0.6) 30%,
+    rgba(0, 0, 0, 0.0) 45%
   );
   z-index: 2;
 `;
 
-/* Felles stil for alle elementer */
 const Box = styled.div`
   padding: 20px;
   width: 40%;
@@ -54,51 +63,51 @@ const Box = styled.div`
   transition: transform 0.6s ease-out, opacity 0.6s ease-out;
   will-change: transform, opacity;
   position: relative;
-  margin: 120px 0; /* Mer plass over og under hver boks */
-  z-index: 3; /* Plasser innhold over bakgrunn og overlay */
+  margin: 120px 0;
+  z-index: 3;
 
-  /* Juster plassering basert på tekst, bilde eller video */
   ${props =>
     props.align === 'left' &&
     css`
       margin-left: 10%;
       margin-right: auto;
     `}
-  
+
   ${props =>
     props.align === 'right' &&
     css`
       margin-left: auto;
       margin-right: 10%;
     `}
-  
+
   &.active {
     opacity: 1;
     transform: translateX(0);
   }
+
+  ${props =>
+    props.extraMargin &&
+    css`
+      margin-top: ${props.extraMargin}px;
+    `}
 `;
 
-/* Stil for tekstbokser */
 const TextBox = styled(Box)`
-  font-family: 'Great Vibes', cursive; /* Bruk script-fonten */
-  font-size: 36px; /* Gjør teksten større */
-  line-height: 1.5; /* Øk linjeavstand for bedre lesbarhet */
-  text-align: center; /* Sentraliser teksten */
-`;
+  font-family: 'MedievalSharp', cursive;
+  font-size: 20px;
+  line-height: 1.4;
+  text-align: center;
 
-/* Stil for bildeboksene */
-const ImageBox = styled(Box)`
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
+  h2 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: #e0c097;
   }
 `;
 
-/* Stil for videoboksen */
-const VideoBox = styled(Box)`
-  video {
-    width: 120%;
+const ImageBox = styled(Box)`
+  img {
+    width: 100%;
     height: auto;
     display: block;
   }
@@ -108,7 +117,9 @@ function ScrollAnimation() {
   const elementRefs = useRef([]);
   elementRefs.current = [];
 
-  const [visibleItems, setVisibleItems] = useState(new Array(6).fill(false));
+  const [visibleItems, setVisibleItems] = useState(new Array(5).fill(false));
+  const bgVideoRef = useRef(null);
+  const [isFading, setIsFading] = useState(false); // Tilstand for fading-effekt
 
   const addToRefs = (el) => {
     if (el && !elementRefs.current.includes(el)) {
@@ -137,53 +148,72 @@ function ScrollAnimation() {
     );
 
     elementRefs.current.forEach((ref) => observer.observe(ref));
-    return () => {
-      observer.disconnect();
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const video = bgVideoRef.current;
+
+    const handleTimeUpdate = () => {
+      if (video && video.currentTime >= video.duration - 2) {
+        // Start fading 2 sekunder før videoen slutter
+        setIsFading(true);
+      }
     };
+
+    if (video) {
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+    }
   }, []);
 
   const elementsData = [
     {
       type: 'text',
-      text: `Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.`,
-      align: 'right',
-    },
-    {
-      type: 'video',
-      video: video1,
-      alt: 'Forest with lights video',
-      align: 'left',
-    },
-    {
-      type: 'image',
-      image: bilde2,
-      alt: 'Bilde 2',
+      text: (
+        <>
+          <h2>About the game</h2>
+          <p>
+            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum vestibulum.
+          </p>
+        </>
+      ),
       align: 'right',
     },
     {
       type: 'text',
-      text: `Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.`,
+      text: `Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore. Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
       align: 'left',
+      extraMargin: 700,
     },
     {
       type: 'image',
       image: bilde3,
       alt: 'Bilde 3',
       align: 'right',
+      extraMargin: 200,
     },
     {
       type: 'text',
-      text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
+      text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum vestibulum.`,
       align: 'left',
+      extraMargin: 200,
     },
   ];
 
   return (
     <>
       <GlobalStyle />
-
       <Container>
-        <BackgroundVideo src={video1} autoPlay muted loop />
+        <BackgroundVideo
+          ref={bgVideoRef}
+          src={video1}
+          autoPlay
+          muted
+          playsInline
+          isFading={isFading}
+        />
         <DarkOverlay />
         {elementsData.map((el, index) => {
           if (el.type === 'text') {
@@ -193,8 +223,9 @@ function ScrollAnimation() {
                 ref={addToRefs}
                 align={el.align}
                 className={visibleItems[index] ? 'active' : ''}
+                extraMargin={el.extraMargin}
               >
-                <p>{el.text}</p>
+                {el.text}
               </TextBox>
             );
           } else if (el.type === 'image') {
@@ -204,20 +235,10 @@ function ScrollAnimation() {
                 ref={addToRefs}
                 align={el.align}
                 className={visibleItems[index] ? 'active' : ''}
+                extraMargin={el.extraMargin}
               >
                 <img src={el.image} alt={el.alt} />
               </ImageBox>
-            );
-          } else if (el.type === 'video') {
-            return (
-              <VideoBox
-                key={index}
-                ref={addToRefs}
-                align={el.align}
-                className={visibleItems[index] ? 'active' : ''}
-              >
-                <video src={el.video} alt={el.alt} controls autoPlay muted loop />
-              </VideoBox>
             );
           }
           return null;
