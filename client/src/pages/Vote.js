@@ -73,7 +73,13 @@ const DarkOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(66, 64, 64, 0.1);
+  background: linear-gradient(
+    to bottom, 
+    rgba(0, 0, 0, 0) 70%, 
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0.7) 90%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
   z-index: 2;
 `;
 
