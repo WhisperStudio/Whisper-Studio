@@ -2,9 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
 
 // Importer mediefiler
-import video1 from '../bilder/Forest with lights.mp4';
-import bilde2 from '../bilder/placeholder.com-1280x720.webp';
-import bilde3 from '../bilder/placeholder.com-1280x720.webp';
+import video1 from '../images/Forest with lights.mp4';
+import bilde2 from '../images/placeholder.com-1280x720.webp';
+import bilde3 from '../images/placeholder.com-1280x720.webp';
 
 // GlobalStyle for å importere skrifttypen (Great Vibes som ligner Basston Script)
 const GlobalStyle = createGlobalStyle`
