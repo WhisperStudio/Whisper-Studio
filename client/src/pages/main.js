@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import Header from '../components/header'; // Adjust path if needed
 import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
-import placeholderImage from '../bilder/placeholder.svg'; // Placeholder image for cards
+import placeholderImage1 from '../bilder/placeholder.svg'; // Placeholder image for cards
+import placeholderImage2 from '../bilder/placeholder.svg'; // Placeholder image for cards
 
 const AppContainer = styled.div`
   height: 100vh;
@@ -133,7 +134,7 @@ const CustomCursor = styled.div`
   z-index: 9999;
 `;
 
-const ScrollSection = styled.div`
+const NewsSection = styled.div`
   min-height: 100vh;
   width: 100%;
   background-color: #1a1a1a;
@@ -143,95 +144,105 @@ const ScrollSection = styled.div`
   box-sizing: border-box;
 `;
 
-const ScrollSectionTitle = styled.h2`
+const NewsSectionTitle = styled.h2`
   font-size: 3rem;
   margin-bottom: 40px;
   margin-left: 50px;
   color: white;
 `;
 
-const CardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  grid-auto-rows: minmax(200px, auto);
-  gap: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+const CardContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 50px;
+  box-sizing: border-box;
+  gap: 40px;
+  
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    align-items: center;
+  }
 `;
 
 const Card = styled.div`
-  background-color: #2a2a2a;
+  width: calc(50% - 20px);
+  max-width: 700px;
+  background-color: #1e1e1e;
   color: white;
-  border-radius: 15px;
+  border-radius: 16px;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  background-image: url(${placeholderImage});
+  transition: transform 0.3s ease;
+  position: relative;
+  height: 500px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  
+  @media (max-width: 1200px) {
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+`;
+
+const CardImage = styled.div`
+  width: 100%;
+  height: 60%;
+  background-image: url(${props => props.image});
   background-size: cover;
   background-position: center;
   position: relative;
   
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  }
-
-  &::before {
+  &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7));
+    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
   }
-`;
-
-const NewsCard = styled(Card)`
-  grid-column: span 4;
-  aspect-ratio: 1 / 1;
-
-  @media (max-width: 1200px) {
-    grid-column: span 6;
-  }
-
-  @media (max-width: 768px) {
-    grid-column: span 12;
-  }
-`;
-
-const GameCard = styled(Card)`
-  grid-column: span 8;
-  aspect-ratio: 16 / 9;
-
-  @media (max-width: 1200px) {
-    grid-column: span 12;
-  }
-`;
-
-const BigCard = styled(Card)`
-  grid-column: span 12;
-  aspect-ratio: 21 / 9;
 `;
 
 const CardContent = styled.div`
-  padding: 20px;
-  height: 100%;
+  padding: 24px;
+  height: 40%;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  position: relative;
-  z-index: 1;
+  justify-content: space-between;
+  background-color: #1e1e1e;
 `;
 
 const CardTitle = styled.h3`
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 8px;
 `;
 
 const CardDescription = styled.p`
   font-size: 1rem;
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin-bottom: 16px;
+`;
+
+const CardButton = styled.button`
+  padding: 10px 20px;
+  background-color: #3a86ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #2a75e8;
+  }
 `;
 
 function App() {
@@ -269,47 +280,31 @@ function App() {
         </ContentContainer>
       </AppContainer>
       
-      <ScrollSection>
-        <ScrollSectionTitle>News and Updates</ScrollSectionTitle>
-        <CardGrid>
-          <BigCard>
+      <NewsSection>
+        <NewsSectionTitle>News and Updates</NewsSectionTitle>
+        <CardContainer>
+          <Card>
+            <CardImage image={placeholderImage1} />
             <CardContent>
-              <CardTitle>V.O.T.E 2.0 Coming Soon</CardTitle>
-              <CardDescription>Get ready for the biggest update yet. V.O.T.E 2.0 launches next month with groundbreaking features and a complete visual overhaul.</CardDescription>
+              <div>
+                <CardTitle>V.O.T.E 2.0 Update</CardTitle>
+                <CardDescription>Get ready for the biggest update yet. V.O.T.E 2.0 launches next month with groundbreaking features and a complete visual overhaul.</CardDescription>
+              </div>
+              <CardButton>Learn More</CardButton>
             </CardContent>
-          </BigCard>
-          <GameCard>
+          </Card>
+          <Card>
+            <CardImage image={placeholderImage2} />
             <CardContent>
-              <CardTitle>New Game Mode</CardTitle>
-              <CardDescription>Experience V.O.T.E in a whole new way with our latest game mode.</CardDescription>
+              <div>
+                <CardTitle>New Game Mode</CardTitle>
+                <CardDescription>Experience V.O.T.E in a whole new way with our latest game mode. Challenge yourself and climb the ranks!</CardDescription>
+              </div>
+              <CardButton>Explore</CardButton>
             </CardContent>
-          </GameCard>
-          <NewsCard>
-            <CardContent>
-              <CardTitle>Latest Update</CardTitle>
-              <CardDescription>Check out our newest features and improvements.</CardDescription>
-            </CardContent>
-          </NewsCard>
-          <NewsCard>
-            <CardContent>
-              <CardTitle>Community Spotlight</CardTitle>
-              <CardDescription>Highlighting our amazing player community.</CardDescription>
-            </CardContent>
-          </NewsCard>
-          <NewsCard>
-            <CardContent>
-              <CardTitle>Upcoming Event</CardTitle>
-              <CardDescription>Join us for a special in-game event next week!</CardDescription>
-            </CardContent>
-          </NewsCard>
-          <GameCard>
-            <CardContent>
-              <CardTitle>Character Showcase</CardTitle>
-              <CardDescription>Meet the new characters joining the V.O.T.E universe.</CardDescription>
-            </CardContent>
-          </GameCard>
-        </CardGrid>
-      </ScrollSection>
+          </Card>
+        </CardContainer>
+      </NewsSection>
     </>
   );
 }

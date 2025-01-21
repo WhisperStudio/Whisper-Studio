@@ -12,7 +12,7 @@ const HeaderContainer = styled.header`
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s ease;
-  background-color: ${({ isScrolled }) => (isScrolled ? 'rgba(255, 255, 255, 1)' : 'transparent')};
+  background-color: ${({ isScrolled }) => (isScrolled ? 'black' : 'transparent')};
 
   @media (max-width: 768px) {
     padding: 1rem 2rem;
@@ -186,7 +186,7 @@ const Header = () => {
   };
 
   // Endre tekstfargen basert på scrolled status
-  const textColor = isScrolled ? 'black' : 'white';
+  const textColor = isScrolled ? 'white' : 'white';
 
   return (
     <HeaderContainer isScrolled={isScrolled}>
