@@ -204,7 +204,7 @@ const FancyDivider = styled.div`
   bottom: -150px;
   left: 50%;
   transform: translateX(-50%);
-  width: 300px;
+  width: 100%;
   height: 300px;
  
   background: transparent;
@@ -218,9 +218,9 @@ const FancyDivider = styled.div`
 `;
 
 const CenterRune = styled.img`
-  width: 1400px;
+  width: 1000px;
    /* Juster størrelsen som ønsket */
-  height: auto;
+  height: 60px;
   border-radius: 3px;
   opacity: 0.7;
   
