@@ -5,6 +5,8 @@ import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
 import Header from '../components/header';
 
+// --- Ny linje ---
+import backgroundMusic from '../bilder/spotifydown.com - Snufs - Kaveh Ali Mohammad.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -69,7 +71,6 @@ const BackgroundVideo = styled.video`
   z-index: 1;
 `;
 
-// Oppdatert DarkOverlay – fra transparent øverst til helt sort nederst
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -88,7 +89,6 @@ const DarkOverlay = styled.div`
   z-index: 2;
 `;
 
-// Innholdslag – holder alt over videoen
 const ContentWrapper = styled.div`
   position: relative;
   z-index: 3;
@@ -96,7 +96,6 @@ const ContentWrapper = styled.div`
   height: 100%;
 `;
 
-// Container for VOTE-teksten – alltid midt på skjermen
 const VoteContainer = styled.div`
   position: absolute;
   top: 50%;
@@ -104,7 +103,6 @@ const VoteContainer = styled.div`
   transform: translate(-50%, -50%);
 `;
 
-// Animasjonskeyframes for VOTE-bokstavene
 const fadeInUp = keyframes`
   from {
     opacity: 0;
@@ -116,7 +114,6 @@ const fadeInUp = keyframes`
   }
 `;
 
-// VOTE-teksten – animeres bokstav for bokstav
 const VoteText = styled.h1`
   font-size: 10rem;
   color: #ffffff;
@@ -131,7 +128,6 @@ const VoteText = styled.h1`
   }
 `;
 
-// TopOverlay – for "Whisper Studio", plassert 12rem over VOTE
 const TopOverlay = styled.div`
   position: absolute;
   top: calc(50% - 12rem);
@@ -149,7 +145,6 @@ const TopText = styled.h2`
   text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
 `;
 
-// UnderOverlay – for "Veil of the Eldertrees", plassert 12rem under VOTE
 const UnderOverlay = styled.div`
   position: absolute;
   top: calc(50% + 10rem);
@@ -168,7 +163,6 @@ const UnderText = styled.span`
   display: block;
 `;
 
-// DownloadOverlay – for DOWNLOAD-knappen, plassert 12rem under UnderOverlay
 const DownloadOverlay = styled.div`
   position: absolute;
   top: calc(50% + 24rem);
@@ -197,18 +191,14 @@ const DownloadButton = styled.button`
   }
 `;
 
-// Fancy divider med vikingaktig design – ikke helt ut til kantene
 const FancyDivider = styled.div`
   position: absolute;
-  
   bottom: -150px;
   left: 50%;
   transform: translateX(-50%);
   width: 300px;
   height: 300px;
- 
   background: black;
- 
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.9);
   z-index: 5;
   display: flex;
@@ -218,14 +208,12 @@ const FancyDivider = styled.div`
 
 const CenterRune = styled.img`
   width: 1400px;
-   /* Juster størrelsen som ønsket */
   height: auto;
   border-radius: 3px;
   opacity: 0.7;
   box-shadow: 0px 30px 14px rgba(0, 0, 0, 0.9);
   object-fit: contain;
 `;
-
 
 const PageWrapper = styled.div`
   display: block;
@@ -238,6 +226,9 @@ const VotePage = () => {
   const [showDownload, setShowDownload] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
 
+  // AudioRef for musikken (valgfritt om du trenger ref eller ikke)
+  const audioRef = useRef(null);
+
   // Bokstavene for VOTE
   const voteLetters = 'VOTE'.split('');
 
@@ -246,19 +237,17 @@ const VotePage = () => {
     if (!videoDuration) {
       return `${index * 0.5}s`;
     }
-    const totalAnimationTime = videoDuration - 1; // siste bokstav animeres 1 sekund før videoen stopper
+    const totalAnimationTime = videoDuration - 1; 
     const delay = (totalAnimationTime / (voteLetters.length - 1)) * index;
     return `${delay}s`;
   };
 
-  // Sett videoDuration når metadata er lastet inn
   useEffect(() => {
     const handleLoadedMetadata = () => {
       if (videoRef.current) {
         setVideoDuration(videoRef.current.duration);
       }
     };
-
     const videoElem = videoRef.current;
     if (videoElem) {
       videoElem.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -270,13 +259,6 @@ const VotePage = () => {
     };
   }, []);
 
-  /* 
-    For en mykere stopp: Når videoen nærmer seg slutten reduserer vi playbackRate (slow-motion).
-    Når det er mindre enn 0.5 sekunder igjen, stopper vi videoen og triggere sekvensiell visning:
-      1. Først vises Whisper Studio.
-      2. Etter 500 ms vises Veil of the Eldertrees.
-      3. Etter ytterligere 500 ms vises DOWNLOAD-knappen.
-  */
   useEffect(() => {
     const handleTimeUpdate = () => {
       if (!videoRef.current || !videoDuration) return;
@@ -311,6 +293,18 @@ const VotePage = () => {
     };
   }, [videoDuration]);
 
+  // --- useEffect for å starte musikken automatisk ---
+  useEffect(() => {
+    if (audioRef.current) {
+      // Prøv å starte avspillingen
+      audioRef.current.play().catch((err) => {
+        // Noen nettlesere vil blokkere automatisk avspilling
+        // Du kan legge til en fallback her, f.eks. en "Play"-knapp
+        console.warn('Autoplay blokkert: ', err);
+      });
+    }
+  }, []);
+
   return (
     <>
       <GlobalStyle />
@@ -327,7 +321,6 @@ const VotePage = () => {
           />
           <DarkOverlay />
           <ContentWrapper>
-            {/* VOTE-teksten vises alltid midt på skjermen */}
             <VoteContainer>
               <VoteText>
                 {voteLetters.map((letter, index) => (
@@ -337,7 +330,6 @@ const VotePage = () => {
                 ))}
               </VoteText>
             </VoteContainer>
-            {/* Overlays som dukker opp sekvensielt */}
             <TopOverlay show={showWhisper}>
               <TopText>Whisper Studio</TopText>
             </TopOverlay>
@@ -348,11 +340,17 @@ const VotePage = () => {
               <DownloadButton>DOWNLOAD</DownloadButton>
             </DownloadOverlay>
           </ContentWrapper>
-          {/* Fancy divider med et dekorativt merke i midten */}
           <FancyDivider>
             <CenterRune src={rune} alt="Rune" />
           </FancyDivider>
 
+          {/* Audio-elementet for bakgrunnsmusikk */}
+          <audio 
+            ref={audioRef} 
+            src={backgroundMusic} 
+            autoPlay 
+            loop
+          />
         </PageContainer>
         <AnimationSection />
       </PageWrapper>
