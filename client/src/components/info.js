@@ -1,16 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
-import Norse from '../Fonts/Norse-KaWl.otf'; // Stien til fontfilen
+import Norse from '../Fonts/Norse-KaWl.otf'; // Sti til fontfilen
 
-// Importer mediefiler
+// Mediefiler
 import video1 from '../images/Forest with lights.mp4';
-import bilde2 from '../images/placeholder.com-1280x720.webp';
 import bilde3 from '../images/placeholder.com-1280x720.webp';
 
-// GlobalStyle – her kan du legge til globale stiler om ønskelig
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
-  
+
   @font-face {
     font-family: 'Norse';
     src: url(${Norse}) format('opentype');
@@ -21,7 +19,7 @@ const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Norse', sans-serif; /* Sett "Norse" som global font */
+    font-family: 'Norse', sans-serif;
     background-color: #0d0d0d;
     color: white;
   }
@@ -31,11 +29,10 @@ const Container = styled.div`
   /* Lang side for scrolling */
   min-height: 200vh;
   position: relative;
-  overflow: hidden; /* Hindrer at videoen stikker ut */
+  overflow: hidden;
   background: #0d0d0d;
 `;
 
-// Bakgrunnsvideoen (Denne forblir øverst i bakgrunnen)
 const BackgroundVideo = styled.video`
   position: absolute;
   top: 0;
@@ -46,10 +43,9 @@ const BackgroundVideo = styled.video`
   z-index: 0;
   pointer-events: none;
   transition: filter 1s ease-out, opacity 2s ease-out;
-  filter: ${(props) => (props.isFading ? 'brightness(0.8) grayscale(20%)' : 'none')};
+  filter: ${({ isFading }) => (isFading ? 'brightness(0.8) grayscale(20%)' : 'none')};
 `;
 
-// DarkOverlay med gradient
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -57,8 +53,8 @@ const DarkOverlay = styled.div`
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    to bottom, 
-    rgba(0, 0, 0, 0.9) 0%, 
+    to bottom,
+    rgba(0, 0, 0, 0.9) 0%,
     rgba(0, 0, 0, 0.8) 5%,
     rgba(0, 0, 0, 0.5) 10%,
     rgba(0, 0, 0, 0.4) 15%,
@@ -78,15 +74,15 @@ const Box = styled.div`
   margin: 120px 0;
   z-index: 3;
 
-  ${props =>
-    props.align === 'left' &&
+  ${({ align }) =>
+    align === 'left' &&
     css`
       margin-left: 10%;
       margin-right: auto;
     `}
 
-  ${props =>
-    props.align === 'right' &&
+  ${({ align }) =>
+    align === 'right' &&
     css`
       margin-left: auto;
       margin-right: 10%;
@@ -97,15 +93,15 @@ const Box = styled.div`
     transform: translateX(0);
   }
 
-  ${props =>
-    props.extraMargin &&
+  ${({ extraMargin }) =>
+    extraMargin &&
     css`
-      margin-top: ${props.extraMargin}px;
+      margin-top: ${extraMargin}px;
     `}
 `;
 
 const TextBox = styled(Box)`
-  
+  top: 60px;
   font-size: 20px;
   line-height: 1.4;
   text-align: center;
@@ -113,8 +109,12 @@ const TextBox = styled(Box)`
   h2 {
     font-family: 'Norse', sans-serif;
     font-size: 36px;
-    margin-bottom: 10px;
+    margin-bottom: 30px;
     color: #e0c097;
+  }
+
+  p {
+    font-family: 'MedievalSharp', sans-serif;
   }
 `;
 
@@ -131,8 +131,12 @@ function ScrollAnimation() {
   elementRefs.current = [];
 
   const [visibleItems, setVisibleItems] = useState(new Array(5).fill(false));
+  const [isFading, setIsFading] = useState(false);
+
+  // For å spore når videoen er ferdig, slik at den ikke starter på nytt:
+  const [hasEnded, setHasEnded] = useState(false);
+
   const bgVideoRef = useRef(null);
-  const [isFading, setIsFading] = useState(false); // Tilstand for fading-effekt
 
   const addToRefs = (el) => {
     if (el && !elementRefs.current.includes(el)) {
@@ -140,6 +144,7 @@ function ScrollAnimation() {
     }
   };
 
+  // IntersectionObserver for boksene
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -164,13 +169,67 @@ function ScrollAnimation() {
     return () => observer.disconnect();
   }, []);
 
+  // Legg til en "ended"-event for å vite når videoen er ferdig.
+  useEffect(() => {
+    const videoElement = bgVideoRef.current;
+    if (!videoElement) return;
+
+    const handleEnded = () => {
+      // Når videoen er ferdig, setter vi hasEnded = true
+      // da fryser videoen (blir stående på siste frame).
+      setHasEnded(true);
+    };
+
+    videoElement.addEventListener('ended', handleEnded);
+
+    return () => {
+      videoElement.removeEventListener('ended', handleEnded);
+    };
+  }, []);
+
+  // IntersectionObserver for selve videoen.
+  // Starter og pauser videoen ved scroll, men kun så lenge den IKKE er ferdigspilt.
+  useEffect(() => {
+    const videoElement = bgVideoRef.current;
+    if (!videoElement) return;
+
+    const videoObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Hvis videoen IKKE er ferdig, spill av
+            if (!hasEnded) {
+              videoElement.play();
+            }
+          } else {
+            // Hvis videoen IKKE er ferdig, pause
+            if (!hasEnded) {
+              videoElement.pause();
+            }
+          }
+        });
+      },
+      { threshold: 0.5 } // Juster om du vil at halvparten av videoen må være synlig
+    );
+
+    videoObserver.observe(videoElement);
+
+    return () => {
+      if (videoElement) {
+        videoObserver.unobserve(videoElement);
+      }
+    };
+  }, [hasEnded]);
+
+  // Håndter fading de siste 2 sekundene av videoen
   useEffect(() => {
     const video = bgVideoRef.current;
 
     const handleTimeUpdate = () => {
-      if (video && video.currentTime >= video.duration - 2) {
-        // Start fading 2 sekunder før videoen slutter
-        setIsFading(true);
+      if (video && video.duration > 0) {
+        if (video.currentTime >= video.duration - 2) {
+          setIsFading(true);
+        }
       }
     };
 
@@ -180,16 +239,17 @@ function ScrollAnimation() {
     }
   }, []);
 
+  // Eksempeldata for bokser/tekst
   const elementsData = [
     {
-      
       type: 'text',
       text: (
         <>
           <h2>About the game</h2>
           <p>
-            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum vestibulum.
+            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit
+            amet risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae
+            vestibulum vestibulum.
           </p>
         </>
       ),
@@ -220,15 +280,22 @@ function ScrollAnimation() {
     <>
       <GlobalStyle />
       <Container>
+        {/* 
+          - Ingen autoPlay (for å unngå at den starter ved lasting).
+          - muted og playsInline gir typisk tillatelse for avspilling uten brukerinteraksjon.
+          - Ingen loop (så videoen stopper på siste frame).
+        */}
         <BackgroundVideo
           ref={bgVideoRef}
           src={video1}
-          autoPlay
           muted
           playsInline
+          preload="metadata"
           isFading={isFading}
         />
         <DarkOverlay />
+
+        {/* Render boksene (tekst/bilder) med intersection-animasjon */}
         {elementsData.map((el, index) => {
           if (el.type === 'text') {
             return (
