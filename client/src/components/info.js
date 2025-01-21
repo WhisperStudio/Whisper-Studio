@@ -35,7 +35,7 @@ const BackgroundVideo = styled.video`
   z-index: 0;
   pointer-events: none;
   transition: filter 1s ease-out, opacity 2s ease-out;
-  filter: ${(props) => (props.isFading ? 'brightness(0.5) grayscale(50%)' : 'none')};
+  filter: ${(props) => (props.isFading ? 'brightness(0.8) grayscale(20%)' : 'none')};
 `;
 
 // DarkOverlay med gradient
@@ -47,10 +47,11 @@ const DarkOverlay = styled.div`
   height: 100%;
   background: linear-gradient(
     to bottom, 
-    rgba(0, 0, 0, 1) 0%, 
-    rgba(0, 0, 0, 0.8) 15%,
-    rgba(0, 0, 0, 0.6) 30%,
-    rgba(0, 0, 0, 0.0) 45%
+    rgba(0, 0, 0, 0.9) 0%, 
+    rgba(0, 0, 0, 0.8) 5%,
+    rgba(0, 0, 0, 0.5) 10%,
+    rgba(0, 0, 0, 0.4) 15%,
+    rgba(0, 0, 0, 0.0) 35%
   );
   z-index: 2;
 `;

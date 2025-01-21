@@ -1,8 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import backgroundVideo from '../images/Forest witout lights.mp4';
+import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
 import Header from '../components/header';
+
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -77,9 +79,11 @@ const DarkOverlay = styled.div`
   background: linear-gradient(
     to bottom, 
     rgba(0, 0, 0, 0) 0%, 
-    rgba(0, 0, 0, 0.6) 40%,
-    rgba(0, 0, 0, 0.8) 60%,
-    rgba(0, 0, 0, 1) 100%
+    rgba(0, 0, 0, 0.2) 70%,
+    rgba(0, 0, 0, 0.4) 75%,
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0.8) 85%,
+    rgba(0, 0, 0, 9) 100%
   );
   z-index: 2;
 `;
@@ -196,40 +200,32 @@ const DownloadButton = styled.button`
 // Fancy divider med vikingaktig design – ikke helt ut til kantene
 const FancyDivider = styled.div`
   position: absolute;
-  bottom: 0;
+  
+  bottom: -150px;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  height: 6px;
-  background: #fff;
-  /* Dekorative utskjæringer for en "vikingaktig" effekt */
-  clip-path: polygon(
-    0% 50%, 10% 60%, 20% 40%, 30% 55%, 
-    40% 35%, 50% 50%, 60% 35%, 70% 55%, 
-    80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%
-  );
-  box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.3);
+  width: 300px;
+  height: 300px;
+ 
+  background: black;
+ 
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.9);
   z-index: 5;
-  /* Gjør plass til merke i midten */
   display: flex;
   align-items: center;
   justify-content: center;
 `;
 
-// Merket/runen i midten av divideren
-const CenterRune = styled.div`
-  background: #fff;
-  color: #000;
-  font-size: 2rem;
-  font-family: 'Cinzel', serif;
-  padding: 0.2rem 0.5rem;
+const CenterRune = styled.img`
+  width: 1400px;
+   /* Juster størrelsen som ønsket */
+  height: auto;
   border-radius: 3px;
-  box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
-  /* Bruk et vikinginspirert rune-tegn – du kan bytte ut Unicode-tegnet etter ønske */
-  &:before {
-    content: 'ᛗ';
-  }
+  opacity: 0.7;
+  box-shadow: 0px 30px 14px rgba(0, 0, 0, 0.9);
+  object-fit: contain;
 `;
+
 
 const PageWrapper = styled.div`
   display: block;
@@ -354,8 +350,9 @@ const VotePage = () => {
           </ContentWrapper>
           {/* Fancy divider med et dekorativt merke i midten */}
           <FancyDivider>
-            <CenterRune />
+            <CenterRune src={rune} alt="Rune" />
           </FancyDivider>
+
         </PageContainer>
         <AnimationSection />
       </PageWrapper>
