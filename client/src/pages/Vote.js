@@ -5,6 +5,8 @@ import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
 import Header from '../components/header';
 
+// Legg til import av musikkfil
+import backgroundMusic from '../images/wyat family.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -200,17 +202,12 @@ const DownloadButton = styled.button`
 // Fancy divider med vikingaktig design – ikke helt ut til kantene
 const FancyDivider = styled.div`
   position: absolute;
-  
   bottom: -150px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   height: 300px;
- 
   background: transparent;
-  
- 
-  
   z-index: 5;
   display: flex;
   align-items: center;
@@ -221,12 +218,12 @@ const CenterRune = styled.img`
   width: 1000px;
    /* Juster størrelsen som ønsket */
   height: 60px;
+  width: 1400px;
+  height: auto;
   border-radius: 3px;
   opacity: 0.7;
-  
   object-fit: contain;
 `;
-
 
 const PageWrapper = styled.div`
   display: block;
@@ -238,6 +235,9 @@ const VotePage = () => {
   const [showUnder, setShowUnder] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
+
+  // Opprett ref til audio-elementet
+  const audioRef = useRef(null);
 
   // Bokstavene for VOTE
   const voteLetters = 'VOTE'.split('');
@@ -271,7 +271,7 @@ const VotePage = () => {
     };
   }, []);
 
-  /* 
+  /*
     For en mykere stopp: Når videoen nærmer seg slutten reduserer vi playbackRate (slow-motion).
     Når det er mindre enn 0.5 sekunder igjen, stopper vi videoen og triggere sekvensiell visning:
       1. Først vises Whisper Studio.
@@ -312,6 +312,18 @@ const VotePage = () => {
     };
   }, [videoDuration]);
 
+  // Forsøk å spille av musikken med en gang komponenten rendres
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current
+        .play()
+        .catch((err) => {
+          // Hvis nettleseren blokkerer autoplay, kan du logge feilen eller vise en "Play"-knapp
+          console.warn('Autoplay blokkert: ', err);
+        });
+    }
+  }, []);
+
   return (
     <>
       <GlobalStyle />
@@ -345,15 +357,26 @@ const VotePage = () => {
             <UnderOverlay show={showUnder}>
               <UnderText>Veil of the Eldertrees</UnderText>
             </UnderOverlay>
-            {/*<DownloadOverlay show={showDownload}>
+            {/* 
+            // Hvis du vil bruke DOWNLOAD-knappen igjen
+            <DownloadOverlay show={showDownload}>
               <DownloadButton>DOWNLOAD</DownloadButton>
-            </DownloadOverlay>*/}
+            </DownloadOverlay> 
+            */}
           </ContentWrapper>
+
           {/* Fancy divider med et dekorativt merke i midten */}
           <FancyDivider>
             <CenterRune src={rune} alt="Rune" />
           </FancyDivider>
 
+          {/* Audio-elementet for musikken */}
+          <audio
+            ref={audioRef}
+            src={backgroundMusic}
+            autoPlay
+            loop
+          />
         </PageContainer>
         <AnimationSection />
       </PageWrapper>
