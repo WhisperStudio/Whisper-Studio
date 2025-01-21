@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import backgroundVideo from '../images/Forest witout lights.mp4';
 import AnimationSection from '../components/info';
-import Header from '../components/header'; // Juster banen om nødvendig
+import Header from '../components/header';
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -67,6 +67,7 @@ const BackgroundVideo = styled.video`
   z-index: 1;
 `;
 
+// Oppdatert DarkOverlay – fra transparent øverst til helt sort nederst
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -75,10 +76,10 @@ const DarkOverlay = styled.div`
   height: 100%;
   background: linear-gradient(
     to bottom, 
-    rgba(0, 0, 0, 0) 70%, 
-    rgba(0, 0, 0, 0.6) 80%,
-    rgba(0, 0, 0, 0.7) 90%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgba(0, 0, 0, 0) 0%, 
+    rgba(0, 0, 0, 0.6) 40%,
+    rgba(0, 0, 0, 0.8) 60%,
+    rgba(0, 0, 0, 1) 100%
   );
   z-index: 2;
 `;
@@ -189,6 +190,44 @@ const DownloadButton = styled.button`
   &:hover {
     background-color: #0a9396;
     transform: scale(1.05);
+  }
+`;
+
+// Fancy divider med vikingaktig design – ikke helt ut til kantene
+const FancyDivider = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 6px;
+  background: #fff;
+  /* Dekorative utskjæringer for en "vikingaktig" effekt */
+  clip-path: polygon(
+    0% 50%, 10% 60%, 20% 40%, 30% 55%, 
+    40% 35%, 50% 50%, 60% 35%, 70% 55%, 
+    80% 40%, 90% 60%, 100% 50%, 100% 100%, 0% 100%
+  );
+  box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+  /* Gjør plass til merke i midten */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+// Merket/runen i midten av divideren
+const CenterRune = styled.div`
+  background: #fff;
+  color: #000;
+  font-size: 2rem;
+  font-family: 'Cinzel', serif;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
+  /* Bruk et vikinginspirert rune-tegn – du kan bytte ut Unicode-tegnet etter ønske */
+  &:before {
+    content: 'ᛗ';
   }
 `;
 
@@ -313,6 +352,10 @@ const VotePage = () => {
               <DownloadButton>DOWNLOAD</DownloadButton>
             </DownloadOverlay>
           </ContentWrapper>
+          {/* Fancy divider med et dekorativt merke i midten */}
+          <FancyDivider>
+            <CenterRune />
+          </FancyDivider>
         </PageContainer>
         <AnimationSection />
       </PageWrapper>
