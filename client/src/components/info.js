@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
+import Norse from '../Fonts/Norse-KaWl.otf'; // Stien til fontfilen
 
 // Importer mediefiler
 import video1 from '../images/Forest with lights.mp4';
@@ -10,9 +11,19 @@ import bilde3 from '../images/placeholder.com-1280x720.webp';
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
   
+  @font-face {
+    font-family: 'Norse';
+    src: url(${Norse}) format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+
   body {
     margin: 0;
     padding: 0;
+    font-family: 'Norse', sans-serif; /* Sett "Norse" som global font */
+    background-color: #0d0d0d;
+    color: white;
   }
 `;
 
@@ -51,7 +62,7 @@ const DarkOverlay = styled.div`
     rgba(0, 0, 0, 0.8) 5%,
     rgba(0, 0, 0, 0.5) 10%,
     rgba(0, 0, 0, 0.4) 15%,
-    rgba(0, 0, 0, 0.0) 35%
+    rgba(0, 0, 0, 0.0) 25%
   );
   z-index: 2;
 `;
@@ -94,12 +105,13 @@ const Box = styled.div`
 `;
 
 const TextBox = styled(Box)`
-  font-family: 'MedievalSharp', cursive;
+  
   font-size: 20px;
   line-height: 1.4;
   text-align: center;
 
   h2 {
+    font-family: 'Norse', sans-serif;
     font-size: 36px;
     margin-bottom: 10px;
     color: #e0c097;
@@ -170,6 +182,7 @@ function ScrollAnimation() {
 
   const elementsData = [
     {
+      
       type: 'text',
       text: (
         <>

@@ -207,9 +207,10 @@ const FancyDivider = styled.div`
   width: 300px;
   height: 300px;
  
-  background: black;
+  background: transparent;
+  
  
-  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.9);
+  
   z-index: 5;
   display: flex;
   align-items: center;
@@ -222,7 +223,7 @@ const CenterRune = styled.img`
   height: auto;
   border-radius: 3px;
   opacity: 0.7;
-  box-shadow: 0px 30px 14px rgba(0, 0, 0, 0.9);
+  
   object-fit: contain;
 `;
 
@@ -344,9 +345,9 @@ const VotePage = () => {
             <UnderOverlay show={showUnder}>
               <UnderText>Veil of the Eldertrees</UnderText>
             </UnderOverlay>
-            <DownloadOverlay show={showDownload}>
+            {/*<DownloadOverlay show={showDownload}>
               <DownloadButton>DOWNLOAD</DownloadButton>
-            </DownloadOverlay>
+            </DownloadOverlay>*/}
           </ContentWrapper>
           {/* Fancy divider med et dekorativt merke i midten */}
           <FancyDivider>
