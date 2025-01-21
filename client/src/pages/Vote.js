@@ -6,7 +6,7 @@ import AnimationSection from '../components/info';
 import Header from '../components/header';
 
 import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
-import backgroundMusic from '../images/wyat family.mp3'; // Bytt til riktig path/filnavn
+import backgroundMusic from '../images/Meet Again.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
