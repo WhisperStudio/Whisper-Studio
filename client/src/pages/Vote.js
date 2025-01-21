@@ -6,7 +6,7 @@ import AnimationSection from '../components/info';
 import Header from '../components/header';
 
 // Legg til import av musikkfil
-import backgroundMusic from '../images/spotifydown.com - Snufs - Kaveh Ali Mohammad.mp3'; // Bytt til riktig path/filnavn
+import backgroundMusic from '../images/wyat family.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
