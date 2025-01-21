@@ -1,9 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Header from '../components/header'; // Adjust path if needed
 import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
 import placeholderImage1 from '../bilder/placeholder.svg'; // Placeholder image for cards
 import placeholderImage2 from '../bilder/placeholder.svg'; // Placeholder image for cards
+
+const fadeInBounce = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const AppContainer = styled.div`
   height: 100vh;
@@ -13,6 +24,9 @@ const AppContainer = styled.div`
   overflow: hidden;
   position: relative;
   background-color: #0e0c0d;
+  opacity: 0;
+  animation: ${fadeInBounce} ease 1s;
+  animation-fill-mode: forwards;
 `;
 
 const BackgroundContainer = styled.div`
@@ -132,6 +146,9 @@ const CustomCursor = styled.div`
   position: fixed;
   pointer-events: none;
   z-index: 9999;
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const NewsSection = styled.div`
@@ -142,6 +159,9 @@ const NewsSection = styled.div`
   flex-direction: column;
   padding: 50px 20px;
   box-sizing: border-box;
+  opacity: 0;
+  animation: ${fadeInBounce} ease 1s;
+  animation-fill-mode: forwards;
 `;
 
 const NewsSectionTitle = styled.h2`
@@ -176,10 +196,11 @@ const Card = styled.div`
   position: relative;
   height: 500px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  margin-bottom: 40px; // Added spacing between cards
   
   @media (max-width: 1200px) {
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 40px; // Added spacing between cards
   }
   
   &:hover {
@@ -216,14 +237,14 @@ const CardContent = styled.div`
 `;
 
 const CardTitle = styled.h3`
-  font-size: 1.8rem;
-  font-weight: 600;
+  font-size: 2.5rem;
+  font-weight: 700;
   color: #ffffff;
   margin-bottom: 8px;
 `;
 
 const CardDescription = styled.p`
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.5;
   margin-bottom: 16px;
@@ -235,7 +256,7 @@ const CardButton = styled.button`
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.3s ease;
