@@ -5,7 +5,7 @@ import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
 import Header from '../components/header';
 
-// Legg til import av musikkfil
+import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
 import backgroundMusic from '../images/wyat family.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
@@ -216,7 +216,6 @@ const FancyDivider = styled.div`
 
 const CenterRune = styled.img`
   width: 1000px;
-   /* Juster størrelsen som ønsket */
   height: 60px;
   width: 1400px;
   height: auto;
@@ -229,15 +228,40 @@ const PageWrapper = styled.div`
   display: block;
 `;
 
+// --- NYTT: Knapp for å mute musikken ---
+const MuteButton = styled.button`
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  font-family: 'Cinzel', serif;
+  background-color: #333;
+  color: #fff;
+  border: 2px solid #888;
+  border-radius: 5px;
+  cursor: pointer;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  
+  &:hover {
+    background-color: #444;
+    transform: scale(1.05);
+  }
+`;
+
 const VotePage = () => {
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
+
   const [showWhisper, setShowWhisper] = useState(false);
   const [showUnder, setShowUnder] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
 
-  // Opprett ref til audio-elementet
-  const audioRef = useRef(null);
+  // --- NYTT: State for å håndtere om lyden er mutet eller ikke ---
+  const [isMuted, setIsMuted] = useState(false);
 
   // Bokstavene for VOTE
   const voteLetters = 'VOTE'.split('');
@@ -271,13 +295,7 @@ const VotePage = () => {
     };
   }, []);
 
-  /*
-    For en mykere stopp: Når videoen nærmer seg slutten reduserer vi playbackRate (slow-motion).
-    Når det er mindre enn 0.5 sekunder igjen, stopper vi videoen og triggere sekvensiell visning:
-      1. Først vises Whisper Studio.
-      2. Etter 500 ms vises Veil of the Eldertrees.
-      3. Etter ytterligere 500 ms vises DOWNLOAD-knappen.
-  */
+  // Håndterer avspilling og sekvensiell visning når videoen nærmer seg slutt
   useEffect(() => {
     const handleTimeUpdate = () => {
       if (!videoRef.current || !videoDuration) return;
@@ -312,7 +330,7 @@ const VotePage = () => {
     };
   }, [videoDuration]);
 
-  // Forsøk å spille av musikken med en gang komponenten rendres
+  // Forsøk å spille av musikken når komponenten rendres
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current
@@ -323,6 +341,11 @@ const VotePage = () => {
         });
     }
   }, []);
+
+  // --- NYTT: Funksjon for å toggle muting ---
+  const handleToggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
 
   return (
     <>
@@ -340,7 +363,6 @@ const VotePage = () => {
           />
           <DarkOverlay />
           <ContentWrapper>
-            {/* VOTE-teksten vises alltid midt på skjermen */}
             <VoteContainer>
               <VoteText>
                 {voteLetters.map((letter, index) => (
@@ -350,34 +372,40 @@ const VotePage = () => {
                 ))}
               </VoteText>
             </VoteContainer>
-            {/* Overlays som dukker opp sekvensielt */}
+
             <TopOverlay show={showWhisper}>
               <TopText>Whisper Studio</TopText>
             </TopOverlay>
+
             <UnderOverlay show={showUnder}>
               <UnderText>Veil of the Eldertrees</UnderText>
+             {/* Nedtelling til desember 2026 */}
+            <Countdown />
             </UnderOverlay>
-            {/* 
-            // Hvis du vil bruke DOWNLOAD-knappen igjen
+
+            {/* Ev. Download-knapp om du vil aktivere den igjen
             <DownloadOverlay show={showDownload}>
               <DownloadButton>DOWNLOAD</DownloadButton>
-            </DownloadOverlay> 
+            </DownloadOverlay>
             */}
           </ContentWrapper>
 
-          {/* Fancy divider med et dekorativt merke i midten */}
           <FancyDivider>
             <CenterRune src={rune} alt="Rune" />
           </FancyDivider>
 
-          {/* Audio-elementet for musikken */}
           <audio
             ref={audioRef}
             src={backgroundMusic}
             autoPlay
             loop
+            muted={isMuted}
           />
         </PageContainer>
+        <MuteButton onClick={handleToggleMute}>
+          {isMuted ? 'Unmute' : 'Mute'}
+        </MuteButton>
+
         <AnimationSection />
       </PageWrapper>
     </>
