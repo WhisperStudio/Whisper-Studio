@@ -1,51 +1,77 @@
-import React, { useRef, useEffect, useState } from 'react';
-import styled, { css, createGlobalStyle } from 'styled-components';
-import Norse from '../Fonts/Norse-KaWl.otf'; // Sti til fontfilen
- 
-// Mediefiler
-import video1 from '../images/Forest with lights.mp4';
-import bilde3 from '../images/placeholder.com-1280x720.webp';
- 
+import React, { useRef, useState, useEffect } from 'react';
+import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import backgroundVideo from '../images/Forest witout lights.mp4';
+import rune from '../images/Rune.png';
+import AnimationSection from '../components/info';
+import Header from '../components/header';
+
+// Legg til import av musikkfil
+import backgroundMusic from '../images/wyat family.mp3'; // Bytt til riktig path/filnavn
+
+// Global styles
 const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
- 
-  @font-face {
-    font-family: 'Norse';
-    src: url(${Norse}) format('opentype');
-    font-weight: normal;
-    font-style: normal;
-  }
- 
-  body {
+  * {
     margin: 0;
     padding: 0;
-    font-family: 'Norse', sans-serif;
-    background-color: #0d0d0d;
-    color: white;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #000;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 `;
- 
-const Container = styled.div`
-  /* Lang side for scrolling */
-  min-height: 200vh;
+
+// Bakgrunnskomponenter
+const PageContainer = styled.div`
   position: relative;
-  overflow: hidden;
-  background: #0d0d0d;
+  width: 100vw;
+  height: 100vh;
 `;
- 
+
+const StarryBackground = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #01161c;
+  z-index: 0;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    background: transparent;
+    box-shadow: 
+      30px 90px #fff,
+      80px 150px #fff,
+      120px 300px #fff,
+      200px 75px #fff,
+      400px 400px #fff,
+      650px 250px #fff,
+      900px 580px #fff,
+      1100px 200px #fff,
+      1300px 700px #fff,
+      1600px 350px #fff;
+  }
+`;
+
 const BackgroundVideo = styled.video`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 40%;
+  height: 100%;
   object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
-  transition: filter 1s ease-out, opacity 2s ease-out;
-  filter: ${({ isFading }) => (isFading ? 'brightness(0.8) grayscale(20%)' : 'none')};
+  z-index: 1;
 `;
- 
+
+// Oppdatert DarkOverlay – fra transparent øverst til helt sort nederst
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -53,280 +79,309 @@ const DarkOverlay = styled.div`
   width: 100%;
   height: 100%;
   background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(0, 0, 0, 0.8) 5%,
-    rgba(0, 0, 0, 0.5) 10%,
-    rgba(0, 0, 0, 0.4) 15%,
-    rgba(0, 0, 0, 0.0) 25%
+    to bottom, 
+    rgba(0, 0, 0, 0) 0%, 
+    rgba(0, 0, 0, 0.2) 70%,
+    rgba(0, 0, 0, 0.4) 75%,
+    rgba(0, 0, 0, 0.6) 80%,
+    rgba(0, 0, 0, 0.8) 85%,
+    rgba(0, 0, 0, 9) 100%
   );
   z-index: 2;
 `;
- 
-const Box = styled.div`
-  padding: 20px;
-  width: 40%;
-  color: white;
-  opacity: 0;
-  transition: transform 0.6s ease-out, opacity 0.6s ease-out;
-  will-change: transform, opacity;
+
+// Innholdslag – holder alt over videoen
+const ContentWrapper = styled.div`
   position: relative;
-  margin: 120px 0;
   z-index: 3;
- 
-  ${({ align }) =>
-    align === 'left' &&
-    css`
-      margin-left: 10%;
-      margin-right: auto;
-    `}
- 
-  ${({ align }) =>
-    align === 'right' &&
-    css`
-      margin-left: auto;
-      margin-right: 10%;
-    `}
- 
-  &.active {
+  width: 100%;
+  height: 100%;
+`;
+
+// Container for VOTE-teksten – alltid midt på skjermen
+const VoteContainer = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+`;
+
+// Animasjonskeyframes for VOTE-bokstavene
+const fadeInUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
     opacity: 1;
-    transform: translateX(0);
-  }
- 
-  ${({ extraMargin }) =>
-    extraMargin &&
-    css`
-      margin-top: ${extraMargin}px;
-    `}
-`;
- 
-const TextBox = styled(Box)`
-  top: 60px;
-  font-size: 20px;
-  line-height: 1.4;
-  text-align: center;
- 
-  h2 {
-    font-family: 'Norse', sans-serif;
-    font-size: 36px;
-    margin-bottom: 30px;
-    color: #e0c097;
-  }
- 
-  p {
-    font-family: 'MedievalSharp', sans-serif;
+    transform: translateY(0);
   }
 `;
- 
-const ImageBox = styled(Box)`
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
+
+// VOTE-teksten – animeres bokstav for bokstav
+const VoteText = styled.h1`
+  font-size: 10rem;
+  color: #ffffff;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  
+  span {
+    opacity: 0;
+    animation: ${fadeInUp} 0.5s ease forwards;
   }
 `;
- 
-function ScrollAnimation() {
-  const elementRefs = useRef([]);
-  elementRefs.current = [];
- 
-  const [visibleItems, setVisibleItems] = useState(new Array(5).fill(false));
-  const [isFading, setIsFading] = useState(false);
- 
-  // For å spore når videoen er ferdig, slik at den ikke starter på nytt:
-  const [hasEnded, setHasEnded] = useState(false);
- 
-  const bgVideoRef = useRef(null);
- 
-  const addToRefs = (el) => {
-    if (el && !elementRefs.current.includes(el)) {
-      elementRefs.current.push(el);
+
+// TopOverlay – for "Whisper Studio", plassert 12rem over VOTE
+const TopOverlay = styled.div`
+  position: absolute;
+  top: calc(50% - 12rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
+`;
+
+const TopText = styled.h2`
+  font-size: 3rem;
+  font-family: 'Cinzel', serif;
+  color: rgba(200, 200, 200, 0.8);
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+`;
+
+// UnderOverlay – for "Veil of the Eldertrees", plassert 12rem under VOTE
+const UnderOverlay = styled.div`
+  position: absolute;
+  top: calc(50% + 10rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
+`;
+
+const UnderText = styled.span`
+  font-size: 2rem;
+  font-family: 'Cinzel', serif;
+  color: rgba(200, 200, 200, 0.8);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  display: block;
+`;
+
+// DownloadOverlay – for DOWNLOAD-knappen, plassert 12rem under UnderOverlay
+const DownloadOverlay = styled.div`
+  position: absolute;
+  top: calc(50% + 24rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  opacity: ${({ show }) => (show ? 1 : 0)};
+  transition: opacity 1s ease;
+`;
+
+const DownloadButton = styled.button`
+  padding: 1rem 2rem;
+  font-size: 1.5rem;
+  font-family: 'Cinzel', serif;
+  color: #ffffff;
+  background-color: #008080;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  
+  &:hover {
+    background-color: #0a9396;
+    transform: scale(1.05);
+  }
+`;
+
+// Fancy divider med vikingaktig design – ikke helt ut til kantene
+const FancyDivider = styled.div`
+  position: absolute;
+  bottom: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 300px;
+  background: transparent;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CenterRune = styled.img`
+  width: 1000px;
+   /* Juster størrelsen som ønsket */
+  height: 60px;
+  width: 1400px;
+  height: auto;
+  border-radius: 3px;
+  opacity: 0.7;
+  object-fit: contain;
+`;
+
+const PageWrapper = styled.div`
+  display: block;
+`;
+
+const VotePage = () => {
+  const videoRef = useRef(null);
+  const [showWhisper, setShowWhisper] = useState(false);
+  const [showUnder, setShowUnder] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(null);
+
+  // Opprett ref til audio-elementet
+  const audioRef = useRef(null);
+
+  // Bokstavene for VOTE
+  const voteLetters = 'VOTE'.split('');
+
+  // Kalkuler dynamiske delays slik at bokstavene animeres med litt mellomrom
+  const getDelay = (index) => {
+    if (!videoDuration) {
+      return `${index * 0.5}s`;
     }
+    const totalAnimationTime = videoDuration - 1; // siste bokstav animeres 1 sekund før videoen stopper
+    const delay = (totalAnimationTime / (voteLetters.length - 1)) * index;
+    return `${delay}s`;
   };
- 
-  // IntersectionObserver for boksene
+
+  // Sett videoDuration når metadata er lastet inn
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = elementRefs.current.indexOf(entry.target);
-            if (index !== -1) {
-              setVisibleItems((prev) => {
-                const updated = [...prev];
-                updated[index] = true;
-                return updated;
-              });
-              observer.unobserve(entry.target);
-            }
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
- 
-    elementRefs.current.forEach((ref) => observer.observe(ref));
-    return () => observer.disconnect();
-  }, []);
- 
-  // Legg til en "ended"-event for å vite når videoen er ferdig.
-  useEffect(() => {
-    const videoElement = bgVideoRef.current;
-    if (!videoElement) return;
- 
-    const handleEnded = () => {
-      // Når videoen er ferdig, setter vi hasEnded = true
-      // da fryser videoen (blir stående på siste frame).
-      setHasEnded(true);
-    };
- 
-    videoElement.addEventListener('ended', handleEnded);
- 
-    return () => {
-      videoElement.removeEventListener('ended', handleEnded);
-    };
-  }, []);
- 
-  // IntersectionObserver for selve videoen.
-  // Starter og pauser videoen ved scroll, men kun så lenge den IKKE er ferdigspilt.
-  useEffect(() => {
-    const videoElement = bgVideoRef.current;
-    if (!videoElement) return;
- 
-    const videoObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Hvis videoen IKKE er ferdig, spill av
-            if (!hasEnded) {
-              videoElement.play();
-            }
-          } else {
-            // Hvis videoen IKKE er ferdig, pause
-            if (!hasEnded) {
-              videoElement.pause();
-            }
-          }
-        });
-      },
-      { threshold: 0.5 } // Juster om du vil at halvparten av videoen må være synlig
-    );
- 
-    videoObserver.observe(videoElement);
- 
-    return () => {
-      if (videoElement) {
-        videoObserver.unobserve(videoElement);
+    const handleLoadedMetadata = () => {
+      if (videoRef.current) {
+        setVideoDuration(videoRef.current.duration);
       }
     };
-  }, [hasEnded]);
- 
-  // Håndter fading de siste 2 sekundene av videoen
+
+    const videoElem = videoRef.current;
+    if (videoElem) {
+      videoElem.addEventListener('loadedmetadata', handleLoadedMetadata);
+    }
+    return () => {
+      if (videoElem) {
+        videoElem.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      }
+    };
+  }, []);
+
+  /*
+    For en mykere stopp: Når videoen nærmer seg slutten reduserer vi playbackRate (slow-motion).
+    Når det er mindre enn 0.5 sekunder igjen, stopper vi videoen og triggere sekvensiell visning:
+      1. Først vises Whisper Studio.
+      2. Etter 500 ms vises Veil of the Eldertrees.
+      3. Etter ytterligere 500 ms vises DOWNLOAD-knappen.
+  */
   useEffect(() => {
-    const video = bgVideoRef.current;
- 
     const handleTimeUpdate = () => {
-      if (video && video.duration > 0) {
-        if (video.currentTime >= video.duration - 2) {
-          setIsFading(true);
-        }
+      if (!videoRef.current || !videoDuration) return;
+      const { currentTime, playbackRate } = videoRef.current;
+      const timeLeft = videoDuration - currentTime;
+
+      if (timeLeft <= 2 && playbackRate !== 0.3) {
+        videoRef.current.playbackRate = 0.3;
+      }
+
+      if (timeLeft <= 0.5) {
+        videoRef.current.pause();
+        // Start sekvensiell visning med en liten forsinkelse mellom hvert steg
+        setShowWhisper(true);
+        setTimeout(() => {
+          setShowUnder(true);
+          setTimeout(() => {
+            setShowDownload(true);
+          }, 500);
+        }, 500);
       }
     };
- 
-    if (video) {
-      video.addEventListener('timeupdate', handleTimeUpdate);
-      return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+
+    const videoElem = videoRef.current;
+    if (videoElem) {
+      videoElem.addEventListener('timeupdate', handleTimeUpdate);
+    }
+    return () => {
+      if (videoElem) {
+        videoElem.removeEventListener('timeupdate', handleTimeUpdate);
+      }
+    };
+  }, [videoDuration]);
+
+  // Forsøk å spille av musikken med en gang komponenten rendres
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current
+        .play()
+        .catch((err) => {
+          // Hvis nettleseren blokkerer autoplay, kan du logge feilen eller vise en "Play"-knapp
+          console.warn('Autoplay blokkert: ', err);
+        });
     }
   }, []);
- 
-  // Eksempeldata for bokser/tekst
-  const elementsData = [
-    {
-      type: 'text',
-      text: (
-<>
-<h2>About the game</h2>
-<p>
-            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit
-            amet risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae
-            vestibulum vestibulum.
-</p>
-</>
-      ),
-      align: 'right',
-    },
-    {
-      type: 'text',
-      text: `Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore. Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
-      align: 'left',
-      extraMargin: 700,
-    },
-    {
-      type: 'image',
-      image: bilde3,
-      alt: 'Bilde 3',
-      align: 'right',
-      extraMargin: 200,
-    },
-    {
-      type: 'text',
-      text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum vestibulum.`,
-      align: 'left',
-      extraMargin: 200,
-    },
-  ];
- 
+
   return (
-<>
-<GlobalStyle />
-<Container>
-        {/* 
-          - Ingen autoPlay (for å unngå at den starter ved lasting).
-          - muted og playsInline gir typisk tillatelse for avspilling uten brukerinteraksjon.
-          - Ingen loop (så videoen stopper på siste frame).
-        */}
-<BackgroundVideo
-          ref={bgVideoRef}
-          src={video1}
-          muted
-          playsInline
-          preload="metadata"
-          isFading={isFading}
-        />
-<DarkOverlay />
- 
-        {/* Render boksene (tekst/bilder) med intersection-animasjon */}
-        {elementsData.map((el, index) => {
-          if (el.type === 'text') {
-            return (
-<TextBox
-                key={index}
-                ref={addToRefs}
-                align={el.align}
-                className={visibleItems[index] ? 'active' : ''}
-                extraMargin={el.extraMargin}
->
-                {el.text}
-</TextBox>
-            );
-          } else if (el.type === 'image') {
-            return (
-<ImageBox
-                key={index}
-                ref={addToRefs}
-                align={el.align}
-                className={visibleItems[index] ? 'active' : ''}
-                extraMargin={el.extraMargin}
->
-<img src={el.image} alt={el.alt} />
-</ImageBox>
-            );
-          }
-          return null;
-        })}
-</Container>
-</>
+    <>
+      <GlobalStyle />
+      <Header />
+      <PageWrapper>
+        <PageContainer>
+          <StarryBackground />
+          <BackgroundVideo
+            ref={videoRef}
+            src={backgroundVideo}
+            autoPlay
+            muted
+            playsInline
+          />
+          <DarkOverlay />
+          <ContentWrapper>
+            {/* VOTE-teksten vises alltid midt på skjermen */}
+            <VoteContainer>
+              <VoteText>
+                {voteLetters.map((letter, index) => (
+                  <span key={index} style={{ animationDelay: getDelay(index) }}>
+                    {letter}
+                  </span>
+                ))}
+              </VoteText>
+            </VoteContainer>
+            {/* Overlays som dukker opp sekvensielt */}
+            <TopOverlay show={showWhisper}>
+              <TopText>Whisper Studio</TopText>
+            </TopOverlay>
+            <UnderOverlay show={showUnder}>
+              <UnderText>Veil of the Eldertrees</UnderText>
+            </UnderOverlay>
+            {/* 
+            // Hvis du vil bruke DOWNLOAD-knappen igjen
+            <DownloadOverlay show={showDownload}>
+              <DownloadButton>DOWNLOAD</DownloadButton>
+            </DownloadOverlay> 
+            */}
+          </ContentWrapper>
+
+          {/* Fancy divider med et dekorativt merke i midten */}
+          <FancyDivider>
+            <CenterRune src={rune} alt="Rune" />
+          </FancyDivider>
+
+          {/* Audio-elementet for musikken */}
+          <audio
+            ref={audioRef}
+            src={backgroundMusic}
+            autoPlay
+            loop
+          />
+        </PageContainer>
+        <AnimationSection />
+      </PageWrapper>
+    </>
   );
-}
- 
-export default ScrollAnimation;
+};
+
+export default VotePage;
