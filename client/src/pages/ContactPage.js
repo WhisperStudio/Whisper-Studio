@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import Header from '../components/header'; // Juster path om nødvendig
-import bigImage from '../bilder/shadow-removebg-preview.png'; // Import av lokal bilde
+import backgroundImage from '../images/94c13177-f23a-4250-b0af-53b850454da8.png';
 
 /* Global styles for fonts, etc. */
 const GlobalStyle = createGlobalStyle`
@@ -34,73 +34,48 @@ const Container = styled.div`
   }
 `;
 
-/* Panel (left or right) with the skew effect */
+/* Panel styles */
 const Panel = styled.div`
   position: relative;
   box-sizing: border-box;
   height: 100%;
-  width: 60%;
   float: left;
-  transform: skew(-20deg);
 
   &.panel-left {
-    margin-left: -10%;
-
-    .panel-content {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) skew(20deg);
-
-      .image-background {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        left: 50%;
-        top: 50%;
-        opacity: 0.95;
-        background-image: url('http://uplusion23.net/images/RickGenestSm.png');
-        background-position: center bottom;
-        background-repeat: no-repeat;
-        background-size: 50%;
-        transform: translate(-50%, -50%);
-      }
-
-      .bottom-left-image {
-        position: absolute;
-        bottom: 0px;
-        left: 300px;
-        width: 800px;
-        height: 600px;
-        background-image: url(${bigImage});
-        background-repeat: no-repeat;
-        background-position: left bottom;
-        background-size: contain;
-        z-index: 2; 
-      }
-    }
+    /* Bilde-panel: ingen skew her. */
+    width: 60%;
+    margin-left: 0;
+    background-image: url(${backgroundImage});
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    z-index: 1; /* Ligger under det sorte panelet */
   }
 
   &.panel-right {
-    margin-right: -10%;
-    background: #1B1B1B;
-
-    .panel-content {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) skew(20deg);
-    }
+    /* Sort panel: behold skew. */
+    width: 60%;
+    left: 188px;
+    margin-left: -20%; 
+    background: rgb(17, 17, 17);
+    transform: skew(-20deg);
+    transform-origin: center;
+    z-index: 2; /* Høyere enn venstre panel */
   }
+`;
+
+/* Posisjonering av innhold inni panelet */
+const PanelContent = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) skew(20deg);
 `;
 
 /* The form container */
 const FormContainer = styled.div`
-  /* Fjernet all bakgrunnsfarge (var rgba(255,255,255,0.05)) */
   display: block;
   position: absolute;
   margin: 0 auto;
@@ -112,9 +87,9 @@ const FormContainer = styled.div`
 
   h1 {
     margin: 0 0 45px 0;
-    color: #FFF;      /* Gjør teksten helt hvit */
+    color: #FFF;
     font-weight: 300;
-    font-size: 28px;  /* Gjør overskriften større */
+    font-size: 28px;
     text-align: center;
   }
 `;
@@ -126,17 +101,17 @@ const Group = styled.div`
 
   input,
   textarea {
-    font-size: 16px;                /* Større tekst i feltene */
+    font-size: 16px;
     padding: 10px 10px 10px 5px;
     display: block;
     width: 100%;
     border: none;
-    border-bottom: 1px solid #FFF;   /* Gjør kantlinjen hvit */
+    border-bottom: 1px solid #FFF;
     background: transparent;
-    color: #FFF;                     /* Gjør tekst i feltene hvit */
-    opacity: 0.8; 
+    color: #FFF;
+    opacity: 0.8;
     transition: 0.2s ease;
-    resize: vertical;               /* Muliggjør at textarea kan endres i høyden */
+    resize: vertical;
 
     &:focus {
       outline: none;
@@ -155,8 +130,8 @@ const Group = styled.div`
   }
 
   label {
-    color: #FFF;    /* Hvit label */
-    font-size: 16px; 
+    color: #FFF;
+    font-size: 16px;
     font-weight: normal;
     position: absolute;
     pointer-events: none;
@@ -190,64 +165,103 @@ const Group = styled.div`
 /* Send button */
 const SendButton = styled.a`
   display: inline-block;
-  color: #FFF;               /* Gjør skriftfargen hvit */
-  font-size: 16px;           /* Litt større knappetekst */
+  color: #FFF;
+  font-size: 16px;
   text-decoration: none;
   cursor: pointer;
   margin-top: 10px;
-  border: 1px solid #FFF;    /* Gjør knapperammen hvit */
-  padding: 10px 20px;        /* Litt større knapp */
+  border: 1px solid #FFF;
+  padding: 10px 20px;
   border-radius: 4px;
   transition: 0.2s ease;
 
   &:hover {
     color: #1B1B1B;
-    background: #FFF;        /* Bytter til hvit bakgrunn ved hover */
+    background: #FFF;
+  }
+`;
+
+/* Styles for the mobile warning message */
+const MobileWarningContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #111, #333);
+  color: #FFF;
+  text-align: center;
+  padding: 0 1rem;
+
+  h1 {
+    margin-bottom: 1rem;
+    font-size: 2rem;
+    font-weight: 300;
+  }
+
+  p {
+    max-width: 600px;
+    font-size: 1.1rem;
+    line-height: 1.5;
   }
 `;
 
 const ContactPage = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Enkel sjekk på userAgent for å se om enheten er mobil
+    const mobileRegex = /Mobi|Android|iPhone|iPod|iPad|BlackBerry|Windows Phone/i;
+    setIsMobile(mobileRegex.test(navigator.userAgent));
+  }, []);
+
+  // Hvis mobil: returner kun melding
+  if (isMobile) {
+    return (
+      <>
+        <GlobalStyle />
+        <Header />
+        <MobileWarningContainer>
+          <h1>This page is not available on mobile devices</h1>
+          <p>Please use a desktop or laptop to access this page.</p>
+        </MobileWarningContainer>
+      </>
+    );
+  }
+
+  // Ellers: returner selve kontaktsiden
   return (
     <>
       <GlobalStyle />
       <Header />
       <Container>
         <div className="inner">
-          <Panel className="panel-left">
-            <div className="panel-content">
-              {/* The original RickGenest background */}
-              <div className="image-background" />
-              {/* The new large image at the bottom-left */}
-              <div className="bottom-left-image" />
-            </div>
-          </Panel>
+          {/* Venstre panel - ingen skew */}
+          <Panel className="panel-left" />
 
+          {/* Høyre panel - med skew */}
           <Panel className="panel-right">
-            <div className="panel-content">
+            <PanelContent>
               <FormContainer>
                 <h1>Contact Whisper Studio</h1>
-
                 <Group>
                   <input type="text" required />
                   <span className="highlight" />
                   <label>Your Name</label>
                 </Group>
-
                 <Group>
                   <input type="email" required />
                   <span className="highlight" />
                   <label>Your Email</label>
                 </Group>
-
                 <Group>
                   <textarea rows="5" required />
                   <span className="highlight" />
                   <label>Your Message</label>
                 </Group>
-
                 <SendButton>Send</SendButton>
               </FormContainer>
-            </div>
+            </PanelContent>
           </Panel>
         </div>
       </Container>
