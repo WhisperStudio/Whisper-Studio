@@ -3,6 +3,7 @@ import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import backgroundVideo from '../images/Forest witout lights.mp4';
 import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
+import AnimationSection2 from '../components/info2';
 import Header from '../components/header';
 
 import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
@@ -214,6 +215,20 @@ const FancyDivider = styled.div`
   justify-content: center;
 `;
 
+const FancyDivider2 = styled.div`
+  position: absolute;
+  bottom: -1200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 25%;
+  background: transparent;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const CenterRune = styled.img`
   width: 100%;
   height: 25%;
@@ -248,6 +263,8 @@ const MuteButton = styled.button`
     transform: scale(1.05);
   }
 `;
+
+
 
 const VotePage = () => {
   const videoRef = useRef(null);
@@ -403,8 +420,13 @@ const VotePage = () => {
         <MuteButton onClick={handleToggleMute}>
           {isMuted ? 'Unmute' : 'Mute'}
         </MuteButton>
-
+     
         <AnimationSection />
+        <FancyDivider2>
+            <CenterRune src={rune} alt="Rune" />
+          </FancyDivider2>
+        <AnimationSection2 />
+
       </PageWrapper>
     </>
   );
