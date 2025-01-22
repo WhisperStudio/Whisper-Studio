@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
 import Norse from '../Fonts/Norse-KaWl.otf'; // Adjust path if needed
+import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
 
-import video1 from '../images/Forest with lights.mp4';
+import video1 from '../images/gnomevid.mp4';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
@@ -49,27 +50,21 @@ const DarkOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  /* Updated gradient to fade in at top, fade out in the middle, and fade back in at the bottom. */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 0.8) 5%,
     rgba(0, 0, 0, 0.5) 10%,
     rgba(0, 0, 0, 0.4) 15%,
-    rgba(0, 0, 0, 0) 25%,
-    rgba(0, 0, 0, 0) 75%,
-    rgba(0, 0, 0, 0.4) 85%,
-    rgba(0, 0, 0, 0.5) 90%,
-    rgba(0, 0, 0, 0.8) 95%,
-    rgba(0, 0, 0, 1) 100%
+    rgba(0, 0, 0, 0.0) 25%
   );
   z-index: 2;
 `;
 
-
 const TextBox = styled.div`
   position: relative;
-  left: 30vh;
+  top: -2vh;
+  left: 48vh;
   z-index: 3;
   width: 60%;
   max-width: 800px;
@@ -77,7 +72,6 @@ const TextBox = styled.div`
   text-align: center;
   padding: 20px;
   opacity: 0;
-  transform: translateY(30px);
   transition: transform 0.6s ease-out, opacity 0.6s ease-out;
   will-change: transform, opacity;
 
@@ -100,7 +94,7 @@ const TextBox = styled.div`
   }
 `;
 
-function ScrollAnimation() {
+function ScrollAnimation2() {
   const bgVideoRef = useRef(null);
   const textRef = useRef(null);
 
@@ -216,16 +210,18 @@ function ScrollAnimation() {
           ref={textRef}
           className={isTextVisible ? 'active' : ''}
         >
-          <h2>About the game</h2>
+          <h2>Coming soon</h2>
           <p>
-            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum
+          Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum
             massa justo sit amet risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             Vivamus lacinia odio vitae vestibulum vestibulum.
           </p>
+          <Countdown/>
         </TextBox>
+        
       </Container>
     </>
   );
 }
 
-export default ScrollAnimation;
+export default ScrollAnimation2;
