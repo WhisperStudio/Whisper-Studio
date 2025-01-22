@@ -13,6 +13,11 @@ const FooterContainer = styled.footer`
   position: relative;
   overflow: hidden;
 
+  @media (max-width: 768px) {
+    padding: 20px 10px;
+    gap: 20px;
+  }
+
   &::before {
     content: '';
     position: absolute;
@@ -36,6 +41,11 @@ const ContentWrapper = styled.div`
   justify-content: space-between;
   width: 100%;
   max-width: 1200px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 20px;
+  }
 `;
 
 const Column = styled.div`
