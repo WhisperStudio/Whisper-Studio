@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import Header from '../components/header'; // Adjust path if needed
+import Footer from '../components/footer'; // Adjust path if needed
 import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
-import placeholderImage1 from '../bilder/placeholder.svg'; // Placeholder image for cards
-import placeholderImage2 from '../bilder/placeholder.svg'; // Placeholder image for cards
+import placeholderImage1 from '../bilder/1.webp'; // Placeholder image for cards
+import placeholderImage2 from '../bilder/2.webp'; // Placeholder image for cards
+import placeholderImage3 from '../bilder/3.webp'; // New placeholder image for cards
 
 const fadeInBounce = keyframes`
   0% {
@@ -17,11 +19,11 @@ const fadeInBounce = keyframes`
 `;
 
 const AppContainer = styled.div`
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
   position: relative;
   background-color: #0e0c0d;
   opacity: 0;
@@ -50,6 +52,7 @@ const ContentContainer = styled.div`
   justify-content: center;
   align-items: flex-start;
   padding-left: 5%;
+  padding-top: 60px; /* Adjust this value based on your header height */
 `;
 
 const TitleContainer = styled.div`
@@ -154,116 +157,145 @@ const CustomCursor = styled.div`
 const NewsSection = styled.div`
   min-height: 100vh;
   width: 100%;
-  background-color: #1a1a1a;
+  background-color: #0a0a0a;
   display: flex;
   flex-direction: column;
-  padding: 50px 20px;
+  padding: 100px 5% 80px;
   box-sizing: border-box;
-  opacity: 0;
-  animation: ${fadeInBounce} ease 1s;
-  animation-fill-mode: forwards;
 `;
 
 const NewsSectionTitle = styled.h2`
-  font-size: 3rem;
-  margin-bottom: 40px;
-  margin-left: 50px;
+  font-size: 4rem;
+  margin-bottom: 80px;
   color: white;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 `;
 
 const CardContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0 50px;
-  box-sizing: border-box;
-  gap: 40px;
-  
-  @media (max-width: 1200px) {
-    flex-direction: column;
-    align-items: center;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, auto);
+  gap: 30px;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 `;
 
 const Card = styled.div`
-  width: calc(50% - 20px);
-  max-width: 700px;
-  background-color: #1e1e1e;
+  background-color: #1a1a1a;
   color: white;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  transition: transform 0.3s ease;
-  position: relative;
-  height: 500px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  margin-bottom: 40px; // Added spacing between cards
-  
-  @media (max-width: 1200px) {
-    width: 100%;
-    margin-bottom: 40px; // Added spacing between cards
-  }
-  
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
   }
+`;
+
+const LargeCard = styled(Card)`
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Added to make the vote 2.0 box as tall as the other cards stackes is */
+
+  @media (max-width: 1024px) {
+    grid-row: auto;
+  }
+`;
+
+const SmallCardContainer = styled.div`
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  gap: 30px;
+
+  @media (max-width: 1024px) {
+    grid-template-rows: auto;
+  }
+`;
+
+const SmallCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
 `;
 
 const CardImage = styled.div`
   width: 100%;
-  height: 60%;
+  padding-top: ${props => props.large ? '70%' : '75%'}; // Increased from 56.25% to 70%
   background-image: url(${props => props.image});
   background-size: cover;
   background-position: center;
   position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
-  }
 `;
 
+
 const CardContent = styled.div`
-  padding: 24px;
-  height: 40%;
+  padding: ${props => props.large ? '40px' : '25px'};
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background-color: #1e1e1e;
+  flex-grow: 1;
 `;
 
 const CardTitle = styled.h3`
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: ${props => props.large ? '2.8rem' : '2rem'};
+  font-weight: 800;
   color: #ffffff;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
+  line-height: 1.2;
 `;
 
 const CardDescription = styled.p`
-  font-size: 1.2rem;
+  font-size: ${props => props.large ? '1.4rem' : '1rem'};
   color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
-  margin-bottom: 16px;
+  line-height: 1.8;
+  margin-bottom: 30px;
 `;
 
 const CardButton = styled.button`
-  padding: 10px 20px;
-  background-color: #3a86ff;
+  padding: 14px 28px;
+  background-color: #4a86ff;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  font-weight: 500;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  align-self: flex-start;
 
   &:hover {
-    background-color: #2a75e8;
+    background-color: #3a76e8;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(74, 134, 255, 0.4);
   }
+`;
+
+const CardDate = styled.span`
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 15px;
+  display: block;
+  font-weight: 600;
+`;
+
+const StyledHeader = styled.header`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  /* Add any other styles you need for your header */
 `;
 
 function App() {
@@ -289,10 +321,12 @@ function App() {
     <>
       <GlobalStyle />
       <CustomCursor style={{ left: mousePosition.x, top: mousePosition.y }} />
+      <StyledHeader>
+        <Header />
+      </StyledHeader>
       <AppContainer>
         <BackgroundContainer image={backgroundImage} />
         <ContentContainer>
-          <Header />
           <TitleContainer>V.O.T.E</TitleContainer>
           <ButtonContainer>
             <PlayButton onClick={handlePlayNowClick}>Play Now</PlayButton>
@@ -302,30 +336,57 @@ function App() {
       </AppContainer>
       
       <NewsSection>
-        <NewsSectionTitle>News and Updates</NewsSectionTitle>
+        <NewsSectionTitle>Latest Updates</NewsSectionTitle>
         <CardContainer>
-          <Card>
-            <CardImage image={placeholderImage1} />
-            <CardContent>
+          <LargeCard>
+            <CardImage large image={placeholderImage1} />
+            <CardContent large>
               <div>
-                <CardTitle>V.O.T.E 2.0 Update</CardTitle>
-                <CardDescription>Get ready for the biggest update yet. V.O.T.E 2.0 launches next month with groundbreaking features and a complete visual overhaul.</CardDescription>
+                <CardDate>January 20, 2025</CardDate>
+                <CardTitle large>V.O.T.E 2.0 Update</CardTitle>
+                <CardDescription large>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                  <br />
+                  <br />
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                </CardDescription>
               </div>
               <CardButton>Learn More</CardButton>
             </CardContent>
-          </Card>
-          <Card>
-            <CardImage image={placeholderImage2} />
-            <CardContent>
-              <div>
-                <CardTitle>New Game Mode</CardTitle>
-                <CardDescription>Experience V.O.T.E in a whole new way with our latest game mode. Challenge yourself and climb the ranks!</CardDescription>
-              </div>
-              <CardButton>Explore</CardButton>
-            </CardContent>
-          </Card>
+          </LargeCard>
+          
+          <SmallCardContainer>
+            <SmallCard>
+              <CardImage image={placeholderImage2} />
+              <CardContent>
+                <div>
+                  <CardDate>January 18, 2025</CardDate>
+                  <CardTitle>New Game Mode</CardTitle>
+                  <CardDescription>
+                    Experience V.O.T.E in a whole new way with our latest game mode. Challenge yourself and climb the ranks!
+                  </CardDescription>
+                </div>
+                <CardButton>Explore</CardButton>
+              </CardContent>
+            </SmallCard>
+            
+            <SmallCard>
+              <CardImage image={placeholderImage3} />
+              <CardContent>
+                <div>
+                  <CardDate>January 15, 2025</CardDate>
+                  <CardTitle>Community Event</CardTitle>
+                  <CardDescription>
+                    Join our upcoming community event and compete for exclusive rewards. Don't miss this chance to showcase your skills!
+                  </CardDescription>
+                </div>
+                <CardButton>Join Now</CardButton>
+              </CardContent>
+            </SmallCard>
+          </SmallCardContainer>
         </CardContainer>
       </NewsSection>
+      <Footer />
     </>
   );
 }
