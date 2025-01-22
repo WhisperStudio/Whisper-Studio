@@ -196,9 +196,11 @@ const Card = styled.div`
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  }
+  transform: translate3d(0, -10px, 0);
+  will-change: transform;
+  transition: transform 0.2s ease-out; /* Shorter, snappier transition */
+}
+
 `;
 
 const LargeCard = styled(Card)`
