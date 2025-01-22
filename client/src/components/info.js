@@ -43,7 +43,7 @@ const BackgroundVideo = styled.video`
   z-index: 0;
   pointer-events: none;
   transition: filter 1s ease-out, opacity 2s ease-out;
-  filter: ${({ isFading }) => (isFading ? 'brightness(0.8) grayscale(20%)' : 'none')};
+  filter: ${({ isFading }) => (isFading ? 'brightness(0.9) grayscale(30%)' : 'none')};
 `;
 
 const DarkOverlay = styled.div`
@@ -101,15 +101,15 @@ const Box = styled.div`
 `;
 
 const TextBox = styled(Box)`
-  top: 60px;
-  font-size: 20px;
+  top: 200px;
+  font-size: 25px;
   line-height: 1.4;
   text-align: center;
 
   h2 {
     font-family: 'Norse', sans-serif;
-    font-size: 36px;
-    margin-bottom: 30px;
+    font-size: 54px;
+    margin-bottom: 40px;
     color: #e0c097;
   }
 
