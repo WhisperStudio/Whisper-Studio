@@ -222,7 +222,7 @@ const Header = () => {
         <MobileNavItem href="/vote" onClick={toggleMenu}>VOTE</MobileNavItem>
         <MobileNavItem href="/who-we-are" onClick={toggleMenu}>Who we are</MobileNavItem>
         <MobileNavItem href="/work-with-us" onClick={toggleMenu}>Work with us</MobileNavItem>
-        <MobileNavItem href="/support" onClick={toggleMenu}>Support</MobileNavItem>
+        <MobileNavItem href="/contact" onClick={toggleMenu}>Support</MobileNavItem>
       </MobileNavMenu>
     </HeaderContainer>
   );
