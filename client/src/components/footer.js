@@ -29,6 +29,11 @@ const FooterContainer = styled.footer`
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+
+  @media (max-width: 768px) {
+    padding: 20px 10px;
+    gap: 20px;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -36,12 +41,20 @@ const ContentWrapper = styled.div`
   justify-content: space-between;
   width: 100%;
   max-width: 1200px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const Column = styled.div`
   display: flex;
   flex-direction: column;
   gap: 15px;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+  }
 `;
 
 const Title = styled.h3`
@@ -58,6 +71,10 @@ const Title = styled.h3`
     height: 2px;
     background-color: #8E24AA;
   }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const ContactItem = styled.div`
@@ -68,6 +85,10 @@ const ContactItem = styled.div`
 
   &:hover {
     transform: translateX(5px);
+  }
+
+  @media (max-width: 768px) {
+    gap: 5px;
   }
 `;
 
@@ -84,6 +105,10 @@ const Link = styled.a`
 const Copyright = styled.p`
   font-size: 0.9rem;
   opacity: 0.7;
+
+  @media (max-width: 768px) {
+    font-size: 0.8rem;
+  }
 `;
 
 const Footer = () => {

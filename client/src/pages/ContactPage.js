@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import Header from '../components/header'; // Juster path om nødvendig
+import Header from '../components/header';
+import Footer from '../components/footer';
 import backgroundImage from '../images/94c13177-f23a-4250-b0af-53b850454da8.png';
 
-/* Global styles for fonts, etc. */
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css?family=Open+Sans:400,300,600');
 
@@ -15,78 +15,82 @@ const GlobalStyle = createGlobalStyle`
     font-family: 'Open Sans', sans-serif;
     font-weight: 300;
     background: #FDFDFD;
+    overflow-x: hidden;
   }
 `;
 
-/* Container for the main panels (left image & right form) */
 const Container = styled.div`
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   transition: all 0.3s ease;
 
-  .inner {
+  @media (min-width: 769px) {
+    height: 100vh;
+    .inner {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: row;
+    }
+  }
+`;
+
+const Panel = styled.div`
+  @media (min-width: 769px) {
+    position: relative;
+    box-sizing: border-box;
+    height: 100%;
+    float: left;
+
+    &.panel-left {
+      width: 60%;
+      margin-left: 0;
+      background-image: url(${backgroundImage});
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      z-index: 1;
+    }
+
+    &.panel-right {
+      width: 60%;
+      left: 188px;
+      margin-left: -20%; 
+      background: rgb(17, 17, 17);
+      transform: skew(-20deg);
+      transform-origin: center;
+      z-index: 2;
+    }
+  }
+`;
+
+const PanelContent = styled.div`
+  @media (min-width: 769px) {
+    position: absolute;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: row;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) skew(20deg);
   }
 `;
 
-/* Panel styles */
-const Panel = styled.div`
-  position: relative;
-  box-sizing: border-box;
-  height: 100%;
-  float: left;
-
-  &.panel-left {
-    /* Bilde-panel: ingen skew her. */
-    width: 60%;
-    margin-left: 0;
-    background-image: url(${backgroundImage});
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    z-index: 1; /* Ligger under det sorte panelet */
-  }
-
-  &.panel-right {
-    /* Sort panel: behold skew. */
-    width: 60%;
-    left: 188px;
-    margin-left: -20%; 
-    background: rgb(17, 17, 17);
-    transform: skew(-20deg);
-    transform-origin: center;
-    z-index: 2; /* Høyere enn venstre panel */
-  }
-`;
-
-/* Posisjonering av innhold inni panelet */
-const PanelContent = styled.div`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) skew(20deg);
-`;
-
-/* The form container */
 const FormContainer = styled.div`
-  display: block;
-  position: absolute;
-  margin: 0 auto;
-  width: 350px;
-  min-height: 400px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -25%);
+  @media (min-width: 769px) {
+    display: block;
+    position: absolute;
+    margin: 0 auto;
+    width: 350px;
+    min-height: 400px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -25%);
+  }
 
   h1 {
-    margin: 0 0 45px 0;
+    margin: 0 0 30px 0;
     color: #FFF;
     font-weight: 300;
     font-size: 28px;
@@ -94,7 +98,6 @@ const FormContainer = styled.div`
   }
 `;
 
-/* Group for each input + label highlight effect */
 const Group = styled.div`
   position: relative;
   margin-bottom: 35px;
@@ -152,17 +155,11 @@ const Group = styled.div`
   }
 
   @keyframes inputHighlighter {
-    from {
-      background: #FFF;
-    }
-    to {
-      width: 0;
-      background: transparent;
-    }
+    from { background: #FFF; }
+    to { width: 0; background: transparent; }
   }
 `;
 
-/* Send button */
 const SendButton = styled.a`
   display: inline-block;
   color: #FFF;
@@ -181,28 +178,122 @@ const SendButton = styled.a`
   }
 `;
 
-/* Styles for the mobile warning message */
-const MobileWarningContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #111, #333);
-  color: #FFF;
-  text-align: center;
-  padding: 0 1rem;
+const MobileContainer = styled.div`
+  @media (max-width: 768px) {
+    min-height: calc(100vh - 60px); // Subtract header height
+    background-image: url(${backgroundImage});
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 0;
 
-  h1 {
-    margin-bottom: 1rem;
-    font-size: 2rem;
-    font-weight: 300;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 1;
+    }
   }
+`;
 
-  p {
-    max-width: 600px;
-    font-size: 1.1rem;
-    line-height: 1.5;
+const MobileFormContainer = styled.div`
+  @media (max-width: 768px) {
+    width: 90%;
+    max-width: 400px;
+    background: rgba(17, 17, 17, 0.85);
+    border-radius: 12px;
+    padding: 40px 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 2;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+`;
+
+const MobileTitle = styled.h1`
+  @media (max-width: 768px) {
+    color: #FFF;
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 30px;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+`;
+
+const MobileGroup = styled.div`
+  @media (max-width: 768px) {
+    position: relative;
+    margin-bottom: 25px;
+
+    input, 
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      color: #FFF;
+      font-size: 16px;
+      padding: 10px 0;
+      transition: border-color 0.3s ease;
+
+      &:focus {
+        outline: none;
+        border-bottom-color: #FFF;
+      }
+    }
+
+    label {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      color: rgba(255,255,255,0.6);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    input:focus + label,
+    textarea:focus + label,
+    input:not(:placeholder-shown) + label,
+    textarea:not(:placeholder-shown) + label {
+      top: -20px;
+      font-size: 12px;
+      color: #FFF;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: transparent;
+    }
+  }
+`;
+
+const MobileSendButton = styled.button`
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 2px solid #FFF;
+    color: #FFF;
+    font-size: 16px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+
+    &:hover {
+      background: #FFF;
+      color: #111;
+    }
   }
 `;
 
@@ -210,61 +301,92 @@ const ContactPage = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Enkel sjekk på userAgent for å se om enheten er mobil
-    const mobileRegex = /Mobi|Android|iPhone|iPod|iPad|BlackBerry|Windows Phone/i;
-    setIsMobile(mobileRegex.test(navigator.userAgent));
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
-  // Hvis mobil: returner kun melding
-  if (isMobile) {
-    return (
-      <>
-        <GlobalStyle />
-        <Header />
-        <MobileWarningContainer>
-          <h1>This page is not available on mobile devices</h1>
-          <p>Please use a desktop or laptop to access this page.</p>
-        </MobileWarningContainer>
-      </>
-    );
-  }
+  const MobileContactForm = () => (
+    <MobileContainer>
+      <MobileFormContainer>
+        <MobileTitle>Contact Whisper Studio</MobileTitle>
+        
+        <MobileGroup>
+          <input 
+            type="text" 
+            placeholder=" " 
+            required 
+          />
+          <label>Your Name</label>
+        </MobileGroup>
+        
+        <MobileGroup>
+          <input 
+            type="email" 
+            placeholder=" " 
+            required 
+          />
+          <label>Your Email</label>
+        </MobileGroup>
+        
+        <MobileGroup>
+          <textarea 
+            rows="4" 
+            placeholder=" " 
+            required 
+          />
+          <label>Your Message</label>
+        </MobileGroup>
+        
+        <MobileSendButton>Send Message</MobileSendButton>
+      </MobileFormContainer>
+    </MobileContainer>
+  );
 
-  // Ellers: returner selve kontaktsiden
   return (
     <>
       <GlobalStyle />
       <Header />
-      <Container>
-        <div className="inner">
-          {/* Venstre panel - ingen skew */}
-          <Panel className="panel-left" />
-
-          {/* Høyre panel - med skew */}
-          <Panel className="panel-right">
-            <PanelContent>
-              <FormContainer>
-                <h1>Contact Whisper Studio</h1>
-                <Group>
-                  <input type="text" required />
-                  <span className="highlight" />
-                  <label>Your Name</label>
-                </Group>
-                <Group>
-                  <input type="email" required />
-                  <span className="highlight" />
-                  <label>Your Email</label>
-                </Group>
-                <Group>
-                  <textarea rows="5" required />
-                  <span className="highlight" />
-                  <label>Your Message</label>
-                </Group>
-                <SendButton>Send</SendButton>
-              </FormContainer>
-            </PanelContent>
-          </Panel>
-        </div>
-      </Container>
+      {isMobile ? (
+        <MobileContactForm />
+      ) : (
+        <Container>
+          <div className="inner">
+            <Panel className="panel-left" />
+            <Panel className="panel-right">
+              <PanelContent>
+                <FormContainer>
+                  <h1>Contact Whisper Studio</h1>
+                  <Group>
+                    <input type="text" required />
+                    <span className="highlight" />
+                    <label>Your Name</label>
+                  </Group>
+                  <Group>
+                    <input type="email" required />
+                    <span className="highlight" />
+                    <label>Your Email</label>
+                  </Group>
+                  <Group>
+                    <textarea rows="5" required />
+                    <span className="highlight" />
+                    <label>Your Message</label>
+                  </Group>
+                  <SendButton>Send</SendButton>
+                </FormContainer>
+              </PanelContent>
+            </Panel>
+          </div>
+        </Container>
+      )}
+      <Footer />
     </>
   );
 };
