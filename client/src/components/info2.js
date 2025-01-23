@@ -61,8 +61,9 @@ const DarkOverlay = styled.div`
     to bottom,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 0.8) 5%,
-    rgba(0, 0, 0, 0.5) 10%,
-    rgba(0, 0, 0, 0.4) 15%,
+    rgba(0, 0, 0, 0.7) 10%,
+    rgba(0, 0, 0, 0.6) 15%,
+    rgba(0, 0, 0, 0.5) 20%,
     rgba(0, 0, 0, 0.0) 25%
   );
   z-index: 2;
