@@ -217,7 +217,7 @@ const FancyDivider = styled.div`
 
 const FancyDivider2 = styled.div`
   position: absolute;
-  bottom: -1200px;
+  bottom: -1090px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
