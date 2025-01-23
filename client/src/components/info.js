@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
 import Norse from '../Fonts/Norse-KaWl.otf'; // Adjust path if needed
+import Chill from '../Fonts/SortsMillGoudy-Regular.ttf';
 
 import video1 from '../images/Forest with lights.mp4';
 
@@ -10,6 +11,12 @@ const GlobalStyle = createGlobalStyle`
   @font-face {
     font-family: 'Norse';
     src: url(${Norse}) format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Chill';
+    src: url(${Chill}) format('truetype'); /* Sørg for at formatet er riktig */
     font-weight: normal;
     font-style: normal;
   }
@@ -70,6 +77,7 @@ const DarkOverlay = styled.div`
 const TextBox = styled.div`
   position: relative;
   left: 30vh;
+  top: -12vh;
   z-index: 3;
   width: 60%;
   max-width: 800px;
@@ -89,12 +97,12 @@ const TextBox = styled.div`
   h2 {
     font-family: 'Norse', sans-serif;
     font-size: 54px;
-    margin-bottom: 20px;
+    margin-bottom: 60px;
     color: #e0c097;
   }
 
   p {
-    font-family: 'MedievalSharp', sans-serif;
+    font-family: 'Chill', sans-serif;
     font-size: 25px;
     line-height: 1.4;
   }
@@ -218,9 +226,11 @@ function ScrollAnimation() {
         >
           <h2>About the game</h2>
           <p>
-            Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum
-            massa justo sit amet risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Vivamus lacinia odio vitae vestibulum vestibulum.
+          Our game takes you on a mysterious journey into the unknown.
+           You play as a young boy living deep in the woods with his father.
+            One day, your father disappears without a trace, leaving behind an eerie silence and a strange VR headset. 
+            Curious and desperate, you put it on, only to be pulled into a dark and haunting world unlike anything you’ve ever known.
+            To uncover the truth and find your father, you must explore this chilling new reality, where danger lurks in every shadow, and nothing is as it seems.
           </p>
         </TextBox>
       </Container>

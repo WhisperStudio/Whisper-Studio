@@ -5,6 +5,7 @@ import rune from '../images/Rune.png';
 import AnimationSection from '../components/info';
 import AnimationSection2 from '../components/info2';
 import Header from '../components/header';
+import Norse from '../Fonts/Norse-KaWl.otf';
 
 import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
 import backgroundMusic from '../images/Meet Again.mp3'; // Bytt til riktig path/filnavn
@@ -16,6 +17,12 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     box-sizing: border-box;
   }
+  @font-face {
+      font-family: 'Norse';
+      src: url(${Norse}) format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
   body {
     font-family: Arial, Helvetica, sans-serif;
     background: #000;
@@ -203,7 +210,7 @@ const DownloadButton = styled.button`
 // Fancy divider med vikingaktig design – ikke helt ut til kantene
 const FancyDivider = styled.div`
   position: absolute;
-  bottom: -150px;
+  bottom: -80px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -217,7 +224,7 @@ const FancyDivider = styled.div`
 
 const FancyDivider2 = styled.div`
   position: absolute;
-  bottom: -1090px;
+  bottom: -1070px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -249,10 +256,10 @@ const MuteButton = styled.button`
   z-index: 9999;
   padding: 0.8rem 1.2rem;
   font-size: 1rem;
-  font-family: 'Cinzel', serif;
+  font-family: 'Norse', serif;
   background-color: #333;
   color: #fff;
-  border: 2px solid #888;
+  border: 2px solid #e0c097;
   border-radius: 5px;
   cursor: pointer;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);

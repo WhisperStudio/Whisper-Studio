@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
 import Norse from '../Fonts/Norse-KaWl.otf'; // Adjust path if needed
+import Chill from '../Fonts/SortsMillGoudy-Regular.ttf';
 import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
 
 import video1 from '../images/gnomevid.mp4';
@@ -14,6 +15,12 @@ const GlobalStyle = createGlobalStyle`
     font-weight: normal;
     font-style: normal;
   }
+    @font-face {
+      font-family: 'Chill';
+      src: url(${Chill}) format('truetype'); /* Sørg for at formatet er riktig */
+      font-weight: normal;
+      font-style: normal;
+    }
 
   body {
     margin: 0;
@@ -63,10 +70,10 @@ const DarkOverlay = styled.div`
 
 const TextBox = styled.div`
   position: relative;
-  top: -2vh;
+  top: 2vh;
   left: 48vh;
   z-index: 3;
-  width: 60%;
+  width: 35%;
   max-width: 800px;
   margin: 40vh auto 0 auto;
   text-align: center;
@@ -83,14 +90,15 @@ const TextBox = styled.div`
   h2 {
     font-family: 'Norse', sans-serif;
     font-size: 54px;
-    margin-bottom: 20px;
+    margin-bottom: 60px;
     color: #e0c097;
   }
 
   p {
-    font-family: 'MedievalSharp', sans-serif;
+    font-family: 'Chill', sans-serif;
     font-size: 25px;
     line-height: 1.4;
+   
   }
 `;
 
@@ -212,9 +220,7 @@ function ScrollAnimation2() {
         >
           <h2>Coming soon</h2>
           <p>
-          Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum
-            massa justo sit amet risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-            Vivamus lacinia odio vitae vestibulum vestibulum.
+          Our game is currently under development, and we’re excited to announce that we plan to release it in 2026 on the Epic Games Store!
           </p>
           <Countdown/>
         </TextBox>

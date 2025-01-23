@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 
+
+
+
+
 const HeaderContainer = styled.header`
   position: fixed;
   top: 0;
@@ -190,6 +194,7 @@ const Header = () => {
   const textColor = isScrolled ? 'white' : 'white';
 
   return (
+    
     <HeaderContainer isScrolled={isScrolled}>
       <Logo href="/" textColor={textColor}>Whisper Studios</Logo>
       <NavMenu>
