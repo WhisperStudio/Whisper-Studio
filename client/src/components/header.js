@@ -62,6 +62,16 @@ const NavItem = styled.a`
     color: ${({ textColor }) => textColor === 'black' ? '#333' : '#f0f0f0'};
     &::after {
       width: 100%;
+      left: 0;
+      right: auto;
+    }
+  }
+
+  &:not(:hover) {
+    &::after {
+      left: auto;
+      right: 0;
+      width: 0;
     }
   }
 `;
