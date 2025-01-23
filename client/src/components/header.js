@@ -168,7 +168,7 @@ const Header = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Skift bakgrunn når du har scrollet 50px eller mer
+      // Endrer bakgrunn når du har scrollet 50px eller mer
       setIsScrolled(window.scrollY >= 50);
     };
 
@@ -179,23 +179,24 @@ const Header = () => {
   const toggleMenu = () => {
     if (menuState.isOpen) {
       setMenuState({ ...menuState, isOpen: false });
+      // Venter på avslutting av animasjon før vi fjerner menyen
       setTimeout(() => setMenuState({ isOpen: false, isVisible: false }), 300);
     } else {
       setMenuState({ isOpen: true, isVisible: true });
     }
   };
 
-  // Endre tekstfargen basert på scrolled status
+  // Endre tekstfargen basert på scrolled-status
   const textColor = isScrolled ? 'white' : 'white';
 
   return (
     <HeaderContainer isScrolled={isScrolled}>
       <Logo href="/" textColor={textColor}>Whisper Studios</Logo>
       <NavMenu>
-        <NavItem href="#" textColor={textColor}>Placeholder</NavItem>
-        <NavItem href="#" textColor={textColor}>Placeholder</NavItem>
-        <NavItem href="#" textColor={textColor}>Placeholder</NavItem>
-        <NavItem href="#" textColor={textColor}>Placeholder</NavItem>
+        <NavItem href="/vote" textColor={textColor}>VOTE</NavItem>
+        <NavItem href="/who-we-are" textColor={textColor}>Who we are</NavItem>
+        <NavItem href="/work-with-us" textColor={textColor}>Work with us</NavItem>
+        <NavItem href="/contact" textColor={textColor}>Support</NavItem>
       </NavMenu>
       <HamburgerButton onClick={toggleMenu} isOpen={menuState.isOpen} textColor={textColor}>
         <span></span>
@@ -203,10 +204,10 @@ const Header = () => {
         <span></span>
       </HamburgerButton>
       <MobileNavMenu isOpen={menuState.isOpen} isVisible={menuState.isVisible}>
-        <MobileNavItem href="#" onClick={toggleMenu}>Placeholder</MobileNavItem>
-        <MobileNavItem href="#" onClick={toggleMenu}>Placeholder</MobileNavItem>
-        <MobileNavItem href="#" onClick={toggleMenu}>Placeholder</MobileNavItem>
-        <MobileNavItem href="#" onClick={toggleMenu}>Placeholder</MobileNavItem>
+        <MobileNavItem href="/vote" onClick={toggleMenu}>VOTE</MobileNavItem>
+        <MobileNavItem href="/who-we-are" onClick={toggleMenu}>Who we are</MobileNavItem>
+        <MobileNavItem href="/work-with-us" onClick={toggleMenu}>Work with us</MobileNavItem>
+        <MobileNavItem href="/support" onClick={toggleMenu}>Support</MobileNavItem>
       </MobileNavMenu>
     </HeaderContainer>
   );
