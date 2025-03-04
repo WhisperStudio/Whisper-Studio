@@ -116,14 +116,14 @@ const Footer = () => {
     <FooterContainer>
       <ContentWrapper>
         <Column>
-          <Title>About Whisper Studio</Title>
+          <Title>About Vintra Studio</Title>
           <p>Empowering game development through creative and immersive experiences.</p>
         </Column>
         <Column>
           <Title>Get in Touch</Title>
           <ContactItem>
             <FaEnvelope />
-            <Link href="mailto:info@whisperstudio.com">info@whisperstudio.com</Link>
+            <Link href="mailto:info@whisperstudio.com">info@vintrastudio.com</Link>
           </ContactItem>
           <ContactItem>
             <FaPhone />
@@ -138,11 +138,11 @@ const Footer = () => {
           </ContactItem>
           <ContactItem>
             <FaDiscord />
-            <Link href="https://discord.com/invite/whisperstudio" target="_blank" rel="noopener noreferrer">discord.com/invite/whisperstudio</Link>
+            <Link href="https://discord.com/invite/whisperstudio" target="_blank" rel="noopener noreferrer">https://discord.gg/8cw3962z7J</Link>
           </ContactItem>
         </Column>
       </ContentWrapper>
-      <Copyright> 2025 Whisper Studio. All rights reserved.</Copyright>
+      <Copyright> 2025 Vintra Studio. All rights reserved.</Copyright>
     </FooterContainer>
   );
 };

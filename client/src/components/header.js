@@ -206,7 +206,7 @@ const Header = () => {
   return (
     
     <HeaderContainer isScrolled={isScrolled}>
-      <Logo href="/" textColor={textColor}>Whisper Studios</Logo>
+      <Logo href="/" textColor={textColor}>Vintra Studios</Logo>
       <NavMenu>
         <NavItem href="/vote" textColor={textColor}>VOTE</NavItem>
         <NavItem href="/who-we-are" textColor={textColor}>Who we are</NavItem>
