@@ -9,66 +9,66 @@ import {
   FiBell,
   FiUser,
   FiSun,
-  FiMoon
+  FiMoon,
+  FiBarChart2,
+  FiClipboard
 } from "react-icons/fi";
 
-// ----- THEMES -----
-
+// ---------- THEMES ----------
 const lightTheme = {
   bodyBg: "#f9fafb",
-  containerBg: "rgba(255, 255, 255, 0.95)",
+  containerBg: "#ffffff",
   text: "#111827",
+  mutedText: "#6b7280",
+  cardBg: "#ffffff",
   sidebarBg: "#1f2937",
   sidebarHover: "#374151",
-  sidebarActive: "rgba(55, 65, 81, 0.3)",
-  cardBg: "#fff",
+  sidebarActive: "rgba(255, 255, 255, 0.1)",
   buttonBg: "#2563eb",
   buttonHover: "#1d4ed8",
   inputBorder: "#d1d5db",
-  inputFocus: "#9ca3af"
+  inputFocus: "#9ca3af",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
 };
 
 const darkTheme = {
-  bodyBg: "#111827",
-  containerBg: "#1e293b",
-  text: "#f9fafb",
-  sidebarBg: "#374151",
-  sidebarHover: "#4b5563",
-  sidebarActive: "rgba(255, 255, 255, 0.2)",
-  cardBg: "#1f2937",
-  buttonBg: "#2563eb",
-  buttonHover: "#1d4ed8",
-  inputBorder: "#4b5563",
-  inputFocus: "#6b7280"
+  bodyBg: "#0F131D",
+  containerBg: "#161A28",
+  text: "#F3F4F6",
+  mutedText: "#9CA3AF",
+  cardBg: "#1A1F2E",
+  sidebarBg: "#161A28",
+  sidebarHover: "#1F2433",
+  sidebarActive: "rgba(255, 255, 255, 0.05)",
+  buttonBg: "#00BFA6",
+  buttonHover: "#00A38D",
+  inputBorder: "#2E3345",
+  inputFocus: "#4b5563",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
 };
 
-// Global styles for å sette bakgrunn og font ut ifra valgt tema
 const GlobalStyle = createGlobalStyle`
+  * {
+    box-sizing: border-box;
+  }
   body {
     margin: 0;
     font-family: "Roboto", sans-serif;
-    background: ${({ theme }) => theme.bodyBg};
+    background-color: ${({ theme }) => theme.bodyBg};
     color: ${({ theme }) => theme.text};
-    transition: background 0.3s, color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
   }
 `;
 
-// ----- STYLES -----
+// ---------- STYLED COMPONENTS FOR LAYOUT ----------
 
-// Hovedcontainer for hele applikasjonen
 const AdminContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: ${({ theme }) => theme.containerBg};
-  border-radius: 8px;
-  margin: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.3s;
 `;
 
-// Topbar (navbar)
+// Top bar
 const TopBar = styled.div`
   background-color: ${({ theme }) => theme.cardBg};
   height: 60px;
@@ -77,36 +77,32 @@ const TopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${({ theme }) => theme.boxShadow};
 `;
 
-// Venstre side av topbaren
 const TopBarLeft = styled.div`
   display: flex;
   align-items: center;
+  gap: 20px;
 `;
 
-// Logo/brand
 const Brand = styled.div`
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: ${({ theme }) => theme.text};
-  margin-right: 30px;
 `;
 
-// Hamburgermeny-ikon med jevn overgang
 const MenuIcon = styled.div`
   font-size: 24px;
   cursor: pointer;
-  color: #6b7280;
-  margin-right: 20px;
+  color: ${({ theme }) => theme.mutedText};
   transition: color 0.2s;
   &:hover {
     color: ${({ theme }) => theme.text};
   }
 `;
 
-// Søkefeltet
+// Search
 const SearchContainer = styled.div`
   position: relative;
 `;
@@ -118,22 +114,23 @@ const SearchInput = styled.input`
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
+  background-color: ${({ theme }) => theme.bodyBg};
+  color: ${({ theme }) => theme.text};
   &:focus {
     border-color: ${({ theme }) => theme.inputFocus};
   }
 `;
 
-// Høyre side av topbaren (varsler, profil)
+// Top bar right icons
 const TopBarRight = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
 `;
 
-// Ikonknapper
 const IconButton = styled.div`
   font-size: 20px;
-  color: #6b7280;
+  color: ${({ theme }) => theme.mutedText};
   cursor: pointer;
   transition: color 0.2s;
   &:hover {
@@ -141,70 +138,90 @@ const IconButton = styled.div`
   }
 `;
 
-// Wrapper for sideinnhold: Sidebar + Content
+// Main area (sidebar + content)
 const Main = styled.div`
   display: flex;
   flex: 1;
-  background-color: ${({ theme }) => theme.bodyBg};
-  transition: background-color 0.3s;
+  overflow: hidden;
 `;
 
 // Sidebar
 const Sidebar = styled.div`
-  width: 60px;
+  width: ${({ expanded }) => (expanded ? "220px" : "60px")};
   background-color: ${({ theme }) => theme.sidebarBg};
-  padding-top: 16px;
   transition: width 0.3s;
   overflow: hidden;
-  ${(props) =>
-    props.expanded &&
-    `
-      width: 220px;
-  `}
+  display: flex;
+  flex-direction: column;
+  padding-top: 16px;
 `;
 
-// Sidebar-item
+// Sidebar items
 const SidebarItem = styled.div`
   display: flex;
   align-items: center;
-  color: #9ca3af;
+  color: ${({ theme, active }) => (active ? "#fff" : theme.mutedText)};
   padding: 12px 16px;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
-  background-color: ${(props) =>
-    props.active ? props.theme.sidebarActive : "transparent"};
+  background-color: ${({ active, theme }) =>
+    active ? theme.sidebarActive : "transparent"};
   &:hover {
     background-color: ${({ theme }) => theme.sidebarHover};
     color: #fff;
   }
 `;
 
-// Ikon i sidebar
 const SidebarIcon = styled.div`
   font-size: 20px;
-  margin-right: ${(props) => (props.expanded ? "16px" : "0")};
+  margin-right: ${({ expanded }) => (expanded ? "16px" : "0")};
   transition: margin 0.3s;
 `;
 
-// Label i sidebar
 const SidebarLabel = styled.span`
-  display: ${(props) => (props.expanded ? "inline" : "none")};
+  display: ${({ expanded }) => (expanded ? "inline" : "none")};
   white-space: nowrap;
-  transition: opacity 0.3s;
 `;
 
-// Hovedinnholdsområde
-const Content = styled.div`
+// Content area
+const ContentWrapper = styled.div`
   flex: 1;
-  padding: 24px;
+  display: flex;
+  padding: 20px;
+  gap: 20px;
+  overflow-y: auto;
+`;
+
+// Del innholdet i to kolonner for å etterligne et dashbordoppsett
+const MainContent = styled.div`
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const RightSidebar = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+// Cards
+const Card = styled.div`
   background-color: ${({ theme }) => theme.cardBg};
-  margin: 16px;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
   transition: background-color 0.3s;
 `;
 
-// Form elementer for Settings (Light/Dark mode toggle)
+const CardTitle = styled.h2`
+  margin-bottom: 12px;
+  font-size: 18px;
+`;
+
+// Settings form group
 const FormGroup = styled.div`
   margin-bottom: 16px;
 `;
@@ -213,7 +230,6 @@ const Label = styled.label`
   display: block;
   font-size: 14px;
   margin-bottom: 4px;
-  color: ${({ theme }) => theme.text};
 `;
 
 const ToggleContainer = styled.div`
@@ -236,87 +252,179 @@ const ToggleButton = styled.button`
   }
 `;
 
-// ----- DATA & COMPONENTS -----
+// ---------- PLACEHOLDER SEKSJONER OG FUNKSJONALITET ----------
 
-// Seksjonsdata med faktiske placeholders for hver side
-const sections = {
-  Dashboard: {
-    title: "Dashboard",
-    content: (
-      <div>
-        <h3>Overview</h3>
-        <p>This is a placeholder for a dashboard chart or summary.</p>
-        <div style={{ background: "#e5e7eb", padding: "20px", borderRadius: "8px" }}>
-          [Chart Component Placeholder]
-        </div>
-      </div>
-    )
-  },
-  Users: {
-    title: "User Management",
-    content: (
-      <div>
-        <h3>Users List</h3>
-        <ul>
-          <li>User 1 (Admin)</li>
-          <li>User 2 (Editor)</li>
-          <li>User 3 (Viewer)</li>
-        </ul>
-      </div>
-    )
-  },
-  Settings: {
-    title: "Settings",
-    content: "Settings content will be replaced with Light/Dark mode toggle below."
-  },
-  Logs: {
-    title: "Logs",
-    content: (
-      <div>
-        <h3>Recent Logs</h3>
-        <ul>
-          <li>Log entry 1: System started.</li>
-          <li>Log entry 2: User login detected.</li>
-          <li>Log entry 3: Error: Something went wrong.</li>
-        </ul>
-      </div>
-    )
-  }
-};
+// Dummy data for brukerliste
+const initialUsers = [
+  { id: 1, name: "User 1 (Admin)" },
+  { id: 2, name: "User 2 (Editor)" },
+  { id: 3, name: "User 3 (Viewer)" }
+];
 
 const Admin = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState("Dashboard");
-  const [themeMode, setThemeMode] = useState("light");
+  const [themeMode, setThemeMode] = useState("dark");
+  const [users, setUsers] = useState(initialUsers);
+  const [newUserName, setNewUserName] = useState("");
+  const [reportsFilter, setReportsFilter] = useState("");
 
   const toggleTheme = () => {
     setThemeMode(themeMode === "light" ? "dark" : "light");
   };
 
-  // Innhold basert på valgt seksjon
+  const addUser = () => {
+    if (newUserName.trim() === "") return;
+    const newUser = { id: users.length + 1, name: newUserName };
+    setUsers([...users, newUser]);
+    setNewUserName("");
+  };
+
+  const clearLogs = () => {
+    alert("Logs cleared (dummy function)");
+  };
+
+  // Render innhold basert på aktiv seksjon
   const renderContent = () => {
-    if (activeSection === "Settings") {
-      return (
-        <>
-          <h2>{sections.Settings.title}</h2>
-          <FormGroup>
-            <Label>Theme Mode</Label>
-            <ToggleContainer>
-              {themeMode === "light" ? <FiSun /> : <FiMoon />}
-              <ToggleButton onClick={toggleTheme}>
-                Switch to {themeMode === "light" ? "Dark" : "Light"} Mode
+    switch (activeSection) {
+      case "Dashboard":
+        return (
+          <>
+            <CardTitle>Dashboard Oversikt</CardTitle>
+            <p style={{ marginBottom: 16 }}>
+              Dette er en placeholder for hovedinnholdet i dashbordet.
+            </p>
+            <Card>
+              <CardTitle>Aktivitetsoppsummering</CardTitle>
+              <p>
+                Antall transaksjoner denne uken: <strong>5.18k</strong>
+              </p>
+              <ToggleButton onClick={() => alert("Data oppdatert!")}>
+                Oppdater Data
               </ToggleButton>
-            </ToggleContainer>
-          </FormGroup>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <h2>{sections[activeSection].title}</h2>
-          {sections[activeSection].content}
-        </>
-      );
+            </Card>
+          </>
+        );
+      case "Users":
+        return (
+          <>
+            <CardTitle>Brukeradministrasjon</CardTitle>
+            <ul>
+              {users.map((user) => (
+                <li key={user.id}>{user.name}</li>
+              ))}
+            </ul>
+            <FormGroup>
+              <Label>Legg til ny bruker</Label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <SearchInput
+                  type="text"
+                  placeholder="Brukernavn..."
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                />
+                <ToggleButton onClick={addUser}>Legg til</ToggleButton>
+              </div>
+            </FormGroup>
+          </>
+        );
+      case "Settings":
+        return (
+          <>
+            <CardTitle>Innstillinger</CardTitle>
+            <FormGroup>
+              <Label>Theme Mode</Label>
+              <ToggleContainer>
+                {themeMode === "light" ? <FiSun /> : <FiMoon />}
+                <ToggleButton onClick={toggleTheme}>
+                  Bytt til {themeMode === "light" ? "Mørk" : "Lys"} Mode
+                </ToggleButton>
+              </ToggleContainer>
+            </FormGroup>
+            <FormGroup>
+              <Label>Språk</Label>
+              <ToggleContainer>
+                <ToggleButton onClick={() => alert("Bytt til Norsk")}>
+                  Norsk
+                </ToggleButton>
+                <ToggleButton onClick={() => alert("Switch to English")}>
+                  English
+                </ToggleButton>
+              </ToggleContainer>
+            </FormGroup>
+          </>
+        );
+      case "Logs":
+        return (
+          <>
+            <CardTitle>Systemlogger</CardTitle>
+            <ul>
+              <li>Logg 1: System startet.</li>
+              <li>Logg 2: Bruker logget inn.</li>
+              <li>Logg 3: Error: Noe gikk galt.</li>
+            </ul>
+            <ToggleButton onClick={clearLogs}>Slett Logger</ToggleButton>
+          </>
+        );
+      case "Reports":
+        return (
+          <>
+            <CardTitle>Rapporter</CardTitle>
+            <FormGroup>
+              <Label>Filter Rapporter</Label>
+              <SearchInput
+                type="text"
+                placeholder="Søk i rapporter..."
+                value={reportsFilter}
+                onChange={(e) => setReportsFilter(e.target.value)}
+              />
+            </FormGroup>
+            <p>
+              Viser rapporter som inneholder: <strong>{reportsFilter}</strong>
+            </p>
+            <ul>
+              <li>Rapport 1: Omsetning</li>
+              <li>Rapport 2: Brukeraktivitet</li>
+              <li>Rapport 3: Feilrapporter</li>
+            </ul>
+          </>
+        );
+      case "Analytics":
+        return (
+          <>
+            <CardTitle>Analyse</CardTitle>
+            <p>Denne seksjonen kan senere utvides med diagrammer og grafer.</p>
+            <Card>
+              <CardTitle>Enkel Analyse</CardTitle>
+              <p>Viser dummy-data:</p>
+              <ul>
+                <li>Besøkende: 1,234</li>
+                <li>Konverteringer: 123</li>
+                <li>Engasjement: 78%</li>
+              </ul>
+            </Card>
+          </>
+        );
+      case "Profile":
+        return (
+          <>
+            <CardTitle>Min Profil</CardTitle>
+            <p>Her kan du redigere din profilinformasjon.</p>
+            <FormGroup>
+              <Label>Navn</Label>
+              <SearchInput type="text" placeholder="Ditt navn" />
+            </FormGroup>
+            <FormGroup>
+              <Label>E-post</Label>
+              <SearchInput type="email" placeholder="din.epost@domene.no" />
+            </FormGroup>
+            <ToggleButton onClick={() => alert("Profil oppdatert!")}>
+              Oppdater Profil
+            </ToggleButton>
+          </>
+        );
+      default:
+        return <p>Velg en seksjon fra menyen.</p>;
     }
   };
 
@@ -324,15 +432,15 @@ const Admin = () => {
     <ThemeProvider theme={themeMode === "light" ? lightTheme : darkTheme}>
       <GlobalStyle />
       <AdminContainer>
-        {/* TOPBAR */}
+        {/* TOP BAR */}
         <TopBar>
           <TopBarLeft>
-            <Brand>Admin</Brand>
+            <Brand>Dashboard</Brand>
             <MenuIcon onClick={() => setSidebarExpanded(!sidebarExpanded)}>
               <FiMenu />
             </MenuIcon>
             <SearchContainer>
-              <SearchInput placeholder="Search..." />
+              <SearchInput placeholder="Søk..." />
             </SearchContainer>
           </TopBarLeft>
           <TopBarRight>
@@ -345,8 +453,9 @@ const Admin = () => {
           </TopBarRight>
         </TopBar>
 
-        {/* MAIN AREA: Sidebar + Content */}
+        {/* MAIN AREA */}
         <Main>
+          {/* SIDEBAR */}
           <Sidebar expanded={sidebarExpanded}>
             <SidebarItem
               active={activeSection === "Dashboard"}
@@ -355,9 +464,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiHome />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>
-                Dashboard
-              </SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Dashboard</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Users"}
@@ -366,9 +473,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiUsers />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>
-                User Management
-              </SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Brukere</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Settings"}
@@ -377,9 +482,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiSettings />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>
-                Settings
-              </SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Innstillinger</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Logs"}
@@ -388,13 +491,55 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiFileText />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>
-                Logs
-              </SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Logger</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
+              active={activeSection === "Reports"}
+              onClick={() => setActiveSection("Reports")}
+            >
+              <SidebarIcon expanded={sidebarExpanded}>
+                <FiClipboard />
+              </SidebarIcon>
+              <SidebarLabel expanded={sidebarExpanded}>Rapporter</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
+              active={activeSection === "Analytics"}
+              onClick={() => setActiveSection("Analytics")}
+            >
+              <SidebarIcon expanded={sidebarExpanded}>
+                <FiBarChart2 />
+              </SidebarIcon>
+              <SidebarLabel expanded={sidebarExpanded}>Analyse</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
+              active={activeSection === "Profile"}
+              onClick={() => setActiveSection("Profile")}
+            >
+              <SidebarIcon expanded={sidebarExpanded}>
+                <FiUser />
+              </SidebarIcon>
+              <SidebarLabel expanded={sidebarExpanded}>Profil</SidebarLabel>
             </SidebarItem>
           </Sidebar>
 
-          <Content>{renderContent()}</Content>
+          {/* CONTENT + HØYRE SIDEBAR */}
+          <ContentWrapper>
+            <MainContent>
+              <Card>{renderContent()}</Card>
+            </MainContent>
+
+            {/* HØYRE SIDEBAR (EKSEMPEL) */}
+            <RightSidebar>
+              <Card>
+                <CardTitle>Hurtiginfo</CardTitle>
+                <p>Denne seksjonen kan vise rask statistikk eller små grafer.</p>
+              </Card>
+              <Card>
+                <CardTitle>Ekstra Widget</CardTitle>
+                <p>Tilleggsinnhold kan legges her.</p>
+              </Card>
+            </RightSidebar>
+          </ContentWrapper>
         </Main>
       </AdminContainer>
     </ThemeProvider>
