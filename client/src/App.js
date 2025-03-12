@@ -5,7 +5,8 @@ import Home from './pages/main';
 import VotePage from './pages/Vote';
 import ContactPage from './pages/ContactPage';
 import Admin from './pages/admin';
-import TicketingIframe from './components/TicketingIframe';
+// IMPORTER Bifrost i stedet for TicketingIframe:
+import Bifrost from './components/bifrost';
 
 function App() {
   return (
@@ -16,8 +17,8 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
-      {/* TicketingIframe vises på alle sider */}
-      <TicketingIframe />
+      {/* Vis Bifrost på alle sider */}
+      <Bifrost />
     </BrowserRouter>
   );
 }
