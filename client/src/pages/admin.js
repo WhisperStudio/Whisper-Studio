@@ -14,7 +14,7 @@ import {
   FiBarChart2,
   FiClipboard
 } from "react-icons/fi";
-import Bifrost from "../components/bifrost";
+import Bifrost from "../components/bifrost"; // Juster stien om nødvendig
 
 // ---------- THEMES ----------
 const lightTheme = {
@@ -213,14 +213,27 @@ const CardTitle = styled.h2`
   font-size: 18px;
 `;
 
-/* --- Ekstra styling for den fancy Tickets-siden --- */
-const TabBar = styled.div`
+/* 
+  ================================
+  TICKET DASHBOARD COMPONENT
+  ================================
+  Adjusted colors and backgrounds for better readability.
+*/
+const TicketDashboardContainer = styled.div`
+  background: linear-gradient(135deg, #ffffff, #f3f4f6);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  color: #111; /* Force text to be dark for better contrast */
+`;
+
+const CategoryTabs = styled.div`
   display: flex;
   gap: 1rem;
   margin-bottom: 1rem;
 `;
 
-const TabButton = styled.button`
+const CategoryButton = styled.button`
   padding: 0.5rem 1rem;
   border-radius: 8px;
   border: none;
@@ -230,35 +243,41 @@ const TabButton = styled.button`
   transition: background 0.3s, color 0.3s;
 `;
 
-const TicketDashboardContainer = styled.div`
-  background: linear-gradient(135deg,rgb(255, 255, 255),rgb(255, 255, 255));
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+const TicketListContainer = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 const TicketCard = styled.div`
-  color: black;
-  background: rgba(255, 255, 255, 0.9);
+  flex: 1 1 calc(33.333% - 1rem);
+  background: #fff;
+  color: #111;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
 
-  strong {
-    font-weight: 600;
+  h4 {
+    margin: 0 0 0.5rem 0;
     color: #111;
   }
 
   p {
-    margin: 0.5rem 0;
-    color: black;
-
+    margin: 0.3rem 0;
+    color: #111;
   }
 
   .reply {
     color: green;
     margin-top: 0.5rem;
+  }
+
+  .subCategory {
+    font-size: 0.85rem;
+    color: #555;
   }
 
   button {
@@ -286,117 +305,186 @@ const TicketCard = styled.div`
   }
 `;
 
-/* --- TicketDashboard-komponent --- */
+const SearchBar = styled(SearchInput)`
+  margin-bottom: 1rem;
+  width: 100%;
+`;
+
+// TICKET DASHBOARD LOGIC
 const TicketDashboard = () => {
-  const categories = ["Games", "General", "Other", "Work", "Billing"];
   const [tickets, setTickets] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("Games");
+  const [activeCategory, setActiveCategory] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [replyTicketId, setReplyTicketId] = useState(null);
   const [replyText, setReplyText] = useState("");
 
-  // Hent tickets fra localStorage
-  const fetchTickets = () => {
-    const stored = localStorage.getItem("tickets");
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  // Lagre tickets i localStorage
-  const saveTickets = (ticketsArray) => {
-    localStorage.setItem("tickets", JSON.stringify(ticketsArray));
+  // Fetch tickets from backend
+  const fetchTickets = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/tickets");
+      const data = await res.json();
+      setTickets(data);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+    }
   };
 
   useEffect(() => {
-    setTickets(fetchTickets());
-    const intervalId = setInterval(() => {
-      setTickets(fetchTickets());
-    }, 30000);
+    fetchTickets();
+    // Poll every 30 seconds
+    const intervalId = setInterval(fetchTickets, 30000);
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleReplySubmit = (ticketId) => {
-    const updated = tickets.map(ticket => {
-      if (ticket.id === ticketId) {
-        return { ...ticket, reply: replyText };
-      }
-      return ticket;
-    });
-    saveTickets(updated);
-    setTickets(updated);
-    setReplyTicketId(null);
-    setReplyText("");
+  // Handle reply submission
+  const handleReplySubmit = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: replyText }),
+      });
+      if (!res.ok) throw new Error("Failed to update ticket");
+      setReplyTicketId(null);
+      setReplyText("");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+    }
   };
 
-  const filteredTickets = tickets.filter(ticket => 
-    ticket.category === activeCategory &&
-    (ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     ticket.message.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Handle closing ticket
+  const closeTicket = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      });
+      if (!res.ok) throw new Error("Failed to close ticket");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error closing ticket:", error);
+    }
+  };
+
+  // Handle deleting ticket
+  const deleteTicket = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete ticket");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+    }
+  };
+
+  // Filter tickets based on category and search term
+  const filteredTickets = tickets.filter((t) => {
+    const inCategory = activeCategory === "All" || t.category === activeCategory;
+    const inSearch =
+      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return inCategory && inSearch;
+  });
+
+  // Categories for tabs
+  const categories = ["All", "Games", "General", "Work", "Billing", "Support", "Sales", "Other"];
 
   return (
     <TicketDashboardContainer>
-      <CardTitle style={{ color: "#111" }}>Tickets - {activeCategory}</CardTitle>
-      <TabBar>
-        {categories.map(cat => (
-          <TabButton
+      <CardTitle style={{ color: "#111" }}>Ticket Dashboard</CardTitle>
+      <p style={{ marginBottom: "1rem", color: "#111" }}>
+        View all submitted tickets. Click on a category to filter.
+      </p>
+
+      <CategoryTabs>
+        {categories.map((cat) => (
+          <CategoryButton
             key={cat}
             active={activeCategory === cat}
             onClick={() => setActiveCategory(cat)}
           >
             {cat}
-          </TabButton>
+          </CategoryButton>
         ))}
-      </TabBar>
-      <div style={{ marginBottom: "1rem" }}>
-        <SearchInput
-          type="text"
-          placeholder="Søk i tickets..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      {filteredTickets.length === 0 ? (
-        <p>Ingen tickets funnet for kategori "{activeCategory}".</p>
-      ) : (
-        filteredTickets.map(ticket => (
-          <TicketCard key={ticket.id}>
-            <strong>{ticket.name}</strong> ({ticket.email})
-            <p>{ticket.message}</p>
-            {ticket.reply ? (
-              <p className="reply"><em>Svar: {ticket.reply}</em></p>
-            ) : replyTicketId === ticket.id ? (
-              <div>
-                <textarea
-                  rows="3"
-                  placeholder="Skriv ditt svar her..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                />
-                <button onClick={() => handleReplySubmit(ticket.id)}>
-                  Send svar
-                </button>
-                <button
-                  onClick={() => {
-                    setReplyTicketId(null);
-                    setReplyText("");
-                  }}
-                >
-                  Avbryt
-                </button>
+      </CategoryTabs>
+
+      <SearchBar
+        type="text"
+        placeholder="Search tickets..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <TicketListContainer>
+        {filteredTickets.length === 0 ? (
+          <p style={{ marginTop: "1rem", color: "#111" }}>
+            No tickets found for category "{activeCategory}".
+          </p>
+        ) : (
+          filteredTickets.map((ticket) => (
+            <TicketCard key={ticket._id}>
+              <h4>{ticket.name}</h4>
+              <p>{ticket.email}</p>
+              {ticket.subCategory && (
+                <p className="subCategory">Subcategory: {ticket.subCategory}</p>
+              )}
+              <p>{ticket.message}</p>
+              {ticket.reply && (
+                <p className="reply">
+                  <strong>Reply:</strong> {ticket.reply}
+                </p>
+              )}
+              <div style={{ marginTop: "0.5rem" }}>
+                {replyTicketId === ticket._id ? (
+                  <>
+                    <textarea
+                      rows="3"
+                      placeholder="Write your reply here..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                    />
+                    <button onClick={() => handleReplySubmit(ticket._id)}>
+                      Send Reply
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReplyTicketId(null);
+                        setReplyText("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setReplyTicketId(ticket._id)}>
+                      Reply
+                    </button>
+                    {ticket.status !== "closed" && (
+                      <button onClick={() => closeTicket(ticket._id)}>
+                        Close Ticket
+                      </button>
+                    )}
+                    <button onClick={() => deleteTicket(ticket._id)}>
+                      Delete Ticket
+                    </button>
+                  </>
+                )}
               </div>
-            ) : (
-              <button onClick={() => setReplyTicketId(ticket.id)}>
-                Svar
-              </button>
-            )}
-          </TicketCard>
-        ))
-      )}
+            </TicketCard>
+          ))
+        )}
+      </TicketListContainer>
     </TicketDashboardContainer>
   );
 };
 
-// ---------- Admin-komponenten ----------
+// ---------- Admin Main Component ----------
 const Admin = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState("Dashboard");
@@ -424,49 +512,47 @@ const Admin = () => {
     alert("Logs cleared (dummy function)");
   };
 
-  // Render innhold basert på aktiv seksjon
   const renderContent = () => {
     switch (activeSection) {
       case "Dashboard":
         return (
           <>
-            <CardTitle>Dashboard Oversikt</CardTitle>
+            <CardTitle>Dashboard Overview</CardTitle>
             <p style={{ marginBottom: 16 }}>
-              Dette er en placeholder for hovedinnholdet i dashbordet.
+              This is a placeholder for your main dashboard content.
             </p>
             <Card>
-              <CardTitle>Aktivitetsoppsummering</CardTitle>
+              <CardTitle>Activity Summary</CardTitle>
               <p>
-                Antall transaksjoner denne uken: <strong>5.18k</strong>
+                Transactions this week: <strong>5.18k</strong>
               </p>
-              <button onClick={() => alert("Data oppdatert!")}>
-                Oppdater Data
+              <button onClick={() => alert("Data updated!")}>
+                Update Data
               </button>
             </Card>
           </>
         );
       case "Tickets":
-        // Bruk TicketDashboard for en avansert visning av tickets
         return <TicketDashboard />;
       case "Users":
         return (
           <>
-            <CardTitle>Brukeradministrasjon</CardTitle>
+            <CardTitle>User Management</CardTitle>
             <ul>
               {users.map((user) => (
                 <li key={user.id}>{user.name}</li>
               ))}
             </ul>
             <div style={{ marginBottom: "16px" }}>
-              <label>Legg til ny bruker</label>
+              <label>Add New User</label>
               <div style={{ display: "flex", gap: "8px" }}>
                 <SearchInput
                   type="text"
-                  placeholder="Brukernavn..."
+                  placeholder="Username..."
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                 />
-                <button onClick={addUser}>Legg til</button>
+                <button onClick={addUser}>Add</button>
               </div>
             </div>
           </>
@@ -474,21 +560,25 @@ const Admin = () => {
       case "Settings":
         return (
           <>
-            <CardTitle>Innstillinger</CardTitle>
+            <CardTitle>Settings</CardTitle>
             <div style={{ marginBottom: "16px" }}>
               <label>Theme Mode</label>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {themeMode === "light" ? <FiSun /> : <FiMoon />}
                 <button onClick={toggleTheme}>
-                  Bytt til {themeMode === "light" ? "Mørk" : "Lys"} Mode
+                  Switch to {themeMode === "light" ? "Dark" : "Light"} Mode
                 </button>
               </div>
             </div>
             <div style={{ marginBottom: "16px" }}>
-              <label>Språk</label>
+              <label>Language</label>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <button onClick={() => alert("Bytt til Norsk")}>Norsk</button>
-                <button onClick={() => alert("Switch to English")}>English</button>
+                <button onClick={() => alert("Switched to English")}>
+                  English
+                </button>
+                <button onClick={() => alert("Switched to Norwegian")}>
+                  Norwegian
+                </button>
               </div>
             </div>
           </>
@@ -496,50 +586,50 @@ const Admin = () => {
       case "Logs":
         return (
           <>
-            <CardTitle>Systemlogger</CardTitle>
+            <CardTitle>System Logs</CardTitle>
             <ul>
-              <li>Logg 1: System startet.</li>
-              <li>Logg 2: Bruker logget inn.</li>
-              <li>Logg 3: Error: Noe gikk galt.</li>
+              <li>Log 1: System started.</li>
+              <li>Log 2: User logged in.</li>
+              <li>Log 3: Error: Something went wrong.</li>
             </ul>
-            <button onClick={clearLogs}>Slett Logger</button>
+            <button onClick={clearLogs}>Clear Logs</button>
           </>
         );
       case "Reports":
         return (
           <>
-            <CardTitle>Rapporter</CardTitle>
+            <CardTitle>Reports</CardTitle>
             <div style={{ marginBottom: "16px" }}>
-              <label>Filter Rapporter</label>
+              <label>Filter Reports</label>
               <SearchInput
                 type="text"
-                placeholder="Søk i rapporter..."
+                placeholder="Search reports..."
                 value={reportsFilter}
                 onChange={(e) => setReportsFilter(e.target.value)}
               />
             </div>
             <p>
-              Viser rapporter som inneholder: <strong>{reportsFilter}</strong>
+              Showing reports containing: <strong>{reportsFilter}</strong>
             </p>
             <ul>
-              <li>Rapport 1: Omsetning</li>
-              <li>Rapport 2: Brukeraktivitet</li>
-              <li>Rapport 3: Feilrapporter</li>
+              <li>Report 1: Revenue</li>
+              <li>Report 2: User Activity</li>
+              <li>Report 3: Error Logs</li>
             </ul>
           </>
         );
       case "Analytics":
         return (
           <>
-            <CardTitle>Analyse</CardTitle>
-            <p>Denne seksjonen kan senere utvides med diagrammer og grafer.</p>
+            <CardTitle>Analytics</CardTitle>
+            <p>This section can later be extended with charts and graphs.</p>
             <Card>
-              <CardTitle>Enkel Analyse</CardTitle>
-              <p>Viser dummy-data:</p>
+              <CardTitle>Simple Analytics</CardTitle>
+              <p>Dummy data:</p>
               <ul>
-                <li>Besøkende: 1,234</li>
-                <li>Konverteringer: 123</li>
-                <li>Engasjement: 78%</li>
+                <li>Visitors: 1,234</li>
+                <li>Conversions: 123</li>
+                <li>Engagement: 78%</li>
               </ul>
             </Card>
           </>
@@ -547,26 +637,27 @@ const Admin = () => {
       case "Profile":
         return (
           <>
-            <CardTitle>Min Profil</CardTitle>
-            <p>Her kan du redigere din profilinformasjon.</p>
+            <CardTitle>My Profile</CardTitle>
+            <p>Edit your profile information here.</p>
             <div style={{ marginBottom: "16px" }}>
-              <label>Navn</label>
-              <SearchInput type="text" placeholder="Ditt navn" />
+              <label>Name</label>
+              <SearchInput type="text" placeholder="Your name" />
             </div>
             <div style={{ marginBottom: "16px" }}>
-              <label>E-post</label>
-              <SearchInput type="email" placeholder="din.epost@domene.no" />
+              <label>Email</label>
+              <SearchInput type="email" placeholder="your.email@example.com" />
             </div>
-            <button onClick={() => alert("Profil oppdatert!")}>
-              Oppdater Profil
+            <button onClick={() => alert("Profile updated!")}>
+              Update Profile
             </button>
           </>
         );
       default:
-        return <p>Velg en seksjon fra menyen.</p>;
+        return <p>Please select a section from the menu.</p>;
     }
   };
 
+  // RENDER
   return (
     <ThemeProvider theme={themeMode === "light" ? lightTheme : darkTheme}>
       <GlobalStyle />
@@ -579,7 +670,7 @@ const Admin = () => {
               <FiMenu />
             </MenuIcon>
             <SearchContainer>
-              <SearchInput placeholder="Søk..." />
+              <SearchInput placeholder="Search..." />
             </SearchContainer>
           </TopBarLeft>
           <TopBarRight>
@@ -596,7 +687,6 @@ const Admin = () => {
         <Main>
           {/* SIDEBAR */}
           <Sidebar expanded={sidebarExpanded}>
-            {/* Dashboard */}
             <SidebarItem
               active={activeSection === "Dashboard"}
               onClick={() => setActiveSection("Dashboard")}
@@ -606,7 +696,6 @@ const Admin = () => {
               </SidebarIcon>
               <SidebarLabel expanded={sidebarExpanded}>Dashboard</SidebarLabel>
             </SidebarItem>
-            {/* Tickets */}
             <SidebarItem
               active={activeSection === "Tickets"}
               onClick={() => setActiveSection("Tickets")}
@@ -616,7 +705,6 @@ const Admin = () => {
               </SidebarIcon>
               <SidebarLabel expanded={sidebarExpanded}>Tickets</SidebarLabel>
             </SidebarItem>
-            {/* Users */}
             <SidebarItem
               active={activeSection === "Users"}
               onClick={() => setActiveSection("Users")}
@@ -624,9 +712,8 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiUsers />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Brukere</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Users</SidebarLabel>
             </SidebarItem>
-            {/* Settings */}
             <SidebarItem
               active={activeSection === "Settings"}
               onClick={() => setActiveSection("Settings")}
@@ -634,9 +721,8 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiSettings />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Innstillinger</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Settings</SidebarLabel>
             </SidebarItem>
-            {/* Logs */}
             <SidebarItem
               active={activeSection === "Logs"}
               onClick={() => setActiveSection("Logs")}
@@ -644,9 +730,8 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiFileText />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Logger</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Logs</SidebarLabel>
             </SidebarItem>
-            {/* Reports */}
             <SidebarItem
               active={activeSection === "Reports"}
               onClick={() => setActiveSection("Reports")}
@@ -654,9 +739,8 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiClipboard />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Rapporter</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Reports</SidebarLabel>
             </SidebarItem>
-            {/* Analytics */}
             <SidebarItem
               active={activeSection === "Analytics"}
               onClick={() => setActiveSection("Analytics")}
@@ -664,9 +748,8 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiBarChart2 />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Analyse</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Analytics</SidebarLabel>
             </SidebarItem>
-            {/* Profile */}
             <SidebarItem
               active={activeSection === "Profile"}
               onClick={() => setActiveSection("Profile")}
@@ -674,25 +757,25 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiUser />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Profil</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Profile</SidebarLabel>
             </SidebarItem>
           </Sidebar>
 
-          {/* CONTENT + HØYRE SIDEBAR */}
+          {/* CONTENT + RIGHT SIDEBAR */}
           <ContentWrapper>
             <MainContent>
               <Card>{renderContent()}</Card>
             </MainContent>
             <RightSidebar>
               <Card>
-                <CardTitle>Hurtiginfo</CardTitle>
-                <p>Denne seksjonen kan vise rask statistikk eller små grafer.</p>
+                <CardTitle>Quick Info</CardTitle>
+                <p>This section can display fast stats or mini charts.</p>
               </Card>
               <Card>
-                <CardTitle>Ekstra Widget</CardTitle>
-                <p>Tilleggsinnhold kan legges her.</p>
+                <CardTitle>Extra Widget</CardTitle>
+                <p>Additional content can be placed here.</p>
               </Card>
-              {/* Vis Bifrost-komponenten direkte slik at nye tickets kan sendes */}
+              {/* Bifrost in the sidebar */}
               <Bifrost />
             </RightSidebar>
           </ContentWrapper>

@@ -1,4 +1,4 @@
-// bifrost.js (eksempel)
+// src/components/Bifrost.js
 import React, { useState } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { FaQuestionCircle, FaInfoCircle, FaGamepad, FaPhone } from 'react-icons/fa';
@@ -226,10 +226,17 @@ const Bifrost = () => {
     email: '',
     name: '',
     message: '',
+    subCategory: ''
   });
 
   const openPanel = () => {
-    setTicket({ category: '', email: '', name: '', message: '' });
+    setTicket({
+      category: '',
+      email: '',
+      name: '',
+      message: '',
+      subCategory: ''
+    });
     setStep(1);
     setIsOpen(true);
   };
@@ -242,7 +249,7 @@ const Bifrost = () => {
     const { name, value } = e.target;
     setTicket(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   };
 
@@ -253,24 +260,22 @@ const Bifrost = () => {
     }
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     try {
-      // Hent eksisterende tickets fra localStorage
-      const storedTickets = localStorage.getItem("tickets");
-      const ticketsArray = storedTickets ? JSON.parse(storedTickets) : [];
-
-      // Opprett et nytt ticket med unikt ID
-      const newTicket = { ...ticket, id: Date.now() };
-
-      // Legg til i arrayen og lagre
-      const updatedTickets = [...ticketsArray, newTicket];
-      localStorage.setItem("tickets", JSON.stringify(updatedTickets));
-
-      console.log("Ticket submitted:", newTicket);
+      const response = await fetch('http://localhost:5000/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticket)
+      });
+      if (!response.ok) {
+        throw new Error('Noe gikk galt ved innsending av ticket');
+      }
+      const data = await response.json();
+      console.log('Ticket submitted:', data);
       closePanel();
     } catch (error) {
-      console.error("Feil under innsending:", error);
+      console.error('Feil under innsending:', error);
     }
   };
 
@@ -291,7 +296,6 @@ const Bifrost = () => {
           <img src={BUTTON_IMAGE} alt="Ticket Icon" />
         </FloatingButton>
       </FloatingButtonWrapper>
-
       {isOpen && (
         <TicketPanel>
           <PanelHeader>
@@ -310,48 +314,61 @@ const Bifrost = () => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="" disabled>
-                      -- Choose Category --
-                    </option>
+                    <option value="" disabled>-- Choose Category --</option>
                     <option value="Games">Games</option>
                     <option value="General">General</option>
-                    <option value="Other">Other</option>
                     <option value="Work">Work</option>
                     <option value="Billing">Billing</option>
+                    <option value="Support">Support</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Other">Other</option>
                   </Select>
                 </FormField>
+                {/* Eksempel på sub-kategori for 'Games' */}
                 {ticket.category === 'Games' && (
-                  <GameLinks>
-                    <GameLinkItem>
-                      <IconWrapper>
-                        <FaQuestionCircle color="#003366" />
-                      </IconWrapper>
-                      <LinkText href="#help">Are you stuck?</LinkText>
-                    </GameLinkItem>
-                    <GameLinkItem>
-                      <IconWrapper>
-                        <FaInfoCircle color="#003366" />
-                      </IconWrapper>
-                      <LinkText href="#faq">Check our FAQ</LinkText>
-                    </GameLinkItem>
-                    <GameLinkItem>
-                      <IconWrapper>
-                        <FaGamepad color="#003366" />
-                      </IconWrapper>
-                      <LinkText href="#tips">Game Tips & Tricks</LinkText>
-                    </GameLinkItem>
-                    <GameLinkItem>
-                      <IconWrapper>
-                        <FaPhone color="#003366" />
-                      </IconWrapper>
-                      <LinkText href="#support">Contact Game Support</LinkText>
-                    </GameLinkItem>
-                  </GameLinks>
+                  <>
+                    <GameLinks>
+                      <GameLinkItem>
+                        <IconWrapper>
+                          <FaQuestionCircle color="#003366" />
+                        </IconWrapper>
+                        <LinkText href="#help">Are you stuck?</LinkText>
+                      </GameLinkItem>
+                      <GameLinkItem>
+                        <IconWrapper>
+                          <FaInfoCircle color="#003366" />
+                        </IconWrapper>
+                        <LinkText href="#faq">Check our FAQ</LinkText>
+                      </GameLinkItem>
+                      <GameLinkItem>
+                        <IconWrapper>
+                          <FaGamepad color="#003366" />
+                        </IconWrapper>
+                        <LinkText href="#tips">Game Tips & Tricks</LinkText>
+                      </GameLinkItem>
+                      <GameLinkItem>
+                        <IconWrapper>
+                          <FaPhone color="#003366" />
+                        </IconWrapper>
+                        <LinkText href="#support">Contact Game Support</LinkText>
+                      </GameLinkItem>
+                    </GameLinks>
+                    <FormField>
+                      <Label htmlFor="subCategory">Game Sub-Category</Label>
+                      <Input
+                        type="text"
+                        id="subCategory"
+                        name="subCategory"
+                        placeholder="E.g. 'Level 10 help'"
+                        value={ticket.subCategory}
+                        onChange={handleChange}
+                      />
+                    </FormField>
+                  </>
                 )}
                 <NextButton type="submit">Next</NextButton>
               </form>
             )}
-
             {step === 2 && (
               <form onSubmit={handleSubmit}>
                 <FormField>
