@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// Admin.js
+import React, { useState, useEffect } from "react";
 import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
 import {
   FiHome,
@@ -13,6 +14,7 @@ import {
   FiBarChart2,
   FiClipboard
 } from "react-icons/fi";
+import Bifrost from "../components/bifrost"; // Juster stien om nødvendig
 
 // ---------- THEMES ----------
 const lightTheme = {
@@ -61,14 +63,12 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 // ---------- STYLED COMPONENTS FOR LAYOUT ----------
-
 const AdminContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
 `;
 
-// Top bar
 const TopBar = styled.div`
   background-color: ${({ theme }) => theme.cardBg};
   height: 60px;
@@ -102,7 +102,6 @@ const MenuIcon = styled.div`
   }
 `;
 
-// Search
 const SearchContainer = styled.div`
   position: relative;
 `;
@@ -121,7 +120,6 @@ const SearchInput = styled.input`
   }
 `;
 
-// Top bar right icons
 const TopBarRight = styled.div`
   display: flex;
   align-items: center;
@@ -138,14 +136,12 @@ const IconButton = styled.div`
   }
 `;
 
-// Main area (sidebar + content)
 const Main = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
 `;
 
-// Sidebar
 const Sidebar = styled.div`
   width: ${({ expanded }) => (expanded ? "220px" : "60px")};
   background-color: ${({ theme }) => theme.sidebarBg};
@@ -156,7 +152,6 @@ const Sidebar = styled.div`
   padding-top: 16px;
 `;
 
-// Sidebar items
 const SidebarItem = styled.div`
   display: flex;
   align-items: center;
@@ -183,7 +178,6 @@ const SidebarLabel = styled.span`
   white-space: nowrap;
 `;
 
-// Content area
 const ContentWrapper = styled.div`
   flex: 1;
   display: flex;
@@ -192,7 +186,6 @@ const ContentWrapper = styled.div`
   overflow-y: auto;
 `;
 
-// Del innholdet i to kolonner for å etterligne et dashbordoppsett
 const MainContent = styled.div`
   flex: 3;
   display: flex;
@@ -207,7 +200,6 @@ const RightSidebar = styled.div`
   gap: 20px;
 `;
 
-// Cards
 const Card = styled.div`
   background-color: ${({ theme }) => theme.cardBg};
   border-radius: 8px;
@@ -221,51 +213,287 @@ const CardTitle = styled.h2`
   font-size: 18px;
 `;
 
-// Settings form group
-const FormGroup = styled.div`
-  margin-bottom: 16px;
+/* 
+  ================================
+  TICKET DASHBOARD COMPONENT
+  ================================
+  Adjusted colors and backgrounds for better readability.
+*/
+const TicketDashboardContainer = styled.div`
+  background: linear-gradient(135deg, #ffffff, #f3f4f6);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  color: #111; /* Force text to be dark for better contrast */
 `;
 
-const Label = styled.label`
-  display: block;
-  font-size: 14px;
-  margin-bottom: 4px;
-`;
-
-const ToggleContainer = styled.div`
+const CategoryTabs = styled.div`
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 1rem;
+  margin-bottom: 1rem;
 `;
 
-const ToggleButton = styled.button`
-  background-color: ${({ theme }) => theme.buttonBg};
-  color: #fff;
+const CategoryButton = styled.button`
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   border: none;
-  padding: 10px 16px;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: ${({ theme }) => theme.buttonHover};
+  background: ${({ active }) => (active ? "#1d4ed8" : "#e0e7ff")};
+  color: ${({ active }) => (active ? "#fff" : "#111827")};
+  transition: background 0.3s, color 0.3s;
+`;
+
+const TicketListContainer = styled.div`
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+`;
+
+const TicketCard = styled.div`
+  flex: 1 1 calc(33.333% - 1rem);
+  background: #fff;
+  color: #111;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    color: #111;
+  }
+
+  p {
+    margin: 0.3rem 0;
+    color: #111;
+  }
+
+  .reply {
+    color: green;
+    margin-top: 0.5rem;
+  }
+
+  .subCategory {
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  button {
+    margin-top: 0.5rem;
+    margin-right: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #2563eb;
+    color: #fff;
+    transition: background 0.3s;
+    &:hover {
+      background: #1d4ed8;
+    }
+  }
+
+  textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: inherit;
   }
 `;
 
-// ---------- PLACEHOLDER SEKSJONER OG FUNKSJONALITET ----------
+const SearchBar = styled(SearchInput)`
+  margin-bottom: 1rem;
+  width: 100%;
+`;
 
-// Dummy data for brukerliste
-const initialUsers = [
-  { id: 1, name: "User 1 (Admin)" },
-  { id: 2, name: "User 2 (Editor)" },
-  { id: 3, name: "User 3 (Viewer)" }
-];
+// TICKET DASHBOARD LOGIC
+const TicketDashboard = () => {
+  const [tickets, setTickets] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [replyTicketId, setReplyTicketId] = useState(null);
+  const [replyText, setReplyText] = useState("");
 
+  // Fetch tickets from backend
+  const fetchTickets = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/tickets");
+      const data = await res.json();
+      setTickets(data);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+    // Poll every 30 seconds
+    const intervalId = setInterval(fetchTickets, 30000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Handle reply submission
+  const handleReplySubmit = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply: replyText }),
+      });
+      if (!res.ok) throw new Error("Failed to update ticket");
+      setReplyTicketId(null);
+      setReplyText("");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+    }
+  };
+
+  // Handle closing ticket
+  const closeTicket = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "closed" }),
+      });
+      if (!res.ok) throw new Error("Failed to close ticket");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error closing ticket:", error);
+    }
+  };
+
+  // Handle deleting ticket
+  const deleteTicket = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete ticket");
+      fetchTickets();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+    }
+  };
+
+  // Filter tickets based on category and search term
+  const filteredTickets = tickets.filter((t) => {
+    const inCategory = activeCategory === "All" || t.category === activeCategory;
+    const inSearch =
+      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return inCategory && inSearch;
+  });
+
+  // Categories for tabs
+  const categories = ["All", "Games", "General", "Work", "Billing", "Support", "Sales", "Other"];
+
+  return (
+    <TicketDashboardContainer>
+      <CardTitle style={{ color: "#111" }}>Ticket Dashboard</CardTitle>
+      <p style={{ marginBottom: "1rem", color: "#111" }}>
+        View all submitted tickets. Click on a category to filter.
+      </p>
+
+      <CategoryTabs>
+        {categories.map((cat) => (
+          <CategoryButton
+            key={cat}
+            active={activeCategory === cat}
+            onClick={() => setActiveCategory(cat)}
+          >
+            {cat}
+          </CategoryButton>
+        ))}
+      </CategoryTabs>
+
+      <SearchBar
+        type="text"
+        placeholder="Search tickets..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      <TicketListContainer>
+        {filteredTickets.length === 0 ? (
+          <p style={{ marginTop: "1rem", color: "#111" }}>
+            No tickets found for category "{activeCategory}".
+          </p>
+        ) : (
+          filteredTickets.map((ticket) => (
+            <TicketCard key={ticket._id}>
+              <h4>{ticket.name}</h4>
+              <p>{ticket.email}</p>
+              {ticket.subCategory && (
+                <p className="subCategory">Subcategory: {ticket.subCategory}</p>
+              )}
+              <p>{ticket.message}</p>
+              {ticket.reply && (
+                <p className="reply">
+                  <strong>Reply:</strong> {ticket.reply}
+                </p>
+              )}
+              <div style={{ marginTop: "0.5rem" }}>
+                {replyTicketId === ticket._id ? (
+                  <>
+                    <textarea
+                      rows="3"
+                      placeholder="Write your reply here..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                    />
+                    <button onClick={() => handleReplySubmit(ticket._id)}>
+                      Send Reply
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReplyTicketId(null);
+                        setReplyText("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setReplyTicketId(ticket._id)}>
+                      Reply
+                    </button>
+                    {ticket.status !== "closed" && (
+                      <button onClick={() => closeTicket(ticket._id)}>
+                        Close Ticket
+                      </button>
+                    )}
+                    <button onClick={() => deleteTicket(ticket._id)}>
+                      Delete Ticket
+                    </button>
+                  </>
+                )}
+              </div>
+            </TicketCard>
+          ))
+        )}
+      </TicketListContainer>
+    </TicketDashboardContainer>
+  );
+};
+
+// ---------- Admin Main Component ----------
 const Admin = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [themeMode, setThemeMode] = useState("dark");
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([
+    { id: 1, name: "User 1 (Admin)" },
+    { id: 2, name: "User 2 (Editor)" },
+    { id: 3, name: "User 3 (Viewer)" }
+  ]);
   const [newUserName, setNewUserName] = useState("");
   const [reportsFilter, setReportsFilter] = useState("");
 
@@ -284,123 +512,124 @@ const Admin = () => {
     alert("Logs cleared (dummy function)");
   };
 
-  // Render innhold basert på aktiv seksjon
   const renderContent = () => {
     switch (activeSection) {
       case "Dashboard":
         return (
           <>
-            <CardTitle>Dashboard Oversikt</CardTitle>
+            <CardTitle>Dashboard Overview</CardTitle>
             <p style={{ marginBottom: 16 }}>
-              Dette er en placeholder for hovedinnholdet i dashbordet.
+              This is a placeholder for your main dashboard content.
             </p>
             <Card>
-              <CardTitle>Aktivitetsoppsummering</CardTitle>
+              <CardTitle>Activity Summary</CardTitle>
               <p>
-                Antall transaksjoner denne uken: <strong>5.18k</strong>
+                Transactions this week: <strong>5.18k</strong>
               </p>
-              <ToggleButton onClick={() => alert("Data oppdatert!")}>
-                Oppdater Data
-              </ToggleButton>
+              <button onClick={() => alert("Data updated!")}>
+                Update Data
+              </button>
             </Card>
           </>
         );
+      case "Tickets":
+        return <TicketDashboard />;
       case "Users":
         return (
           <>
-            <CardTitle>Brukeradministrasjon</CardTitle>
+            <CardTitle>User Management</CardTitle>
             <ul>
               {users.map((user) => (
                 <li key={user.id}>{user.name}</li>
               ))}
             </ul>
-            <FormGroup>
-              <Label>Legg til ny bruker</Label>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Add New User</label>
               <div style={{ display: "flex", gap: "8px" }}>
                 <SearchInput
                   type="text"
-                  placeholder="Brukernavn..."
+                  placeholder="Username..."
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                 />
-                <ToggleButton onClick={addUser}>Legg til</ToggleButton>
+                <button onClick={addUser}>Add</button>
               </div>
-            </FormGroup>
+            </div>
           </>
         );
       case "Settings":
         return (
           <>
-            <CardTitle>Innstillinger</CardTitle>
-            <FormGroup>
-              <Label>Theme Mode</Label>
-              <ToggleContainer>
+            <CardTitle>Settings</CardTitle>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Theme Mode</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {themeMode === "light" ? <FiSun /> : <FiMoon />}
-                <ToggleButton onClick={toggleTheme}>
-                  Bytt til {themeMode === "light" ? "Mørk" : "Lys"} Mode
-                </ToggleButton>
-              </ToggleContainer>
-            </FormGroup>
-            <FormGroup>
-              <Label>Språk</Label>
-              <ToggleContainer>
-                <ToggleButton onClick={() => alert("Bytt til Norsk")}>
-                  Norsk
-                </ToggleButton>
-                <ToggleButton onClick={() => alert("Switch to English")}>
+                <button onClick={toggleTheme}>
+                  Switch to {themeMode === "light" ? "Dark" : "Light"} Mode
+                </button>
+              </div>
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Language</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button onClick={() => alert("Switched to English")}>
                   English
-                </ToggleButton>
-              </ToggleContainer>
-            </FormGroup>
+                </button>
+                <button onClick={() => alert("Switched to Norwegian")}>
+                  Norwegian
+                </button>
+              </div>
+            </div>
           </>
         );
       case "Logs":
         return (
           <>
-            <CardTitle>Systemlogger</CardTitle>
+            <CardTitle>System Logs</CardTitle>
             <ul>
-              <li>Logg 1: System startet.</li>
-              <li>Logg 2: Bruker logget inn.</li>
-              <li>Logg 3: Error: Noe gikk galt.</li>
+              <li>Log 1: System started.</li>
+              <li>Log 2: User logged in.</li>
+              <li>Log 3: Error: Something went wrong.</li>
             </ul>
-            <ToggleButton onClick={clearLogs}>Slett Logger</ToggleButton>
+            <button onClick={clearLogs}>Clear Logs</button>
           </>
         );
       case "Reports":
         return (
           <>
-            <CardTitle>Rapporter</CardTitle>
-            <FormGroup>
-              <Label>Filter Rapporter</Label>
+            <CardTitle>Reports</CardTitle>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Filter Reports</label>
               <SearchInput
                 type="text"
-                placeholder="Søk i rapporter..."
+                placeholder="Search reports..."
                 value={reportsFilter}
                 onChange={(e) => setReportsFilter(e.target.value)}
               />
-            </FormGroup>
+            </div>
             <p>
-              Viser rapporter som inneholder: <strong>{reportsFilter}</strong>
+              Showing reports containing: <strong>{reportsFilter}</strong>
             </p>
             <ul>
-              <li>Rapport 1: Omsetning</li>
-              <li>Rapport 2: Brukeraktivitet</li>
-              <li>Rapport 3: Feilrapporter</li>
+              <li>Report 1: Revenue</li>
+              <li>Report 2: User Activity</li>
+              <li>Report 3: Error Logs</li>
             </ul>
           </>
         );
       case "Analytics":
         return (
           <>
-            <CardTitle>Analyse</CardTitle>
-            <p>Denne seksjonen kan senere utvides med diagrammer og grafer.</p>
+            <CardTitle>Analytics</CardTitle>
+            <p>This section can later be extended with charts and graphs.</p>
             <Card>
-              <CardTitle>Enkel Analyse</CardTitle>
-              <p>Viser dummy-data:</p>
+              <CardTitle>Simple Analytics</CardTitle>
+              <p>Dummy data:</p>
               <ul>
-                <li>Besøkende: 1,234</li>
-                <li>Konverteringer: 123</li>
-                <li>Engasjement: 78%</li>
+                <li>Visitors: 1,234</li>
+                <li>Conversions: 123</li>
+                <li>Engagement: 78%</li>
               </ul>
             </Card>
           </>
@@ -408,26 +637,27 @@ const Admin = () => {
       case "Profile":
         return (
           <>
-            <CardTitle>Min Profil</CardTitle>
-            <p>Her kan du redigere din profilinformasjon.</p>
-            <FormGroup>
-              <Label>Navn</Label>
-              <SearchInput type="text" placeholder="Ditt navn" />
-            </FormGroup>
-            <FormGroup>
-              <Label>E-post</Label>
-              <SearchInput type="email" placeholder="din.epost@domene.no" />
-            </FormGroup>
-            <ToggleButton onClick={() => alert("Profil oppdatert!")}>
-              Oppdater Profil
-            </ToggleButton>
+            <CardTitle>My Profile</CardTitle>
+            <p>Edit your profile information here.</p>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Name</label>
+              <SearchInput type="text" placeholder="Your name" />
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Email</label>
+              <SearchInput type="email" placeholder="your.email@example.com" />
+            </div>
+            <button onClick={() => alert("Profile updated!")}>
+              Update Profile
+            </button>
           </>
         );
       default:
-        return <p>Velg en seksjon fra menyen.</p>;
+        return <p>Please select a section from the menu.</p>;
     }
   };
 
+  // RENDER
   return (
     <ThemeProvider theme={themeMode === "light" ? lightTheme : darkTheme}>
       <GlobalStyle />
@@ -440,7 +670,7 @@ const Admin = () => {
               <FiMenu />
             </MenuIcon>
             <SearchContainer>
-              <SearchInput placeholder="Søk..." />
+              <SearchInput placeholder="Search..." />
             </SearchContainer>
           </TopBarLeft>
           <TopBarRight>
@@ -467,13 +697,22 @@ const Admin = () => {
               <SidebarLabel expanded={sidebarExpanded}>Dashboard</SidebarLabel>
             </SidebarItem>
             <SidebarItem
+              active={activeSection === "Tickets"}
+              onClick={() => setActiveSection("Tickets")}
+            >
+              <SidebarIcon expanded={sidebarExpanded}>
+                <FiFileText />
+              </SidebarIcon>
+              <SidebarLabel expanded={sidebarExpanded}>Tickets</SidebarLabel>
+            </SidebarItem>
+            <SidebarItem
               active={activeSection === "Users"}
               onClick={() => setActiveSection("Users")}
             >
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiUsers />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Brukere</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Users</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Settings"}
@@ -482,7 +721,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiSettings />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Innstillinger</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Settings</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Logs"}
@@ -491,7 +730,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiFileText />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Logger</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Logs</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Reports"}
@@ -500,7 +739,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiClipboard />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Rapporter</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Reports</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Analytics"}
@@ -509,7 +748,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiBarChart2 />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Analyse</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Analytics</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Profile"}
@@ -518,26 +757,26 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiUser />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Profil</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Profile</SidebarLabel>
             </SidebarItem>
           </Sidebar>
 
-          {/* CONTENT + HØYRE SIDEBAR */}
+          {/* CONTENT + RIGHT SIDEBAR */}
           <ContentWrapper>
             <MainContent>
               <Card>{renderContent()}</Card>
             </MainContent>
-
-            {/* HØYRE SIDEBAR (EKSEMPEL) */}
             <RightSidebar>
               <Card>
-                <CardTitle>Hurtiginfo</CardTitle>
-                <p>Denne seksjonen kan vise rask statistikk eller små grafer.</p>
+                <CardTitle>Quick Info</CardTitle>
+                <p>This section can display fast stats or mini charts.</p>
               </Card>
               <Card>
-                <CardTitle>Ekstra Widget</CardTitle>
-                <p>Tilleggsinnhold kan legges her.</p>
+                <CardTitle>Extra Widget</CardTitle>
+                <p>Additional content can be placed here.</p>
               </Card>
+              {/* Bifrost in the sidebar */}
+              <Bifrost />
             </RightSidebar>
           </ContentWrapper>
         </Main>
