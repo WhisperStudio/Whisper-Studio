@@ -1,8 +1,8 @@
 // server/controllers/ticketController.js
-const Ticket = require('../models/Ticket');
+import Ticket from '../models/Ticket.js';
 
 // Hent alle tickets
-exports.getTickets = async (req, res) => {
+export const getTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find().sort({ createdAt: -1 });
     res.json(tickets);
@@ -12,7 +12,7 @@ exports.getTickets = async (req, res) => {
 };
 
 // Opprett ny ticket
-exports.createTicket = async (req, res) => {
+export const createTicket = async (req, res) => {
   try {
     const { category, email, name, message, subCategory } = req.body;
 
@@ -31,7 +31,7 @@ exports.createTicket = async (req, res) => {
 };
 
 // Oppdater ticket (for eksempel reply eller status)
-exports.updateTicket = async (req, res) => {
+export const updateTicket = async (req, res) => {
   try {
     const ticketId = req.params.id;
     const updated = await Ticket.findByIdAndUpdate(ticketId, req.body, {
@@ -47,7 +47,7 @@ exports.updateTicket = async (req, res) => {
 };
 
 // Slett ticket
-exports.deleteTicket = async (req, res) => {
+export const deleteTicket = async (req, res) => {
   try {
     const ticketId = req.params.id;
     const deleted = await Ticket.findByIdAndDelete(ticketId);

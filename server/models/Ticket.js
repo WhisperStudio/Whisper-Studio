@@ -1,12 +1,12 @@
 // server/models/Ticket.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const ticketSchema = new mongoose.Schema(
   {
     category: {
       type: String,
       required: true,
-      enum: ['Games', 'General', 'Other', 'Work', 'Billing', 'Support', 'Sales'] // utvidet
+      enum: ['Games', 'General', 'Other', 'Work', 'Billing', 'Support', 'Sales']
     },
     email: {
       type: String,
@@ -24,7 +24,6 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
-    // Om du vil skille tickets i underkategorier, legg til mer felt her:
     subCategory: {
       type: String,
       default: ''
@@ -38,4 +37,4 @@ const ticketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Ticket', ticketSchema);
+export default mongoose.model('Ticket', ticketSchema);
