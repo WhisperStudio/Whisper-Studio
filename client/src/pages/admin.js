@@ -1,4 +1,4 @@
-// Admin.js
+// src/pages/admin.js
 import React, { useState, useEffect } from "react";
 import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
 import {
@@ -12,7 +12,9 @@ import {
   FiSun,
   FiMoon,
   FiBarChart2,
-  FiClipboard
+  FiClipboard,
+  FiTrash2,
+  FiLock
 } from "react-icons/fi";
 import Bifrost from "../components/bifrost"; // Juster stien om nødvendig
 
@@ -50,9 +52,7 @@ const darkTheme = {
 };
 
 const GlobalStyle = createGlobalStyle`
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: "Roboto", sans-serif;
@@ -97,9 +97,7 @@ const MenuIcon = styled.div`
   cursor: pointer;
   color: ${({ theme }) => theme.mutedText};
   transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.text};
-  }
+  &:hover { color: ${({ theme }) => theme.text}; }
 `;
 
 const SearchContainer = styled.div`
@@ -115,9 +113,7 @@ const SearchInput = styled.input`
   transition: border-color 0.2s;
   background-color: ${({ theme }) => theme.bodyBg};
   color: ${({ theme }) => theme.text};
-  &:focus {
-    border-color: ${({ theme }) => theme.inputFocus};
-  }
+  &:focus { border-color: ${({ theme }) => theme.inputFocus}; }
 `;
 
 const TopBarRight = styled.div`
@@ -131,9 +127,7 @@ const IconButton = styled.div`
   color: ${({ theme }) => theme.mutedText};
   cursor: pointer;
   transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.text};
-  }
+  &:hover { color: ${({ theme }) => theme.text}; }
 `;
 
 const Main = styled.div`
@@ -161,10 +155,7 @@ const SidebarItem = styled.div`
   transition: background-color 0.2s, color 0.2s;
   background-color: ${({ active, theme }) =>
     active ? theme.sidebarActive : "transparent"};
-  &:hover {
-    background-color: ${({ theme }) => theme.sidebarHover};
-    color: #fff;
-  }
+  &:hover { background-color: ${({ theme }) => theme.sidebarHover}; color: #fff; }
 `;
 
 const SidebarIcon = styled.div`
@@ -213,274 +204,293 @@ const CardTitle = styled.h2`
   font-size: 18px;
 `;
 
-/* 
-  ================================
-  TICKET DASHBOARD COMPONENT
-  ================================
-  Adjusted colors and backgrounds for better readability.
-*/
-const TicketDashboardContainer = styled.div`
+// =========== CHAT DASHBOARD ===========
+const ChatDashboardContainer = styled.div`
   background: linear-gradient(135deg, #ffffff, #f3f4f6);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  color: #111; /* Force text to be dark for better contrast */
-`;
-
-const CategoryTabs = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-`;
-
-const CategoryButton = styled.button`
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: ${({ active }) => (active ? "#1d4ed8" : "#e0e7ff")};
-  color: ${({ active }) => (active ? "#fff" : "#111827")};
-  transition: background 0.3s, color 0.3s;
-`;
-
-const TicketListContainer = styled.div`
-  margin-top: 1rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-`;
-
-const TicketCard = styled.div`
-  flex: 1 1 calc(33.333% - 1rem);
-  background: #fff;
   color: #111;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const ChatListWrapper = styled.div`
+  display: flex;
+  gap: 1rem;
+`;
+
+const ChatList = styled.div`
+  flex: 1;
+  max-width: 300px;
+  border-right: 1px solid #ccc;
+  padding-right: 16px;
+  overflow-y: auto;
+`;
+
+const ChatListItem = styled.div`
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  background: ${({ active }) => (active ? "#e0e7ff" : "transparent")};
+  transition: background 0.2s;
+  &:hover { background: #f3f4ff; }
+`;
+
+const ChatDetails = styled.div`
+  flex: 2;
+  padding-left: 16px;
+`;
+
+const MessagesContainer = styled.div`
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 8px;
+  margin-bottom: 8px;
   border-radius: 8px;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  min-width: 250px;
-
-  h4 {
-    margin: 0 0 0.5rem 0;
-    color: #111;
-  }
-
-  p {
-    margin: 0.3rem 0;
-    color: #111;
-  }
-
-  .reply {
-    color: green;
-    margin-top: 0.5rem;
-  }
-
-  .subCategory {
-    font-size: 0.85rem;
-    color: #555;
-  }
-
-  button {
-    margin-top: 0.5rem;
-    margin-right: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    background: #2563eb;
-    color: #fff;
-    transition: background 0.3s;
-    &:hover {
-      background: #1d4ed8;
-    }
-  }
-
-  textarea {
-    width: 100%;
-    padding: 0.5rem;
-    margin-top: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-family: inherit;
-  }
+  background: #fff;
 `;
 
-const SearchBar = styled(SearchInput)`
-  margin-bottom: 1rem;
+const MessageItem = styled.div`
+  margin-bottom: 8px;
+  line-height: 1.4;
+`;
+
+const AdminTextArea = styled.textarea`
   width: 100%;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+  resize: vertical;
 `;
 
-// TICKET DASHBOARD LOGIC
-const TicketDashboard = () => {
-  const [tickets, setTickets] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [replyTicketId, setReplyTicketId] = useState(null);
-  const [replyText, setReplyText] = useState("");
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+`;
 
-  // Fetch tickets from backend
-  const fetchTickets = async () => {
+const ActionButton = styled.button`
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #fff;
+  background-color: ${({ bgColor }) => bgColor || "#2563eb"};
+  transition: background-color 0.3s;
+  &:hover { opacity: 0.9; }
+`;
+
+const CategoryFilter = styled.select`
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+`;
+
+// ChatDashboard-komponent
+const ChatDashboard = () => {
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [adminReply, setAdminReply] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+
+  // Hent samtaler
+  const fetchConversations = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/tickets");
+      const res = await fetch("http://localhost:5000/api/conversations");
       const data = await res.json();
-      setTickets(data);
+      setConversations(data);
     } catch (error) {
-      console.error("Error fetching tickets:", error);
+      console.error("Error fetching conversations:", error);
     }
   };
 
+  // Polling hver 10. sekund for oppdatering
   useEffect(() => {
-    fetchTickets();
-    // Poll every 30 seconds
-    const intervalId = setInterval(fetchTickets, 30000);
+    fetchConversations();
+    const intervalId = setInterval(fetchConversations, 10000);
     return () => clearInterval(intervalId);
   }, []);
 
-  // Handle reply submission
-  const handleReplySubmit = async (ticketId) => {
+  const handleSelectConversation = (conv) => {
+    setSelectedConversation(conv);
+    setAdminReply("");
+  };
+
+  const handleAdminReply = async (conversationId) => {
+    if (!adminReply.trim()) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reply: replyText }),
-      });
-      if (!res.ok) throw new Error("Failed to update ticket");
-      setReplyTicketId(null);
-      setReplyText("");
-      fetchTickets();
+      const res = await fetch(
+        `http://localhost:5000/api/conversations/${conversationId}/reply`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ replyText: adminReply })
+        }
+      );
+      if (!res.ok) throw new Error("Failed to send admin reply");
+      setAdminReply("");
+      await fetchConversations();
+      // Hent oppdatert samtale
+      const updatedRes = await fetch(
+        `http://localhost:5000/api/conversations/${conversationId}`
+      );
+      const updatedConv = await updatedRes.json();
+      setSelectedConversation(updatedConv);
     } catch (error) {
-      console.error("Error submitting reply:", error);
+      console.error("Error sending admin reply:", error);
     }
   };
 
-  // Handle closing ticket
-  const closeTicket = async (ticketId) => {
+  const handleDeleteConversation = async (conversationId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "closed" }),
-      });
-      if (!res.ok) throw new Error("Failed to close ticket");
-      fetchTickets();
+      const res = await fetch(
+        `http://localhost:5000/api/conversations/${conversationId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete conversation");
+      await fetchConversations();
+      setSelectedConversation(null);
     } catch (error) {
-      console.error("Error closing ticket:", error);
+      console.error("Error deleting conversation:", error);
     }
   };
 
-  // Handle deleting ticket
-  const deleteTicket = async (ticketId) => {
+  const handleCloseConversation = async (conversationId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete ticket");
-      fetchTickets();
+      const res = await fetch(
+        `http://localhost:5000/api/conversations/${conversationId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "closed" })
+        }
+      );
+      if (!res.ok) throw new Error("Failed to close conversation");
+      await fetchConversations();
+      const updatedRes = await fetch(
+        `http://localhost:5000/api/conversations/${conversationId}`
+      );
+      const updatedConv = await updatedRes.json();
+      setSelectedConversation(updatedConv);
     } catch (error) {
-      console.error("Error deleting ticket:", error);
+      console.error("Error closing conversation:", error);
     }
   };
 
-  // Filter tickets based on category and search term
-  const filteredTickets = tickets.filter((t) => {
-    const inCategory = activeCategory === "All" || t.category === activeCategory;
-    const inSearch =
-      t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.subCategory || "").toLowerCase().includes(searchTerm.toLowerCase());
-    return inCategory && inSearch;
-  });
-
-  // Categories for tabs
-  const categories = ["All", "Games", "General", "Work", "Billing", "Support", "Sales", "Other"];
+  // Filtrering på kategori
+  const filteredConversations =
+    categoryFilter === "All"
+      ? conversations
+      : conversations.filter((conv) => conv.category === categoryFilter);
 
   return (
-    <TicketDashboardContainer>
-      <CardTitle style={{ color: "#111" }}>Ticket Dashboard</CardTitle>
+    <ChatDashboardContainer>
+      <CardTitle style={{ color: "#111" }}>Live Chat Conversations</CardTitle>
       <p style={{ marginBottom: "1rem", color: "#111" }}>
-        View all submitted tickets. Click on a category to filter.
+        Her kan du se alle samtaler og svare direkte.
       </p>
-
-      <CategoryTabs>
-        {categories.map((cat) => (
-          <CategoryButton
-            key={cat}
-            active={activeCategory === cat}
-            onClick={() => setActiveCategory(cat)}
-          >
-            {cat}
-          </CategoryButton>
-        ))}
-      </CategoryTabs>
-
-      <SearchBar
-        type="text"
-        placeholder="Search tickets..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-
-      <TicketListContainer>
-        {filteredTickets.length === 0 ? (
-          <p style={{ marginTop: "1rem", color: "#111" }}>
-            No tickets found for category "{activeCategory}".
-          </p>
-        ) : (
-          filteredTickets.map((ticket) => (
-            <TicketCard key={ticket._id}>
-              <h4>{ticket.name}</h4>
-              <p>{ticket.email}</p>
-              {ticket.subCategory && (
-                <p className="subCategory">Subcategory: {ticket.subCategory}</p>
-              )}
-              <p>{ticket.message}</p>
-              {ticket.reply && (
-                <p className="reply">
-                  <strong>Reply:</strong> {ticket.reply}
+      <CategoryFilter
+        value={categoryFilter}
+        onChange={(e) => setCategoryFilter(e.target.value)}
+      >
+        <option value="All">Alle kategorier</option>
+        <option value="Games">Games</option>
+        <option value="General">General</option>
+        <option value="Work">Work</option>
+        <option value="Billing">Billing</option>
+        <option value="Support">Support</option>
+        <option value="Sales">Sales</option>
+        <option value="Other">Other</option>
+      </CategoryFilter>
+      <ChatListWrapper>
+        <ChatList>
+          <h3 style={{ marginTop: 0 }}>Samtaler</h3>
+          {filteredConversations.length === 0 ? (
+            <p>Ingen samtaler funnet.</p>
+          ) : (
+            filteredConversations.map((conv) => (
+              <ChatListItem
+                key={conv.conversationId}
+                active={
+                  selectedConversation &&
+                  selectedConversation.conversationId === conv.conversationId
+                }
+                onClick={() => handleSelectConversation(conv)}
+              >
+                <strong>{conv.name || "Ukjent bruker"}</strong>
+                <p style={{ fontSize: "0.85rem", color: "#555", margin: 0 }}>
+                  {conv.messages && conv.messages.length > 0
+                    ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
+                    : "Ingen meldinger"}
                 </p>
-              )}
-              <div style={{ marginTop: "0.5rem" }}>
-                {replyTicketId === ticket._id ? (
-                  <>
-                    <textarea
-                      rows="3"
-                      placeholder="Write your reply here..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                    />
-                    <button onClick={() => handleReplySubmit(ticket._id)}>
-                      Send Reply
-                    </button>
-                    <button
-                      onClick={() => {
-                        setReplyTicketId(null);
-                        setReplyText("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => setReplyTicketId(ticket._id)}>
-                      Reply
-                    </button>
-                    {ticket.status !== "closed" && (
-                      <button onClick={() => closeTicket(ticket._id)}>
-                        Close Ticket
-                      </button>
-                    )}
-                    <button onClick={() => deleteTicket(ticket._id)}>
-                      Delete Ticket
-                    </button>
-                  </>
-                )}
-              </div>
-            </TicketCard>
-          ))
-        )}
-      </TicketListContainer>
-    </TicketDashboardContainer>
+              </ChatListItem>
+            ))
+          )}
+        </ChatList>
+        <ChatDetails>
+          {selectedConversation ? (
+            <div>
+              <h3 style={{ marginTop: 0 }}>
+                Samtale med {selectedConversation.name || "Ukjent bruker"}
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+                E-post: {selectedConversation.email || "Ukjent"}
+              </p>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+                Kategori: {selectedConversation.category || "Ingen"}
+              </p>
+              <MessagesContainer>
+                {selectedConversation.messages.map((msg, index) => (
+                  <MessageItem key={index}>
+                    <strong>{msg.sender.toUpperCase()}:</strong> {msg.text}
+                  </MessageItem>
+                ))}
+              </MessagesContainer>
+              <AdminTextArea
+                rows="3"
+                placeholder="Skriv svar..."
+                value={adminReply}
+                onChange={(e) => setAdminReply(e.target.value)}
+              />
+              <ActionButtons>
+                <ActionButton
+                  bgColor="#2563eb"
+                  onClick={() =>
+                    handleAdminReply(selectedConversation.conversationId)
+                  }
+                >
+                  Send Svar
+                </ActionButton>
+                <ActionButton
+                  bgColor="#f59e0b"
+                  onClick={() =>
+                    handleCloseConversation(selectedConversation.conversationId)
+                  }
+                >
+                  Lukk Samtale <FiLock style={{ marginLeft: "4px" }} />
+                </ActionButton>
+                <ActionButton
+                  bgColor="#dc2626"
+                  onClick={() =>
+                    handleDeleteConversation(selectedConversation.conversationId)
+                  }
+                >
+                  Slett <FiTrash2 style={{ marginLeft: "4px" }} />
+                </ActionButton>
+              </ActionButtons>
+            </div>
+          ) : (
+            <p>Velg en samtale for å se detaljer.</p>
+          )}
+        </ChatDetails>
+      </ChatListWrapper>
+    </ChatDashboardContainer>
   );
 };
 
@@ -533,7 +543,7 @@ const Admin = () => {
           </>
         );
       case "Tickets":
-        return <TicketDashboard />;
+        return <ChatDashboard />;
       case "Users":
         return (
           <>
@@ -657,7 +667,6 @@ const Admin = () => {
     }
   };
 
-  // RENDER
   return (
     <ThemeProvider theme={themeMode === "light" ? lightTheme : darkTheme}>
       <GlobalStyle />
@@ -666,7 +675,7 @@ const Admin = () => {
         <TopBar>
           <TopBarLeft>
             <Brand>Dashboard</Brand>
-            <MenuIcon onClick={() => setSidebarExpanded(!sidebarExpanded)}>
+            <MenuIcon onClick={() => setSidebarExpanded((prev) => !prev)}>
               <FiMenu />
             </MenuIcon>
             <SearchContainer>
@@ -703,7 +712,7 @@ const Admin = () => {
               <SidebarIcon expanded={sidebarExpanded}>
                 <FiFileText />
               </SidebarIcon>
-              <SidebarLabel expanded={sidebarExpanded}>Tickets</SidebarLabel>
+              <SidebarLabel expanded={sidebarExpanded}>Chat</SidebarLabel>
             </SidebarItem>
             <SidebarItem
               active={activeSection === "Users"}
@@ -775,7 +784,7 @@ const Admin = () => {
                 <CardTitle>Extra Widget</CardTitle>
                 <p>Additional content can be placed here.</p>
               </Card>
-              {/* Bifrost in the sidebar */}
+              {/* Bifrost (live chat-knapp) vises også i adminpanelet */}
               <Bifrost />
             </RightSidebar>
           </ContentWrapper>
