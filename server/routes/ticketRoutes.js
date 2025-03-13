@@ -1,12 +1,12 @@
-// server/routes/ticketRoutes.js
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getTickets,
   createTicket,
   updateTicket,
   deleteTicket
-} = require('../controllers/ticketController');
+} from '../controllers/ticketController.js';
+
+const router = express.Router();
 
 // GET /api/tickets - hent alle
 router.get('/', getTickets);
@@ -20,4 +20,4 @@ router.put('/:id', updateTicket);
 // DELETE /api/tickets/:id - slett ticket
 router.delete('/:id', deleteTicket);
 
-module.exports = router;
+export default router;
