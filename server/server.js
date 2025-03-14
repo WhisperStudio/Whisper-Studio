@@ -9,21 +9,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1) Koble til MongoDB
+// 1) Connect to MongoDB
 const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
-  console.error('MONGO_URI mangler i .env');
+  console.error('MONGO_URI missing in .env');
   process.exit(1);
 }
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Tilkoblet MongoDB'))
+  .then(() => console.log('Connected to MongoDB'))
   .catch((err) => {
-    console.error('Feil ved tilkobling til MongoDB:', err);
+    console.error('Error connecting to MongoDB:', err);
     process.exit(1);
   });
 
-// 2) Ticket-modell og ruter (CRUD)
+// 2) Ticket model + routes
 const ticketSchema = new mongoose.Schema(
   {
     category: {
@@ -46,13 +46,13 @@ const ticketSchema = new mongoose.Schema(
 );
 const Ticket = mongoose.model('Ticket', ticketSchema);
 
-// Tickets-ruter
+// CRUD for tickets
 app.get('/api/tickets', async (req, res) => {
   try {
     const tickets = await Ticket.find().sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
-    res.status(500).json({ message: 'Kunne ikke hente tickets', error });
+    res.status(500).json({ message: 'Could not fetch tickets', error });
   }
 });
 
@@ -62,7 +62,7 @@ app.post('/api/tickets', async (req, res) => {
     const newTicket = await Ticket.create({ category, email, name, message, subCategory });
     res.status(201).json(newTicket);
   } catch (error) {
-    res.status(400).json({ message: 'Kunne ikke opprette ticket', error });
+    res.status(400).json({ message: 'Could not create ticket', error });
   }
 });
 
@@ -70,11 +70,11 @@ app.put('/api/tickets/:id', async (req, res) => {
   try {
     const updated = await Ticket.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      return res.status(404).json({ message: 'Ticket ikke funnet' });
+      return res.status(404).json({ message: 'Ticket not found' });
     }
     res.json(updated);
   } catch (error) {
-    res.status(400).json({ message: 'Kunne ikke oppdatere ticket', error });
+    res.status(400).json({ message: 'Could not update ticket', error });
   }
 });
 
@@ -82,15 +82,15 @@ app.delete('/api/tickets/:id', async (req, res) => {
   try {
     const deleted = await Ticket.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      return res.status(404).json({ message: 'Ticket ikke funnet' });
+      return res.status(404).json({ message: 'Ticket not found' });
     }
-    res.json({ message: 'Ticket slettet' });
+    res.json({ message: 'Ticket deleted' });
   } catch (error) {
-    res.status(400).json({ message: 'Kunne ikke slette ticket', error });
+    res.status(400).json({ message: 'Could not delete ticket', error });
   }
 });
 
-// 3) Conversation-modell for live chat
+// 3) Conversation model (with userWantsAdmin)
 const messageSchema = new mongoose.Schema({
   sender: { type: String, enum: ['user', 'bot', 'admin'], default: 'user' },
   text: String,
@@ -99,12 +99,12 @@ const messageSchema = new mongoose.Schema({
 
 const conversationSchema = new mongoose.Schema(
   {
-    // Unik streng for å identifisere en samtale
     conversationId: { type: String, unique: true },
     email: String,
     name: String,
     category: String,
     subCategory: String,
+    userWantsAdmin: { type: Boolean, default: false },
     messages: [messageSchema],
     status: {
       type: String,
@@ -116,18 +116,51 @@ const conversationSchema = new mongoose.Schema(
 );
 const Conversation = mongoose.model('Conversation', conversationSchema);
 
-// 4) ChatGPT-endepunkt
+// 4) Admin availability & typing (in-memory)
+let adminAvailable = false;
+let adminTyping = false;
+
+app.get('/api/admin/availability', (req, res) => {
+  res.json({ adminAvailable });
+});
+
+app.post('/api/admin/availability', (req, res) => {
+  const { available } = req.body;
+  adminAvailable = available;
+  res.json({ adminAvailable });
+});
+
+// NEW: admin typing endpoints
+app.get('/api/admin/typing', (req, res) => {
+  res.json({ adminTyping });
+});
+
+app.post('/api/admin/typing', (req, res) => {
+  const { typing } = req.body;
+  adminTyping = !!typing; // cast til boolean
+  res.json({ adminTyping });
+});
+
+// 5) ChatGPT endpoint
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 if (!OPENAI_API_KEY) {
-  console.error('Error: OPENAI_API_KEY mangler i .env');
+  console.error('Missing OPENAI_API_KEY in .env');
   process.exit(1);
 }
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { conversationId, message, email, name, category, subCategory } = req.body;
+    const {
+      conversationId,
+      message,
+      email,
+      name,
+      category,
+      subCategory,
+      userWantsAdmin
+    } = req.body;
 
-    // Finn eller opprett en samtale
+    // Find or create conversation
     let conv = null;
     if (conversationId) {
       conv = await Conversation.findOne({ conversationId });
@@ -140,15 +173,29 @@ app.post('/api/chat', async (req, res) => {
         name: name || '',
         category: category || '',
         subCategory: subCategory || '',
+        userWantsAdmin: userWantsAdmin === true,
         messages: []
       });
     }
 
-    // Bygg ChatGPT-historikk
+    // If user wants admin, skip ChatGPT
+    if (conv.userWantsAdmin === true || userWantsAdmin === true) {
+      if (!conv.userWantsAdmin && userWantsAdmin) {
+        conv.userWantsAdmin = true;
+      }
+      // Add the user's message
+      if (message) {
+        conv.messages.push({ sender: 'user', text: message, timestamp: new Date() });
+      }
+      await conv.save();
+      return res.json({ reply: '', conversationId: conv.conversationId });
+    }
+
+    // Otherwise, call ChatGPT
     let messagesForGPT = [
       {
         role: 'system',
-        content: 'Du er en hjelpsom assistent. Svar på meldinger og gi støtte til brukere.'
+        content: 'You are a helpful assistant. Provide support to the user.'
       }
     ];
     for (let m of conv.messages) {
@@ -161,13 +208,9 @@ app.post('/api/chat', async (req, res) => {
       messagesForGPT.push({ role: 'user', content: message });
     }
 
-    // Kall ChatGPT
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-3.5-turbo',
-        messages: messagesForGPT
-      },
+      { model: 'gpt-3.5-turbo', messages: messagesForGPT },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -177,7 +220,7 @@ app.post('/api/chat', async (req, res) => {
     );
     const reply = response.data.choices[0].message.content;
 
-    // Oppdater DB med brukermelding + botsvar
+    // Store the user's message + bot reply
     if (message) {
       conv.messages.push({ sender: 'user', text: message, timestamp: new Date() });
     }
@@ -191,8 +234,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// 5) Ruter for å hente, lukke og slette samtaler
-// Hent alle
+// 6) Conversation routes
 app.get('/api/conversations', async (req, res) => {
   try {
     const allConvs = await Conversation.find().sort({ createdAt: -1 });
@@ -202,7 +244,6 @@ app.get('/api/conversations', async (req, res) => {
   }
 });
 
-// Hent én basert på conversationId
 app.get('/api/conversations/:id', async (req, res) => {
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
@@ -213,18 +254,14 @@ app.get('/api/conversations/:id', async (req, res) => {
   }
 });
 
-// Admin kan svare via /reply (alltid sender: 'admin')
+// Admin can reply
 app.post('/api/conversations/:id/reply', async (req, res) => {
   try {
     const { replyText } = req.body;
     const conv = await Conversation.findOne({ conversationId: req.params.id });
     if (!conv) return res.status(404).json({ error: 'Conversation not found' });
 
-    conv.messages.push({
-      sender: 'admin',
-      text: replyText,
-      timestamp: new Date()
-    });
+    conv.messages.push({ sender: 'admin', text: replyText, timestamp: new Date() });
     await conv.save();
     res.json({ message: 'Admin reply added successfully' });
   } catch (error) {
@@ -233,7 +270,7 @@ app.post('/api/conversations/:id/reply', async (req, res) => {
   }
 });
 
-// Oppdater status (f.eks. lukke)
+// Update conversation status
 app.put('/api/conversations/:id', async (req, res) => {
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
@@ -250,7 +287,7 @@ app.put('/api/conversations/:id', async (req, res) => {
   }
 });
 
-// Slett samtale
+// Delete conversation
 app.delete('/api/conversations/:id', async (req, res) => {
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
@@ -265,8 +302,8 @@ app.delete('/api/conversations/:id', async (req, res) => {
   }
 });
 
-// 6) Start server
+// 7) Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server kjører på port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
