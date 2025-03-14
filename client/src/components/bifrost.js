@@ -1,4 +1,3 @@
-// Bifrost.js
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
@@ -10,13 +9,13 @@ const colors = {
   backgroundDark: '#0b1121',
   panelDark: '#152238',
   textLight: '#E0E0E0',
-  userBubble: '#1E40AF',   // Blå
-  botBubble: '#1E293B',    // Mørkblå
-  adminBubble: '#8B008B',  // Lilla (admin)
+  userBubble: '#1E40AF', // Blå
+  botBubble: '#1E293B',  // Mørkblå
+  adminBubble: '#8B008B', // Lilla (admin)
   white: '#FFFFFF',
   buttonBorder: '#1c2e4e',
-  buttonBg: '#2f2f2f',
-  buttonHover: '#3a3a3a'
+  buttonBg: '#1A1F2E',
+  buttonHover: '#2C354F'
 };
 
 const getTimeGreeting = () => {
@@ -131,6 +130,7 @@ const ChatPanel = styled.div`
   flex-direction: column;
 `;
 
+// Header med skygge og tilbake knapp
 const PanelHeader = styled.div`
   background: linear-gradient(135deg, #152238, #1c2e4e);
   padding: 15px 20px;
@@ -142,11 +142,26 @@ const PanelHeader = styled.div`
   justify-content: center;
   align-items: center;
   position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 `;
 
 const CloseButton = styled.button`
   position: absolute;
   right: 20px;
+  background: transparent;
+  border: none;
+  color: ${colors.textLight};
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  &:hover {
+    transform: scale(1.2);
+  }
+`;
+
+const BackButton = styled.button`
+  position: absolute;
+  left: 20px;
   background: transparent;
   border: none;
   color: ${colors.textLight};
@@ -186,18 +201,14 @@ const MessageBubble = styled.div`
     props.sender === 'bot'
       ? colors.botBubble
       : props.sender === 'admin'
-        ? colors.adminBubble
-        : colors.userBubble
-  };
+      ? colors.adminBubble
+      : colors.userBubble};
   color: ${props =>
     props.sender === 'bot' ? colors.textLight : colors.white};
-
   align-self: ${props =>
     props.sender === 'bot' ? 'flex-start' : 'flex-end'};
-
   /* Litt ekstra margin for admin-meldinger */
-  margin-right: ${props => props.sender === 'admin' ? '20px' : '0'};
-
+  margin-right: ${props => (props.sender === 'admin' ? '20px' : '0')};
   padding: 10px 14px;
   border-radius: 16px;
   margin: 4px 0;
@@ -231,8 +242,12 @@ const Dot = styled.span`
   background-color: ${colors.textLight};
   border-radius: 50%;
   animation: ${dotPulse} 1.4s infinite both;
-  &:nth-child(2) { animation-delay: 0.2s; }
-  &:nth-child(3) { animation-delay: 0.4s; }
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.4s;
+  }
 `;
 
 const InputContainer = styled.div`
@@ -269,7 +284,9 @@ const InputField = styled.input`
   }
 `;
 
-const SendButton = styled(StyledButton)``;
+// Use a functional component to avoid rendering StyledButton directly
+const SendButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
+const SendButton = styled(SendButtonComponent)``;
 
 const FormField = styled.div`
   margin-bottom: 18px;
@@ -328,12 +345,15 @@ const TextArea = styled.textarea`
   }
 `;
 
-const NextButton = styled(StyledButton)`
+// Create functional components for the buttons to avoid direct styled component rendering
+const NextButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
+const NextButton = styled(NextButtonComponent)`
   width: 100%;
   margin-top: 10px;
 `;
 
-const SubmitButton = styled(StyledButton)`
+const SubmitButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
+const SubmitButton = styled(SubmitButtonComponent)`
   width: 100%;
   margin-top: 10px;
 `;
@@ -360,8 +380,10 @@ const Bifrost = () => {
 
   // Chat input
   const [inputMessage, setInputMessage] = useState("");
+
   // "isTyping" for AI Bot
   const [isTyping, setIsTyping] = useState(false);
+
   // Admin sin typing (polling)
   const [adminIsTyping, setAdminIsTyping] = useState(false);
 
@@ -378,7 +400,6 @@ const Bifrost = () => {
   const [isOpen, setIsOpen] = useState(false);
   const openPanel = () => setIsOpen(true);
   const closePanel = () => setIsOpen(false);
-
   const messagesEndRef = useRef(null);
 
   // Hent adminAvailable én gang
@@ -430,6 +451,7 @@ const Bifrost = () => {
     setUserWantsAdmin(false);
     setStep(1);
   };
+
   const handleChooseAdmin = () => {
     setUserWantsAdmin(true);
     if (adminAvailable) {
@@ -444,6 +466,7 @@ const Bifrost = () => {
     setUserWantsAdmin(false);
     setStep(1);
   };
+
   const handleFallbackTicket = () => {
     alert("Ticket submission placeholder.\nImplementer din ticket-løsning her.");
     setIsOpen(false);
@@ -477,21 +500,19 @@ const Bifrost = () => {
       });
       if (!response.ok) throw new Error("Error communicating with ChatGPT/admin flow");
       const data = await response.json();
-
       setConversationId(data.conversationId);
-
       // Legg inn en "Welcome to Vintra Support!" melding manuelt i chatten.
       const welcomeMsg = {
         sender: userWantsAdmin ? 'admin' : 'bot',
         text: "Welcome to Vintra Support!",
         timestamp: new Date()
       };
-
       // Hvis brukeren skrev en melding i pre-chat
-      const userMsg = ticket.message.trim()
-        ? { sender: "user", text: ticket.message, timestamp: new Date() }
-        : null;
-
+      const userMsg = ticket.message.trim() ? {
+        sender: "user",
+        text: ticket.message,
+        timestamp: new Date()
+      } : null;
       setChatMessages(userMsg ? [welcomeMsg, userMsg] : [welcomeMsg]);
       setPreChatCompleted(true);
       setStep(3);
@@ -512,11 +533,7 @@ const Bifrost = () => {
       await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId,
-          message: messageToSend,
-          userWantsAdmin
-        })
+        body: JSON.stringify({ conversationId, message: messageToSend, userWantsAdmin })
       });
     } catch (error) {
       console.error("Error sending message:", error);
@@ -532,6 +549,17 @@ const Bifrost = () => {
     }
   };
 
+  // Funksjon for å gå ett steg tilbake
+  const handleBack = () => {
+    if (step === 3) {
+      setStep(2);
+    } else if (step === 2) {
+      setStep(1);
+    } else if (step === 1 || step === 0.5) {
+      setStep(0);
+    }
+  };
+
   // Render innhold for hvert steg
   const renderContent = () => {
     // STEG 3: Chat
@@ -542,11 +570,7 @@ const Bifrost = () => {
             {chatMessages.map((msg, index) => (
               <MessageBubble key={index} sender={msg.sender}>
                 <SenderLabel sender={msg.sender}>
-                  {msg.sender === 'user'
-                    ? 'You'
-                    : msg.sender === 'admin'
-                      ? 'Admin'
-                      : 'AI Bot'}
+                  {msg.sender === 'user' ? 'You' : msg.sender === 'admin' ? 'Admin' : 'AI Bot'}
                 </SenderLabel>
                 {msg.text}
               </MessageBubble>
@@ -699,12 +723,12 @@ const Bifrost = () => {
           <img src={BUTTON_IMAGE} alt="Chat Icon" />
         </FloatingButton>
       </FloatingButtonWrapper>
-
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
+            {step !== 0 && <BackButton onClick={handleBack} style={{fontSize:'22px'}}>◁</BackButton>}
             {getTimeGreeting()}
-            <CloseButton onClick={closePanel}>×</CloseButton>
+            <CloseButton onClick={closePanel} style={{fontSize:'18px'}}>⛌</CloseButton>
           </PanelHeader>
           <PanelBody>
             {renderContent()}
