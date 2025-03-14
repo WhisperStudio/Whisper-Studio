@@ -16,7 +16,7 @@ import {
   FiTrash2,
   FiLock
 } from "react-icons/fi";
-import Bifrost from "../components/bifrost"; // Juster stien om nødvendig
+import Bifrost from "../components/bifrost"; // Adjust path if needed
 
 // ---------- THEMES ----------
 const lightTheme = {
@@ -97,7 +97,9 @@ const MenuIcon = styled.div`
   cursor: pointer;
   color: ${({ theme }) => theme.mutedText};
   transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.text}; }
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
 `;
 
 const SearchContainer = styled.div`
@@ -113,7 +115,9 @@ const SearchInput = styled.input`
   transition: border-color 0.2s;
   background-color: ${({ theme }) => theme.bodyBg};
   color: ${({ theme }) => theme.text};
-  &:focus { border-color: ${({ theme }) => theme.inputFocus}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.inputFocus};
+  }
 `;
 
 const TopBarRight = styled.div`
@@ -127,7 +131,9 @@ const IconButton = styled.div`
   color: ${({ theme }) => theme.mutedText};
   cursor: pointer;
   transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.text}; }
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
 `;
 
 const Main = styled.div`
@@ -155,7 +161,10 @@ const SidebarItem = styled.div`
   transition: background-color 0.2s, color 0.2s;
   background-color: ${({ active, theme }) =>
     active ? theme.sidebarActive : "transparent"};
-  &:hover { background-color: ${({ theme }) => theme.sidebarHover}; color: #fff; }
+  &:hover {
+    background-color: ${({ theme }) => theme.sidebarHover};
+    color: #fff;
+  }
 `;
 
 const SidebarIcon = styled.div`
@@ -235,7 +244,9 @@ const ChatListItem = styled.div`
   cursor: pointer;
   background: ${({ active }) => (active ? "#e0e7ff" : "transparent")};
   transition: background 0.2s;
-  &:hover { background: #f3f4ff; }
+  &:hover {
+    background: #f3f4ff;
+  }
 `;
 
 const ChatDetails = styled.div`
@@ -253,9 +264,16 @@ const MessagesContainer = styled.div`
   background: #fff;
 `;
 
+// Color-code messages
 const MessageItem = styled.div`
   margin-bottom: 8px;
   line-height: 1.4;
+  color: ${({ sender }) => {
+    if (sender === 'bot') return '#9D4EDD';   // Purple for bot
+    if (sender === 'admin') return '#3B82F6'; // Blue for admin
+    if (sender === 'user') return '#111';     // Dark text for user
+    return '#000';
+  }};
 `;
 
 const AdminTextArea = styled.textarea`
@@ -282,7 +300,11 @@ const ActionButton = styled.button`
   color: #fff;
   background-color: ${({ bgColor }) => bgColor || "#2563eb"};
   transition: background-color 0.3s;
-  &:hover { opacity: 0.9; }
+  display: flex;
+  align-items: center;
+  &:hover {
+    opacity: 0.9;
+  }
 `;
 
 const CategoryFilter = styled.select`
@@ -292,14 +314,29 @@ const CategoryFilter = styled.select`
   margin-bottom: 12px;
 `;
 
-// ChatDashboard-komponent
+/**
+ * setAdminTyping(typing) - kaller /api/admin/typing for å si at admin skriver
+ */
+const setAdminTyping = async (typing) => {
+  try {
+    await fetch("http://localhost:5000/api/admin/typing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ typing })
+    });
+  } catch (error) {
+    console.error("Error setting admin typing:", error);
+  }
+};
+
+// ChatDashboard component
 const ChatDashboard = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [adminReply, setAdminReply] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
-  // Hent samtaler
+  // Fetch conversations
   const fetchConversations = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/conversations");
@@ -310,7 +347,7 @@ const ChatDashboard = () => {
     }
   };
 
-  // Polling hver 10. sekund for oppdatering
+  // Poll every 10 seconds
   useEffect(() => {
     fetchConversations();
     const intervalId = setInterval(fetchConversations, 10000);
@@ -322,6 +359,14 @@ const ChatDashboard = () => {
     setAdminReply("");
   };
 
+  // Kalles når admin skriver i tekstfeltet
+  const handleAdminTextChange = (e) => {
+    setAdminReply(e.target.value);
+    // Oppdater serveren om at admin skriver (hvis feltet ikke er tomt)
+    setAdminTyping(e.target.value.trim().length > 0);
+  };
+
+  // Send admin-reply
   const handleAdminReply = async (conversationId) => {
     if (!adminReply.trim()) return;
     try {
@@ -334,9 +379,13 @@ const ChatDashboard = () => {
         }
       );
       if (!res.ok) throw new Error("Failed to send admin reply");
+
+      // Etter å ha sendt melding, si fra at admin ikke lenger skriver
+      await setAdminTyping(false);
+
       setAdminReply("");
       await fetchConversations();
-      // Hent oppdatert samtale
+      // Get updated conversation
       const updatedRes = await fetch(
         `http://localhost:5000/api/conversations/${conversationId}`
       );
@@ -347,6 +396,7 @@ const ChatDashboard = () => {
     }
   };
 
+  // Slett en samtale
   const handleDeleteConversation = async (conversationId) => {
     try {
       const res = await fetch(
@@ -361,6 +411,7 @@ const ChatDashboard = () => {
     }
   };
 
+  // Lukk en samtale
   const handleCloseConversation = async (conversationId) => {
     try {
       const res = await fetch(
@@ -383,7 +434,7 @@ const ChatDashboard = () => {
     }
   };
 
-  // Filtrering på kategori
+  // Filter by category
   const filteredConversations =
     categoryFilter === "All"
       ? conversations
@@ -391,15 +442,17 @@ const ChatDashboard = () => {
 
   return (
     <ChatDashboardContainer>
-      <CardTitle style={{ color: "#111" }}>Live Chat Conversations</CardTitle>
-      <p style={{ marginBottom: "1rem", color: "#111" }}>
-        Her kan du se alle samtaler og svare direkte.
+      <CardTitle style={{ color: "#111" }}>Live Chat</CardTitle>
+      <p style={{ marginBottom: "1rem", color: "#111", fontSize: "0.9rem" }}>
+        • See all ongoing chats.  
+        • Reply as admin (blue text).  
+        • Bot is purple text.
       </p>
       <CategoryFilter
         value={categoryFilter}
         onChange={(e) => setCategoryFilter(e.target.value)}
       >
-        <option value="All">Alle kategorier</option>
+        <option value="All">All categories</option>
         <option value="Games">Games</option>
         <option value="General">General</option>
         <option value="Work">Work</option>
@@ -410,9 +463,9 @@ const ChatDashboard = () => {
       </CategoryFilter>
       <ChatListWrapper>
         <ChatList>
-          <h3 style={{ marginTop: 0 }}>Samtaler</h3>
+          <h3 style={{ marginTop: 0 }}>Conversations</h3>
           {filteredConversations.length === 0 ? (
-            <p>Ingen samtaler funnet.</p>
+            <p>No conversations found.</p>
           ) : (
             filteredConversations.map((conv) => (
               <ChatListItem
@@ -423,11 +476,11 @@ const ChatDashboard = () => {
                 }
                 onClick={() => handleSelectConversation(conv)}
               >
-                <strong>{conv.name || "Ukjent bruker"}</strong>
+                <strong>{conv.name || "Unknown user"}</strong>
                 <p style={{ fontSize: "0.85rem", color: "#555", margin: 0 }}>
                   {conv.messages && conv.messages.length > 0
                     ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
-                    : "Ingen meldinger"}
+                    : "No messages"}
                 </p>
               </ChatListItem>
             ))
@@ -437,26 +490,26 @@ const ChatDashboard = () => {
           {selectedConversation ? (
             <div>
               <h3 style={{ marginTop: 0 }}>
-                Samtale med {selectedConversation.name || "Ukjent bruker"}
+                Chat with {selectedConversation.name || "Unknown user"}
               </h3>
               <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
-                E-post: {selectedConversation.email || "Ukjent"}
+                Email: {selectedConversation.email || "Unknown"}
               </p>
               <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
-                Kategori: {selectedConversation.category || "Ingen"}
+                Category: {selectedConversation.category || "None"}
               </p>
               <MessagesContainer>
                 {selectedConversation.messages.map((msg, index) => (
-                  <MessageItem key={index}>
+                  <MessageItem key={index} sender={msg.sender}>
                     <strong>{msg.sender.toUpperCase()}:</strong> {msg.text}
                   </MessageItem>
                 ))}
               </MessagesContainer>
               <AdminTextArea
                 rows="3"
-                placeholder="Skriv svar..."
+                placeholder="Write a reply..."
                 value={adminReply}
-                onChange={(e) => setAdminReply(e.target.value)}
+                onChange={handleAdminTextChange} // <--- Kaller setAdminTyping
               />
               <ActionButtons>
                 <ActionButton
@@ -465,7 +518,7 @@ const ChatDashboard = () => {
                     handleAdminReply(selectedConversation.conversationId)
                   }
                 >
-                  Send Svar
+                  Send Reply
                 </ActionButton>
                 <ActionButton
                   bgColor="#f59e0b"
@@ -473,7 +526,7 @@ const ChatDashboard = () => {
                     handleCloseConversation(selectedConversation.conversationId)
                   }
                 >
-                  Lukk Samtale <FiLock style={{ marginLeft: "4px" }} />
+                  Close <FiLock style={{ marginLeft: "4px" }} />
                 </ActionButton>
                 <ActionButton
                   bgColor="#dc2626"
@@ -481,12 +534,12 @@ const ChatDashboard = () => {
                     handleDeleteConversation(selectedConversation.conversationId)
                   }
                 >
-                  Slett <FiTrash2 style={{ marginLeft: "4px" }} />
+                  Delete <FiTrash2 style={{ marginLeft: "4px" }} />
                 </ActionButton>
               </ActionButtons>
             </div>
           ) : (
-            <p>Velg en samtale for å se detaljer.</p>
+            <p>Select a conversation.</p>
           )}
         </ChatDetails>
       </ChatListWrapper>
@@ -499,6 +552,8 @@ const Admin = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [themeMode, setThemeMode] = useState("dark");
+  const [adminAvailable, setAdminAvailable] = useState(false);
+
   const [users, setUsers] = useState([
     { id: 1, name: "User 1 (Admin)" },
     { id: 2, name: "User 2 (Editor)" },
@@ -507,8 +562,38 @@ const Admin = () => {
   const [newUserName, setNewUserName] = useState("");
   const [reportsFilter, setReportsFilter] = useState("");
 
+  const fetchAdminAvailability = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/availability");
+      const data = await res.json();
+      setAdminAvailable(data.adminAvailable);
+    } catch (error) {
+      console.error("Error fetching admin availability:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminAvailability();
+  }, []);
+
   const toggleTheme = () => {
     setThemeMode(themeMode === "light" ? "dark" : "light");
+  };
+
+  const toggleAdminAvailability = async () => {
+    try {
+      const newVal = !adminAvailable;
+      const res = await fetch("http://localhost:5000/api/admin/availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ available: newVal })
+      });
+      if (!res.ok) throw new Error("Failed to update availability");
+      const data = await res.json();
+      setAdminAvailable(data.adminAvailable);
+    } catch (error) {
+      console.error("Error updating admin availability:", error);
+    }
   };
 
   const addUser = () => {
@@ -519,7 +604,7 @@ const Admin = () => {
   };
 
   const clearLogs = () => {
-    alert("Logs cleared (dummy function)");
+    alert("Logs cleared (dummy function).");
   };
 
   const renderContent = () => {
@@ -529,13 +614,11 @@ const Admin = () => {
           <>
             <CardTitle>Dashboard Overview</CardTitle>
             <p style={{ marginBottom: 16 }}>
-              This is a placeholder for your main dashboard content.
+              • Main dashboard content goes here.
             </p>
             <Card>
               <CardTitle>Activity Summary</CardTitle>
-              <p>
-                Transactions this week: <strong>5.18k</strong>
-              </p>
+              <p>Transactions this week: <strong>5.18k</strong></p>
               <button onClick={() => alert("Data updated!")}>
                 Update Data
               </button>
@@ -543,6 +626,7 @@ const Admin = () => {
           </>
         );
       case "Tickets":
+        // Chat (live chat) dash
         return <ChatDashboard />;
       case "Users":
         return (
@@ -578,6 +662,13 @@ const Admin = () => {
                 <button onClick={toggleTheme}>
                   Switch to {themeMode === "light" ? "Dark" : "Light"} Mode
                 </button>
+              </div>
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label>Admin Availability</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <p style={{ margin: 0 }}>{adminAvailable ? "Available" : "Unavailable"}</p>
+                <button onClick={toggleAdminAvailability}>Toggle</button>
               </div>
             </div>
             <div style={{ marginBottom: "16px" }}>
@@ -632,7 +723,7 @@ const Admin = () => {
         return (
           <>
             <CardTitle>Analytics</CardTitle>
-            <p>This section can later be extended with charts and graphs.</p>
+            <p>This section can have charts and graphs later.</p>
             <Card>
               <CardTitle>Simple Analytics</CardTitle>
               <p>Dummy data:</p>
@@ -778,13 +869,13 @@ const Admin = () => {
             <RightSidebar>
               <Card>
                 <CardTitle>Quick Info</CardTitle>
-                <p>This section can display fast stats or mini charts.</p>
+                <p>Fast stats or mini charts can go here.</p>
               </Card>
               <Card>
                 <CardTitle>Extra Widget</CardTitle>
                 <p>Additional content can be placed here.</p>
               </Card>
-              {/* Bifrost (live chat-knapp) vises også i adminpanelet */}
+              {/* Bifrost (live chat button) also appears in the admin panel */}
               <Bifrost />
             </RightSidebar>
           </ContentWrapper>
