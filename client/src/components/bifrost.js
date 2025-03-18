@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
 
 // Ikon til den flytende knappen
 const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
@@ -17,6 +17,17 @@ const colors = {
   buttonBg: '#1A1F2E',
   buttonHover: '#2C354F'
 };
+
+const GlobalStyle = createGlobalStyle`
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
+      -webkit-text-fill-color: #E0E0E0 !important;
+      transition: background-color 5000s ease-in-out 0s;
+  }
+`;
 
 const getTimeGreeting = () => {
   const hour = new Date().getHours();
@@ -143,6 +154,13 @@ const PanelHeader = styled.div`
   align-items: center;
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  height: 60px; /* Set a fixed height to ensure consistency */
+`;
+
+const GreetingText = styled.span`
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: ${colors.textLight};
 `;
 
 const CloseButton = styled.button`
@@ -151,11 +169,26 @@ const CloseButton = styled.button`
   background: transparent;
   border: none;
   color: ${colors.textLight};
-  font-size: 1.4rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+  height: 30px;
   transition: transform 0.2s ease;
+  
   &:hover {
     transform: scale(1.2);
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  svg {
+    width: 100%;
+    height: 100%;
   }
 `;
 
@@ -165,11 +198,26 @@ const BackButton = styled.button`
   background: transparent;
   border: none;
   color: ${colors.textLight};
-  font-size: 1.4rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+  height: 30px;
   transition: transform 0.2s ease;
+  
   &:hover {
     transform: scale(1.2);
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+  
+  svg {
+    width: 100%;
+    height: 100%;
   }
 `;
 
@@ -274,7 +322,7 @@ const InputField = styled.input`
   flex: 1;
   padding: 10px;
   border: 2px solid ${colors.buttonBorder};
-  background-color: #1f1f1f;
+  background-color: rgb(11, 9, 29);
   color: ${colors.textLight};
   border-radius: 8px;
   font-size: 1rem;
@@ -282,8 +330,14 @@ const InputField = styled.input`
     outline: none;
     border-color: ${colors.buttonHover};
   }
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover, 
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
+    -webkit-text-fill-color: #E0E0E0 !important;
+  }
 `;
-
 // Use a functional component to avoid rendering StyledButton directly
 const SendButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
 const SendButton = styled(SendButtonComponent)``;
@@ -300,10 +354,10 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  width: 100%;
+  width: 90%;
   padding: 12px 16px;
   border: 2px solid ${colors.buttonBorder};
-  background-color: #1f1f1f;
+  background-color:rgb(11, 9, 29);
   color: ${colors.textLight};
   border-radius: 8px;
   font-size: 1rem;
@@ -318,7 +372,7 @@ const Select = styled.select`
   width: 100%;
   padding: 12px 16px;
   border: 2px solid ${colors.buttonBorder};
-  background-color: #1f1f1f;
+  background-color:rgb(11, 9, 29);
   color: ${colors.textLight};
   border-radius: 8px;
   font-size: 1rem;
@@ -330,10 +384,10 @@ const Select = styled.select`
 `;
 
 const TextArea = styled.textarea`
-  width: 100%;
+  width: 90%;
   padding: 12px 16px;
   border: 2px solid ${colors.buttonBorder};
-  background-color: #1f1f1f;
+  background-color:rgb(11, 9, 29);
   color: ${colors.textLight};
   border-radius: 8px;
   font-size: 1rem;
@@ -718,6 +772,7 @@ const Bifrost = () => {
 
   return (
     <>
+    <GlobalStyle />
       <FloatingButtonWrapper>
         <FloatingButton onClick={isOpen ? closePanel : openPanel} isOpen={isOpen}>
           <img src={BUTTON_IMAGE} alt="Chat Icon" />
@@ -726,9 +781,27 @@ const Bifrost = () => {
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
-            {step !== 0 && <BackButton onClick={handleBack} style={{fontSize:'22px'}}>◁</BackButton>}
-            {getTimeGreeting()}
-            <CloseButton onClick={closePanel} style={{fontSize:'18px'}}>⛌</CloseButton>
+            {step !== 0 && (
+              <BackButton onClick={handleBack}>
+                <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                  <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                  <g id="SVGRepo_iconCarrier">
+                    <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
+                  </g>
+                </svg>
+              </BackButton>
+            )}
+            <GreetingText>{getTimeGreeting()}</GreetingText>
+            <CloseButton onClick={closePanel}>
+              <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                  <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
+                </g>
+              </svg>
+            </CloseButton>
           </PanelHeader>
           <PanelBody>
             {renderContent()}

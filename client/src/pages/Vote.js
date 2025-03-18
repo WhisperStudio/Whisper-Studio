@@ -8,7 +8,7 @@ import Header from '../components/header';
 import Norse from '../Fonts/Norse-KaWl.otf';
 
 import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
-import backgroundMusic from '../images/Meet Again.mp3'; // Bytt til riktig path/filnavn
+import backgroundMusic from '../bilder/VOTE-MUSIC.mp3'; // Bytt til riktig path/filnavn
 
 // Global styles
 const GlobalStyle = createGlobalStyle`
@@ -252,7 +252,7 @@ const PageWrapper = styled.div`
 const MuteButton = styled.button`
   position: fixed;
   bottom: 2rem;
-  right: 2rem;
+  left: 2rem;
   z-index: 9999;
   padding: 0.8rem 1.2rem;
   font-size: 1rem;
