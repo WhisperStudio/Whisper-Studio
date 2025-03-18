@@ -215,11 +215,11 @@ const CardTitle = styled.h2`
 
 // =========== CHAT DASHBOARD ===========
 const ChatDashboardContainer = styled.div`
-  background: linear-gradient(135deg, #ffffff, #f3f4f6);
+  background: #0b1121; 
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  color: #111;
+  box-shadow: 0 30px 40px rgba(0, 0, 0, 0.25);
+  color: white;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -242,10 +242,10 @@ const ChatListItem = styled.div`
   padding: 8px;
   border-bottom: 1px solid #ddd;
   cursor: pointer;
-  background: ${({ active }) => (active ? "#e0e7ff" : "transparent")};
+  background: ${({ active }) => (active ? "#182547" : "transparent")};
   transition: background 0.2s;
   &:hover {
-    background: #f3f4ff;
+    background:rgb(38, 55, 100);
   }
 `;
 
@@ -261,7 +261,7 @@ const MessagesContainer = styled.div`
   padding: 8px;
   margin-bottom: 8px;
   border-radius: 8px;
-  background: #fff;
+  background: #FAF9FA ;
 `;
 
 // Color-code messages
@@ -269,9 +269,9 @@ const MessageItem = styled.div`
   margin-bottom: 8px;
   line-height: 1.4;
   color: ${({ sender }) => {
-    if (sender === 'bot') return '#9D4EDD';   // Purple for bot
+    if (sender === 'bot') return '#7824BC';   // Purple for bot
     if (sender === 'admin') return '#3B82F6'; // Blue for admin
-    if (sender === 'user') return '#111';     // Dark text for user
+    if (sender === 'user') return '#484F5D';     // Dark text for user
     return '#000';
   }};
 `;
@@ -310,8 +310,14 @@ const ActionButton = styled.button`
 const CategoryFilter = styled.select`
   padding: 6px 12px;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid rgb(49, 54, 77);
   margin-bottom: 12px;
+  background-color: #1A1F2E;
+  color: #fff;
+`;
+
+const p = styled.select`
+color: red;
 `;
 
 /**
@@ -442,10 +448,10 @@ const ChatDashboard = () => {
 
   return (
     <ChatDashboardContainer>
-      <CardTitle style={{ color: "#111" }}>Live Chat</CardTitle>
-      <p style={{ marginBottom: "1rem", color: "#111", fontSize: "0.9rem" }}>
-        • See all ongoing chats.  
-        • Reply as admin (blue text).  
+      <CardTitle style={{ color: "white" }}>Live Chat</CardTitle>
+      <p style={{ marginBottom: "1rem", marginLeft: "1rem", color: "white", fontSize: "0.9rem" }}>
+        • See all ongoing chats.    
+        • Reply as admin (blue text).      
         • Bot is purple text.
       </p>
       <CategoryFilter
@@ -477,7 +483,7 @@ const ChatDashboard = () => {
                 onClick={() => handleSelectConversation(conv)}
               >
                 <strong>{conv.name || "Unknown user"}</strong>
-                <p style={{ fontSize: "0.85rem", color: "#555", margin: 0 }}>
+                <p style={{ fontSize: "0.85rem", color: "white", margin: 0 }}>
                   {conv.messages && conv.messages.length > 0
                     ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
                     : "No messages"}
@@ -492,10 +498,10 @@ const ChatDashboard = () => {
               <h3 style={{ marginTop: 0 }}>
                 Chat with {selectedConversation.name || "Unknown user"}
               </h3>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+              <p style={{ marginBottom: 10, fontSize: "0.9rem", color: "white" }}>
                 Email: {selectedConversation.email || "Unknown"}
               </p>
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+              <p style={{ marginBottom: 10, fontSize: "0.9rem", color: "white" }}>
                 Category: {selectedConversation.category || "None"}
               </p>
               <MessagesContainer>

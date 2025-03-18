@@ -661,7 +661,7 @@ const Bifrost = () => {
         return (
           <>
             <ul style={{ marginBottom: '1rem' }}>
-              <li>Vil du snakke med Chatbot eller Admin?</li>
+              <li>Would you prefer a Chatbot or an Admin to talk to?</li>
             </ul>
             <div style={{ display: 'flex', gap: '8px' }}>
               <NextButton onClick={handleChooseChatbot}>Chatbot</NextButton>
@@ -673,8 +673,8 @@ const Bifrost = () => {
         return (
           <>
             <ul style={{ marginBottom: '1rem' }}>
-              <li>Ingen admin er tilgjengelig nå.</li>
-              <li>Vil du bruke Chatbot eller sende en ticket?</li>
+              <li>No admin is available right now.</li>
+              <li>Do you want to use a Chatbot or send inn a ticket?</li>
             </ul>
             <div style={{ display: 'flex', gap: '8px' }}>
               <NextButton onClick={handleFallbackChatbot}>Chatbot</NextButton>
@@ -686,7 +686,7 @@ const Bifrost = () => {
         return (
           <form onSubmit={handleCategorySubmit}>
             <ul style={{ marginBottom: '1rem' }}>
-              <li>Velg kategori</li>
+              <li>Choose category</li>
             </ul>
             <FormField>
               <Label htmlFor="category">Category</Label>
@@ -727,7 +727,7 @@ const Bifrost = () => {
         return (
           <form onSubmit={handlePreChatSubmit}>
             <ul style={{ marginBottom: '1rem' }}>
-              <li>Oppgi dine detaljer</li>
+              <li>Enter your details</li>
             </ul>
             <FormField>
               <Label htmlFor="email">Email</Label>
