@@ -123,11 +123,11 @@ const Footer = () => {
           <Title>Get in Touch</Title>
           <ContactItem>
             <FaEnvelope />
-            <Link href="mailto:info@whisperstudio.com">info@vintrastudio.com</Link>
+            <Link href="mailto:support@vintrastudio.com">support@vintrastudio.com</Link>
           </ContactItem>
           <ContactItem>
             <FaPhone />
-            <Link href="tel:+1234567890">+1234567890</Link>
+            <Link href="tel:+1234567890">coming soon</Link>
           </ContactItem>
         </Column>
         <Column>
