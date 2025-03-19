@@ -482,11 +482,18 @@ const ChatDashboard = () => {
                 }
                 onClick={() => handleSelectConversation(conv)}
               >
-                <strong>{conv.name || "Unknown user"}</strong>
-                <p style={{ fontSize: "0.85rem", color: "white", margin: 0 }}>
+                <div style={{  }}><strong style={{ color: "#fff", fontSize: "1.1rem" }}>{conv.name || "Unknown user"}</strong>
+                <strong style={{ color: "#fff", marginLeft: "10px" }}>:</strong>
+                <strong style={{ fontSize: "0.75rem", color: "#fff", marginLeft: "10px" }}> {new Date(conv.createdAt).toLocaleString()} </strong>
+                </div>
+                
+                <p style={{ fontSize: "0.75rem", color: "white" }}>
                   {conv.messages && conv.messages.length > 0
                     ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
                     : "No messages"}
+                </p>
+                <p style={{ fontSize: "0.75rem", color: "#aaa" }}>
+                  Sist Redigert : {new Date(conv.updatedAt).toLocaleString()}
                 </p>
               </ChatListItem>
             ))
