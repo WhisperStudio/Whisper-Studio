@@ -240,6 +240,7 @@ const ChatList = styled.div`
 
 const ChatListItem = styled.div`
   padding: 8px;
+  border-top: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
   cursor: pointer;
   background: ${({ active }) => (active ? "#182547" : "transparent")};
@@ -468,37 +469,76 @@ const ChatDashboard = () => {
         <option value="Other">Other</option>
       </CategoryFilter>
       <ChatListWrapper>
-        <ChatList>
-          <h3 style={{ marginTop: 0 }}>Conversations</h3>
-          {filteredConversations.length === 0 ? (
-            <p>No conversations found.</p>
-          ) : (
-            filteredConversations.map((conv) => (
-              <ChatListItem
-                key={conv.conversationId}
-                active={
-                  selectedConversation &&
-                  selectedConversation.conversationId === conv.conversationId
-                }
-                onClick={() => handleSelectConversation(conv)}
-              >
-                <div style={{  }}><strong style={{ color: "#fff", fontSize: "1.1rem" }}>{conv.name || "Unknown user"}</strong>
-                <strong style={{ color: "#fff", marginLeft: "10px" }}>:</strong>
-                <strong style={{ fontSize: "0.75rem", color: "#fff", marginLeft: "10px" }}> {new Date(conv.createdAt).toLocaleString()} </strong>
-                </div>
-                
-                <p style={{ fontSize: "0.75rem", color: "white" }}>
-                  {conv.messages && conv.messages.length > 0
-                    ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
-                    : "No messages"}
-                </p>
-                <p style={{ fontSize: "0.75rem", color: "#aaa" }}>
-                  Sist Redigert : {new Date(conv.updatedAt).toLocaleString()}
-                </p>
-              </ChatListItem>
-            ))
-          )}
-        </ChatList>
+      <ChatList>
+  <h3 style={{ marginTop: 0 }}>Conversations</h3>
+  {filteredConversations.length === 0 ? (
+    <p>No conversations found.</p>
+  ) : (
+    filteredConversations.map((conv) => {
+      const lastSender =
+        conv.messages && conv.messages.length > 0
+          ? conv.messages[conv.messages.length - 1].sender.toLowerCase()
+          : "ingen";
+
+      // Bestem farge basert på sender
+      const senderColor =
+        lastSender === "bot"
+          ? "#7824BC" // Lilla for bot
+          : lastSender === "admin"
+          ? "#3B82F6" // Blå for admin
+          : lastSender === "user"
+          ? "#484F5D" // Mørk tekst for user
+          : "#aaa"; // Standardfarge
+
+      return (
+        <ChatListItem
+          key={conv.conversationId}
+          active={
+            selectedConversation &&
+            selectedConversation.conversationId === conv.conversationId
+          }
+          onClick={() => handleSelectConversation(conv)}
+        >
+          <div>
+            <strong style={{ color: "#fff", fontSize: "1.1rem" }}>
+              {conv.name || "Unknown user"}
+            </strong>
+            <strong style={{ color: "#fff", marginLeft: "10px" }}>:</strong>
+            <strong
+              style={{
+                fontSize: "0.75rem",
+                color: "#fff",
+                marginLeft: "10px",
+              }}
+            >
+              {new Date(conv.createdAt).toLocaleString()}
+            </strong>
+          </div>
+
+          <p style={{ fontSize: "0.85rem", color: "white", margin: 0 }}>
+            {conv.messages && conv.messages.length > 0
+              ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
+              : "No messages"}
+          </p>
+          <p
+            style={{
+              fontSize: "0.75rem",
+              color: "#aaa",
+              margin: "4px 0 0 0",
+            }}
+          >
+            Sist Redigert{" "}
+            <strong style={{ color: senderColor }}>
+              {lastSender.toUpperCase()}
+            </strong>{" "}
+            : {new Date(conv.updatedAt).toLocaleString()}
+          </p>
+        </ChatListItem>
+      );
+    })
+  )}
+</ChatList>
+
         <ChatDetails>
           {selectedConversation ? (
             <div>
