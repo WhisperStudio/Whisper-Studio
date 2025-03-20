@@ -248,7 +248,7 @@ const Admin = () => {
 
   const fetchAdminAvailability = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/admin/availability");
+      const res = await fetch("http://104.248.132.57:5000/api/admin/availability");
       const data = await res.json();
       setAdminAvailable(data.adminAvailable);
     } catch (error) {
@@ -267,7 +267,7 @@ const Admin = () => {
   const toggleAdminAvailability = async () => {
     try {
       const newVal = !adminAvailable;
-      const res = await fetch("http://localhost:5000/api/admin/availability", {
+      const res = await fetch("http://104.248.132.57:5000/api/admin/availability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ available: newVal })
