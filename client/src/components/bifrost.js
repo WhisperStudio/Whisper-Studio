@@ -350,7 +350,7 @@ const Bifrost = () => {
 
   // Hent adminAvailable én gang
   useEffect(() => {
-    fetch('http://localhost:5000/api/admin/availability')
+    fetch('http://104.248.132.57:5000/api/admin/availability')
       .then(res => res.json())
       .then(data => setAdminAvailable(data.adminAvailable))
       .catch(err => console.error('Error fetching admin availability:', err));
@@ -360,7 +360,7 @@ const Bifrost = () => {
   useEffect(() => {
     if (!conversationId || step !== 3) return;
     const interval = setInterval(() => {
-      fetch(`http://localhost:5000/api/conversations/${conversationId}`)
+      fetch(`http://104.248.132.57:5000/api/conversations/${conversationId}`)
         .then(res => {
           if (!res.ok) throw new Error('Could not fetch conversation');
           return res.json();
@@ -420,7 +420,7 @@ const Bifrost = () => {
     e.preventDefault();
     try {
       setIsTyping(true);
-      const response = await fetch("http://localhost:5000/api/chat", {
+      const response = await fetch("http://104.248.132.57:5000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -460,7 +460,7 @@ const Bifrost = () => {
   const handleTicketSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:5000/api/tickets", {
+      const res = await fetch("http://104.248.132.57:5000/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ticketForm)
@@ -489,7 +489,7 @@ const Bifrost = () => {
     setInputMessage("");
     try {
       setIsTyping(true);
-      await fetch("http://localhost:5000/api/chat", {
+      await fetch("http://104.248.132.57:5000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, message: messageToSend, userWantsAdmin })
