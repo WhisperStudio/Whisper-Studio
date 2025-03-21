@@ -114,7 +114,7 @@ const CardTitle = styled.h2`
 // Funksjon for å signalisere at admin skriver
 const setAdminTyping = async (typing) => {
   try {
-    await fetch("http://104.248.132.57:5000/api/admin/typing", {
+    await fetch("https://api.vintrastudio.com/api/admin/typing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ typing })
@@ -134,7 +134,7 @@ const ChatDashboard = () => {
   // Hent samtaler fra API-et
   const fetchConversations = async () => {
     try {
-      const res = await fetch("http://104.248.132.57:5000/api/conversations");
+      const res = await fetch("https://api.vintrastudio.com/api/conversations");
       const data = await res.json();
       setConversations(data);
     } catch (error) {
@@ -165,7 +165,7 @@ const ChatDashboard = () => {
     if (!adminReply.trim()) return;
     try {
       const res = await fetch(
-        `http://104.248.132.57:5000/api/conversations/${conversationId}/reply`,
+        `https://api.vintrastudio.com/api/conversations/${conversationId}/reply`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -181,7 +181,7 @@ const ChatDashboard = () => {
       await fetchConversations();
       // Hent oppdatert samtale
       const updatedRes = await fetch(
-        `http://104.248.132.57:5000/api/conversations/${conversationId}`
+        `https://api.vintrastudio.com/api/conversations/${conversationId}`
       );
       const updatedConv = await updatedRes.json();
       setSelectedConversation(updatedConv);
@@ -194,7 +194,7 @@ const ChatDashboard = () => {
   const handleDeleteConversation = async (conversationId) => {
     try {
       const res = await fetch(
-        `http://104.248.132.57:5000/api/conversations/${conversationId}`,
+        `https://api.vintrastudio.com/api/conversations/${conversationId}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error("Failed to delete conversation");
@@ -209,7 +209,7 @@ const ChatDashboard = () => {
   const handleCloseConversation = async (conversationId) => {
     try {
       const res = await fetch(
-        `http://104.248.132.57:5000/api/conversations/${conversationId}`,
+        `https://api.vintrastudio.com/api/conversations/${conversationId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -219,7 +219,7 @@ const ChatDashboard = () => {
       if (!res.ok) throw new Error("Failed to close conversation");
       await fetchConversations();
       const updatedRes = await fetch(
-        `http://104.248.132.57:5000/api/conversations/${conversationId}`
+        `https://api.vintrastudio.com/api/conversations/${conversationId}`
       );
       const updatedConv = await updatedRes.json();
       setSelectedConversation(updatedConv);
