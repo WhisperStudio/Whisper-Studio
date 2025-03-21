@@ -1,4 +1,4 @@
-// src/pages/Tickets.js
+// src/components/Tickets.js
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FiTrash2, FiCheckCircle } from "react-icons/fi";

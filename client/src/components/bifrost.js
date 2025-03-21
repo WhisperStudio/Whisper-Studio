@@ -1,23 +1,26 @@
+// src/components/bifrost.js
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
+import { FiTrash2, FiCheckCircle } from "react-icons/fi";
 
 // Ikon til den flytende knappen
 const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
 
-// Dark-blue theme
+// Farger brukt i komponenten
 const colors = {
   backgroundDark: '#0b1121',
   panelDark: '#152238',
   textLight: '#E0E0E0',
-  userBubble: '#1E40AF', // Blå
-  botBubble: '#1E293B',  // Mørkblå
-  adminBubble: '#8B008B', // Lilla (admin)
+  userBubble: '#1E40AF',
+  botBubble: '#1E293B',
+  adminBubble: '#8B008B',
   white: '#FFFFFF',
   buttonBorder: '#1c2e4e',
   buttonBg: '#1A1F2E',
   buttonHover: '#2C354F'
 };
 
+// Global styling
 const GlobalStyle = createGlobalStyle`
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
@@ -29,6 +32,7 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+// Funksjon for å hente en tidsspesifikk hilsen
 const getTimeGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -36,7 +40,7 @@ const getTimeGreeting = () => {
   return 'Good evening';
 };
 
-// Animations
+// Animasjoner
 const popUp = keyframes`
   0% {
     transform: translateY(50%) scale(0.3);
@@ -69,7 +73,123 @@ const dotPulse = keyframes`
   100% { opacity: 0.2; }
 `;
 
-// Styled Components
+// Styled components for modal
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ModalContent = styled.div`
+  background-color: ${({ theme }) => theme?.cardBg || colors.panelDark};
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  position: relative;
+`;
+
+// Styled components for formfelter i modalen
+const FormField = styled.div`
+  margin-bottom: 18px;
+`;
+
+const Label = styled.label`
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: ${colors.textLight};
+`;
+
+const Input = styled.input`
+  width: 90%;
+  padding: 12px 16px;
+  border: 2px solid ${colors.buttonBorder};
+  background-color: rgb(11, 9, 29);
+  color: ${colors.textLight};
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+  &:focus {
+    border-color: ${colors.buttonHover};
+    outline: none;
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid ${colors.buttonBorder};
+  background-color: rgb(11, 9, 29);
+  color: ${colors.textLight};
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+  &:focus {
+    border-color: ${colors.buttonHover};
+    outline: none;
+  }
+`;
+
+const TextArea = styled.textarea`
+  width: 90%;
+  padding: 12px 16px;
+  border: 2px solid ${colors.buttonBorder};
+  background-color: rgb(11, 9, 29);
+  color: ${colors.textLight};
+  border-radius: 8px;
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  &:focus {
+    border-color: ${colors.buttonHover};
+    outline: none;
+  }
+`;
+
+// Styled knapper for skjema
+const NextButton = styled.button`
+  border: 2px solid ${colors.buttonBorder};
+  background-color: ${colors.buttonBg};
+  color: ${colors.white};
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+  &:hover {
+    background-color: ${colors.buttonHover};
+  }
+`;
+
+const SubmitButton = styled.button`
+  border: 2px solid ${colors.buttonBorder};
+  background-color: ${colors.buttonBg};
+  color: ${colors.white};
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+  &:hover {
+    background-color: ${colors.buttonHover};
+  }
+`;
+
+// Hoved-styled components for livechat-panelet
 const FloatingButtonWrapper = styled.div`
   position: fixed;
   bottom: 20px;
@@ -133,7 +253,7 @@ const ChatPanel = styled.div`
   background: ${colors.panelDark};
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
   animation: ${popUp} 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
   transform-origin: bottom right;
   z-index: 1200;
@@ -141,7 +261,6 @@ const ChatPanel = styled.div`
   flex-direction: column;
 `;
 
-// Header med skygge og tilbake knapp
 const PanelHeader = styled.div`
   background: linear-gradient(135deg, #152238, #1c2e4e);
   padding: 15px 20px;
@@ -154,7 +273,7 @@ const PanelHeader = styled.div`
   align-items: center;
   position: relative;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  height: 60px; /* Set a fixed height to ensure consistency */
+  height: 60px;
 `;
 
 const GreetingText = styled.span`
@@ -177,15 +296,12 @@ const CloseButton = styled.button`
   width: 30px;
   height: 30px;
   transition: transform 0.2s ease;
-  
   &:hover {
     transform: scale(1.2);
   }
-  
   &:active {
     transform: scale(0.9);
   }
-  
   svg {
     width: 100%;
     height: 100%;
@@ -206,15 +322,12 @@ const BackButton = styled.button`
   width: 30px;
   height: 30px;
   transition: transform 0.2s ease;
-  
   &:hover {
     transform: scale(1.2);
   }
-  
   &:active {
     transform: scale(0.9);
   }
-  
   svg {
     width: 100%;
     height: 100%;
@@ -230,7 +343,6 @@ const PanelBody = styled.div`
   color: ${colors.textLight};
 `;
 
-// Chat messages
 const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -238,12 +350,6 @@ const MessagesContainer = styled.div`
   padding: 0 5px;
 `;
 
-/**
- * Meldingsfarger og plassering:
- * - bot => venstre, farge: botBubble
- * - admin => høyre, farge: adminBubble (lilla), litt ekstra margin
- * - user => høyre, farge: userBubble (blå)
- */
 const MessageBubble = styled.div`
   background: ${props =>
     props.sender === 'bot'
@@ -255,7 +361,6 @@ const MessageBubble = styled.div`
     props.sender === 'bot' ? colors.textLight : colors.white};
   align-self: ${props =>
     props.sender === 'bot' ? 'flex-start' : 'flex-end'};
-  /* Litt ekstra margin for admin-meldinger */
   margin-right: ${props => (props.sender === 'admin' ? '20px' : '0')};
   padding: 10px 14px;
   border-radius: 16px;
@@ -303,21 +408,6 @@ const InputContainer = styled.div`
   gap: 8px;
 `;
 
-const StyledButton = styled.button`
-  border: 2px solid ${colors.buttonBorder};
-  background-color: ${colors.buttonBg};
-  color: ${colors.white};
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s ease;
-  &:hover {
-    background-color: ${colors.buttonHover};
-  }
-`;
-
 const InputField = styled.input`
   flex: 1;
   padding: 10px;
@@ -330,101 +420,14 @@ const InputField = styled.input`
     outline: none;
     border-color: ${colors.buttonHover};
   }
-  &:-webkit-autofill,
-  &:-webkit-autofill:hover, 
-  &:-webkit-autofill:focus,
-  &:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
-    -webkit-text-fill-color: #E0E0E0 !important;
-  }
-`;
-// Use a functional component to avoid rendering StyledButton directly
-const SendButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
-const SendButton = styled(SendButtonComponent)``;
-
-const FormField = styled.div`
-  margin-bottom: 18px;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: ${colors.textLight};
-`;
-
-const Input = styled.input`
-  width: 90%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color:rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color:rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 90%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color:rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  resize: vertical;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-// Create functional components for the buttons to avoid direct styled component rendering
-const NextButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
-const NextButton = styled(NextButtonComponent)`
-  width: 100%;
-  margin-top: 10px;
-`;
-
-const SubmitButtonComponent = (props) => <StyledButton {...props}>{props.children}</StyledButton>;
-const SubmitButton = styled(SubmitButtonComponent)`
-  width: 100%;
-  margin-top: 10px;
 `;
 
 const Bifrost = () => {
-  /**
-   * Pre-chat steg:
-   * 0: Velg Chatbot / Admin
-   * 0.5: Fallback hvis admin ikke tilgjengelig
-   * 1: Velg kategori
-   * 2: Oppgi e-post, navn, melding
-   * 3: Chat
-   */
+  // Pre-chat steg: 0: velg chatbot/admin, 0.5: fallback hvis admin ikke er tilgjengelig, 1: kategori, 2: detaljer, 3: chat
   const [step, setStep] = useState(0);
   const [preChatCompleted, setPreChatCompleted] = useState(false);
 
-  // Conversation data
+  // Chat data
   const [conversationId, setConversationId] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -434,14 +437,10 @@ const Bifrost = () => {
 
   // Chat input
   const [inputMessage, setInputMessage] = useState("");
-
-  // "isTyping" for AI Bot
   const [isTyping, setIsTyping] = useState(false);
-
-  // Admin sin typing (polling)
   const [adminIsTyping, setAdminIsTyping] = useState(false);
 
-  // Pre-chat data
+  // Pre-chat / ticket data
   const [ticket, setTicket] = useState({
     category: '',
     email: '',
@@ -450,13 +449,12 @@ const Bifrost = () => {
     subCategory: ''
   });
 
-  // Åpne/lukke panel
+  // State for livechat-panelet og ticket modal
   const [isOpen, setIsOpen] = useState(false);
-  const openPanel = () => setIsOpen(true);
-  const closePanel = () => setIsOpen(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Hent adminAvailable én gang
+  // Hent admin availability én gang
   useEffect(() => {
     fetch('https://api.vintrastudio.com/api/admin/availability')
       .then(res => res.json())
@@ -464,7 +462,7 @@ const Bifrost = () => {
       .catch(err => console.error('Error fetching admin availability:', err));
   }, []);
 
-  // Poll for meldinger i conversation
+  // Poll for conversation messages
   useEffect(() => {
     if (!conversationId) return;
     const interval = setInterval(() => {
@@ -500,7 +498,7 @@ const Bifrost = () => {
     }
   }, [chatMessages, isTyping, adminIsTyping]);
 
-  // STEG 0: Velg Chatbot eller Admin
+  // Funksjoner for pre-chat steg og chat
   const handleChooseChatbot = () => {
     setUserWantsAdmin(false);
     setStep(1);
@@ -515,18 +513,16 @@ const Bifrost = () => {
     }
   };
 
-  // STEG 0.5: Fallback hvis admin ikke tilgjengelig
   const handleFallbackChatbot = () => {
     setUserWantsAdmin(false);
     setStep(1);
   };
 
+  // Når fallback for ticket skal vises – åpne ticket modal
   const handleFallbackTicket = () => {
-    alert("Ticket submission placeholder.\nImplementer din ticket-løsning her.");
-    setIsOpen(false);
+    setShowTicketModal(true);
   };
 
-  // STEG 1: Velg kategori
   const handleCategorySubmit = (e) => {
     e.preventDefault();
     if (ticket.category) {
@@ -534,8 +530,6 @@ const Bifrost = () => {
     }
   };
 
-  // STEG 2: E-post, navn, melding
-  // Alle samtaler starter med "Welcome to Vintra Support!"
   const handlePreChatSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -552,16 +546,14 @@ const Bifrost = () => {
           userWantsAdmin
         })
       });
-      if (!response.ok) throw new Error("Error communicating with ChatGPT/admin flow");
+      if (!response.ok) throw new Error("Error communicating with chat API");
       const data = await response.json();
       setConversationId(data.conversationId);
-      // Legg inn en "Welcome to Vintra Support!" melding manuelt i chatten.
       const welcomeMsg = {
         sender: userWantsAdmin ? 'admin' : 'bot',
         text: "Welcome to Vintra Support!",
         timestamp: new Date()
       };
-      // Hvis brukeren skrev en melding i pre-chat
       const userMsg = ticket.message.trim() ? {
         sender: "user",
         text: ticket.message,
@@ -577,7 +569,6 @@ const Bifrost = () => {
     }
   };
 
-  // STEG 3: Chat
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     const messageToSend = inputMessage;
@@ -603,7 +594,6 @@ const Bifrost = () => {
     }
   };
 
-  // Funksjon for å gå ett steg tilbake
   const handleBack = () => {
     if (step === 3) {
       setStep(2);
@@ -614,9 +604,33 @@ const Bifrost = () => {
     }
   };
 
-  // Render innhold for hvert steg
+  // Funksjon for å sende ticket (brukes i ticket modal)
+  const handleTicketSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const ticketPayload = {
+        category: ticket.category,
+        subCategory: ticket.subCategory,
+        email: ticket.email,
+        name: ticket.name,
+        message: ticket.message,
+      };
+      const res = await fetch("https://api.vintrastudio.com/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ticketPayload),
+      });
+      if (!res.ok) throw new Error("Failed to submit ticket");
+      alert("Ticket submitted successfully!");
+      setShowTicketModal(false);
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error submitting ticket:", error);
+      alert("There was an error submitting your ticket. Please try again.");
+    }
+  };
+
   const renderContent = () => {
-    // STEG 3: Chat
     if (step === 3 && preChatCompleted) {
       return (
         <>
@@ -649,13 +663,12 @@ const Bifrost = () => {
               onChange={e => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
             />
-            <SendButton onClick={handleSendMessage}>Send</SendButton>
+            <NextButton onClick={handleSendMessage}>Send</NextButton>
           </InputContainer>
         </>
       );
     }
 
-    // Pre-chat steg: 0, 0.5, 1, 2!
     switch (step) {
       case 0:
         return (
@@ -674,7 +687,7 @@ const Bifrost = () => {
           <>
             <ul style={{ marginBottom: '1rem' }}>
               <li>No admin is available right now.</li>
-              <li>Do you want to use a Chatbot or send inn a ticket?</li>
+              <li>Do you want to use a Chatbot or submit a ticket?</li>
             </ul>
             <div style={{ display: 'flex', gap: '8px' }}>
               <NextButton onClick={handleFallbackChatbot}>Chatbot</NextButton>
@@ -694,7 +707,7 @@ const Bifrost = () => {
                 id="category"
                 name="category"
                 value={ticket.category}
-                onChange={e => setTicket({ ...ticket, category: e.target.value })}
+                onChange={(e) => setTicket({ ...ticket, category: e.target.value })}
                 required
               >
                 <option value="" disabled>-- Select category --</option>
@@ -714,9 +727,9 @@ const Bifrost = () => {
                   type="text"
                   id="subCategory"
                   name="subCategory"
-                  placeholder="F.eks. 'Level 10 help'"
+                  placeholder="For example, 'Level 10 help'"
                   value={ticket.subCategory}
-                  onChange={e => setTicket({ ...ticket, subCategory: e.target.value })}
+                  onChange={(e) => setTicket({ ...ticket, subCategory: e.target.value })}
                 />
               </FormField>
             )}
@@ -736,7 +749,7 @@ const Bifrost = () => {
                 id="email"
                 name="email"
                 value={ticket.email}
-                onChange={e => setTicket({ ...ticket, email: e.target.value })}
+                onChange={(e) => setTicket({ ...ticket, email: e.target.value })}
                 required
               />
             </FormField>
@@ -747,7 +760,7 @@ const Bifrost = () => {
                 id="name"
                 name="name"
                 value={ticket.name}
-                onChange={e => setTicket({ ...ticket, name: e.target.value })}
+                onChange={(e) => setTicket({ ...ticket, name: e.target.value })}
                 required
               />
             </FormField>
@@ -758,7 +771,7 @@ const Bifrost = () => {
                 name="message"
                 rows="4"
                 value={ticket.message}
-                onChange={e => setTicket({ ...ticket, message: e.target.value })}
+                onChange={(e) => setTicket({ ...ticket, message: e.target.value })}
                 required
               />
             </FormField>
@@ -772,9 +785,9 @@ const Bifrost = () => {
 
   return (
     <>
-    <GlobalStyle />
+      <GlobalStyle />
       <FloatingButtonWrapper>
-        <FloatingButton onClick={isOpen ? closePanel : openPanel} isOpen={isOpen}>
+        <FloatingButton onClick={isOpen ? () => setIsOpen(false) : () => setIsOpen(true)} isOpen={isOpen}>
           <img src={BUTTON_IMAGE} alt="Chat Icon" />
         </FloatingButton>
       </FloatingButtonWrapper>
@@ -784,22 +797,14 @@ const Bifrost = () => {
             {step !== 0 && (
               <BackButton onClick={handleBack}>
                 <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="https://www.w3.org/2000/svg">
-                  <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                  <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                  <g id="SVGRepo_iconCarrier">
-                    <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
-                  </g>
+                  <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
                 </svg>
               </BackButton>
             )}
             <GreetingText>{getTimeGreeting()}</GreetingText>
-            <CloseButton onClick={closePanel}>
+            <CloseButton onClick={() => setIsOpen(false)}>
               <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="https://www.w3.org/2000/svg">
-                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="SVGRepo_iconCarrier">
-                  <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
-                </g>
+                <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
               </svg>
             </CloseButton>
           </PanelHeader>
@@ -807,6 +812,88 @@ const Bifrost = () => {
             {renderContent()}
           </PanelBody>
         </ChatPanel>
+      )}
+      {/* Ticket Submission Modal */}
+      {showTicketModal && (
+        <ModalOverlay onClick={() => setShowTicketModal(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={() => setShowTicketModal(false)}>×</CloseButton>
+            <h3>Submit a Ticket</h3>
+            <form onSubmit={handleTicketSubmit}>
+              <FormField>
+                <Label htmlFor="ticketCategory">Category:</Label>
+                <Select
+                  id="ticketCategory"
+                  value={ticket.category}
+                  onChange={(e) =>
+                    setTicket({ ...ticket, category: e.target.value })
+                  }
+                  required
+                >
+                  <option value="" disabled>-- Select category --</option>
+                  <option value="Games">Games</option>
+                  <option value="General">General</option>
+                  <option value="Work">Work</option>
+                  <option value="Billing">Billing</option>
+                  <option value="Support">Support</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Other">Other</option>
+                </Select>
+              </FormField>
+              {ticket.category === "Games" && (
+                <FormField>
+                  <Label htmlFor="ticketSubCategory">Game sub-category:</Label>
+                  <Input
+                    type="text"
+                    id="ticketSubCategory"
+                    placeholder="For example, 'Level 10 help'"
+                    value={ticket.subCategory}
+                    onChange={(e) =>
+                      setTicket({ ...ticket, subCategory: e.target.value })
+                    }
+                  />
+                </FormField>
+              )}
+              <FormField>
+                <Label htmlFor="ticketEmail">Email:</Label>
+                <Input
+                  type="email"
+                  id="ticketEmail"
+                  value={ticket.email}
+                  onChange={(e) =>
+                    setTicket({ ...ticket, email: e.target.value })
+                  }
+                  required
+                />
+              </FormField>
+              <FormField>
+                <Label htmlFor="ticketName">Name:</Label>
+                <Input
+                  type="text"
+                  id="ticketName"
+                  value={ticket.name}
+                  onChange={(e) =>
+                    setTicket({ ...ticket, name: e.target.value })
+                  }
+                  required
+                />
+              </FormField>
+              <FormField>
+                <Label htmlFor="ticketMessage">Message:</Label>
+                <TextArea
+                  id="ticketMessage"
+                  rows="4"
+                  value={ticket.message}
+                  onChange={(e) =>
+                    setTicket({ ...ticket, message: e.target.value })
+                  }
+                  required
+                />
+              </FormField>
+              <NextButton type="submit">Submit Ticket</NextButton>
+            </form>
+          </ModalContent>
+        </ModalOverlay>
       )}
     </>
   );
