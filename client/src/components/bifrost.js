@@ -655,7 +655,7 @@ const Bifrost = () => {
       );
     }
 
-    // Pre-chat steg: 0, 0.5, 1, 2
+    // Pre-chat steg: 0, 0.5, 1, 2!
     switch (step) {
       case 0:
         return (
