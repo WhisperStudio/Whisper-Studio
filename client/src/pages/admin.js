@@ -15,6 +15,7 @@ import {
   FiClipboard,
   FiTrash2,
   FiLock,
+  FiCornerDownRight,
   FiInbox
 } from "react-icons/fi";
 import PieChartCard from "../components/pieChartCard";
@@ -220,10 +221,11 @@ const CardTitle = styled.h2`
 
 // ---------- CHAT DASHBOARD (DIN eksisterende implementasjon) ----------
 const ChatDashboardContainer = styled.div`
-  background: #0b1121; 
+  background: #1A1F2E; 
+  box-shadow: 0 10px 20px 6px rgba(0, 0, 0, 0.2);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 30px 40px rgba(0, 0, 0, 0.25);
+  
   color: white;
   display: flex;
   flex-direction: column;
@@ -238,7 +240,6 @@ const ChatListWrapper = styled.div`
 const ChatList = styled.div`
   flex: 1;
   max-width: 300px;
-  border-right: 1px solid #ccc;
   padding-right: 16px;
   overflow-y: auto;
 `;
@@ -267,7 +268,7 @@ const MessagesContainer = styled.div`
   padding: 8px;
   margin-bottom: 8px;
   border-radius: 8px;
-  background: #FAF9FA;
+  background:rgb(255, 255, 255);
 `;
 
 // Color-code messages
@@ -318,7 +319,7 @@ const CategoryFilter = styled.select`
   border-radius: 4px;
   border: 1px solid rgb(49, 54, 77);
   margin-bottom: 12px;
-  background-color: #1A1F2E;
+  background-color: #0b1121;
   color: #fff;
 `;
 
@@ -377,7 +378,7 @@ const ChatDashboard = () => {
     if (!adminReply.trim()) return;
     try {
       const res = await fetch(
-        `httpss://api.vintrastudio.com/api/conversations/${conversationId}/reply`,
+        `https://api.vintrastudio.com/api/conversations/${conversationId}/reply`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -447,7 +448,7 @@ const ChatDashboard = () => {
       : conversations.filter((conv) => conv.category === categoryFilter);
 
   return (
-    <ChatDashboardContainer>
+    <ChatDashboardContainer >
       <CardTitle style={{ color: "white" }}>Live Chat</CardTitle>
       <p style={{ marginBottom: "1rem", marginLeft: "1rem", color: "white", fontSize: "0.9rem" }}>
         • Se alle pågående chatter.
@@ -468,7 +469,12 @@ const ChatDashboard = () => {
         <option value="Other">Other</option>
       </CategoryFilter>
       <ChatListWrapper>
-        <ChatList>
+        <ChatList style={{
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+              padding: "1rem",
+              borderRadius: "6px",
+              backgroundColor: "#0b1121",
+            }}>
           <h3 style={{ marginTop: 0 }}>Conversations</h3>
           {filteredConversations.length === 0 ? (
             <p>No conversations found.</p>
@@ -488,7 +494,7 @@ const ChatDashboard = () => {
                   : "#aaa";
 
               return (
-                <ChatListItem
+                <ChatListItem 
                   key={conv.conversationId}
                   active={
                     selectedConversation &&
@@ -534,7 +540,12 @@ const ChatDashboard = () => {
             })
           )}
         </ChatList>
-        <ChatDetails>
+        <ChatDetails style={{
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+              padding: "1rem",
+              borderRadius: "6px",
+              backgroundColor: "#0b1121",
+            }}>
           {selectedConversation ? (
             <div>
               <h3 style={{ marginTop: 0 }}>
@@ -566,7 +577,7 @@ const ChatDashboard = () => {
                     handleAdminReply(selectedConversation.conversationId)
                   }
                 >
-                  Send Reply
+                   <FiCornerDownRight style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}}/> 
                 </ActionButton>
                 <ActionButton
                   bgColor="#f59e0b"
@@ -574,7 +585,7 @@ const ChatDashboard = () => {
                     handleCloseConversation(selectedConversation.conversationId)
                   }
                 >
-                  Close <FiLock style={{ marginLeft: "4px" }} />
+                <FiLock style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}} />
                 </ActionButton>
                 <ActionButton
                   bgColor="#dc2626"
@@ -582,7 +593,7 @@ const ChatDashboard = () => {
                     handleDeleteConversation(selectedConversation.conversationId)
                   }
                 >
-                  Delete <FiTrash2 style={{ marginLeft: "4px" }} />
+                  <FiTrash2 style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}} />
                 </ActionButton>
               </ActionButtons>
             </div>
@@ -932,12 +943,11 @@ const Admin = () => {
             </MainContent>
             <RightSidebar>
               <Card>
-                <CardTitle>Quick Info</CardTitle>
+                <CardTitle>Active Conversations</CardTitle>
                 <PieChartCard />
               </Card>
               <Card>
-                <CardTitle>Extra Widget</CardTitle>
-                <h1>Admin Page</h1>
+                <CardTitle>Type of Active Chats</CardTitle>
                 <BotAdminTicketChart />
               </Card>
               {/* Bifrost (live chat-knapp) vises også i admin-panelet */}
