@@ -20,7 +20,7 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS);
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const ADMIN_DOMAIN = process.env.ADMIN_DOMAIN; // skal være api.vintrastudio.com
 
 if (!MONGO_URI || !OPENAI_API_KEY || !JWT_SECRET || !ADMIN_SECRET || !SALT_ROUNDS) {
