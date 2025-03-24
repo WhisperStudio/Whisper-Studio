@@ -454,44 +454,100 @@ const Bifrost = () => {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Hent admin availability én gang
+  // --- Hent admin availability ---
+  const fetchAdminAvailability = async () => {
+    try {
+      const res = await fetch('https://api.vintrastudio.com/api/admin/availability');
+      if (!res.ok) {
+        // F.eks. 429 => parse text
+        const errorText = await res.text();
+        console.error('Feil ved henting av admin availability:', errorText);
+        return;
+      }
+      // Sjekk at content-type er JSON
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data?.adminAvailable !== undefined) {
+          setAdminAvailable(data.adminAvailable);
+        }
+      } else {
+        // Fikk ikke JSON
+        const errorText = await res.text();
+        console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+      }
+    } catch (err) {
+      console.error('Error fetching admin availability:', err);
+    }
+  };
+
   useEffect(() => {
-    fetch('https://api.vintrastudio.com/api/admin/availability')
-      .then(res => res.json())
-      .then(data => setAdminAvailable(data.adminAvailable))
-      .catch(err => console.error('Error fetching admin availability:', err));
+    fetchAdminAvailability();
   }, []);
 
-  // Poll for conversation messages
+  // --- Poll for conversation messages ---
   useEffect(() => {
     if (!conversationId) return;
-    const interval = setInterval(() => {
-      fetch(`https://api.vintrastudio.com/api/conversations/${conversationId}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Could not fetch conversation');
-          return res.json();
-        })
-        .then(data => {
-          if (!data.messages) return;
-          setChatMessages(data.messages);
-        })
-        .catch(err => console.error('Polling error:', err));
-    }, 2000);
+
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(`https://api.vintrastudio.com/api/conversations/${conversationId}`);
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Feil ved henting av samtale:', errorText);
+          return;
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          if (data.messages) {
+            setChatMessages(data.messages);
+          }
+        } else {
+          const errorText = await res.text();
+          console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    };
+
+    // Øk intervall for å unngå 429
+    const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
   }, [conversationId]);
 
-  // Poll for admin typing status
+  // --- Poll for admin typing status ---
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetch('https://api.vintrastudio.com/api/admin/typing')
-        .then(res => res.json())
-        .then(data => setAdminIsTyping(data.adminTyping))
-        .catch(err => console.error('Error fetching admin typing status:', err));
-    }, 2000);
+    const fetchAdminTyping = async () => {
+      try {
+        const res = await fetch('https://api.vintrastudio.com/api/admin/typing');
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Feil ved henting av admin typing-status:', errorText);
+          setAdminIsTyping(false);
+          return;
+        }
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          setAdminIsTyping(data.adminTyping);
+        } else {
+          const errorText = await res.text();
+          console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+          setAdminIsTyping(false);
+        }
+      } catch (err) {
+        console.error('Error fetching admin typing status:', err);
+      }
+    };
+
+    // Øk intervall for å unngå 429
+    const interval = setInterval(fetchAdminTyping, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll til bunn
+  // --- Scroll til bunn ---
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -546,22 +602,37 @@ const Bifrost = () => {
           userWantsAdmin
         })
       });
-      if (!response.ok) throw new Error("Error communicating with chat API");
-      const data = await response.json();
-      setConversationId(data.conversationId);
-      const welcomeMsg = {
-        sender: userWantsAdmin ? 'admin' : 'bot',
-        text: "Welcome to Vintra Support!",
-        timestamp: new Date()
-      };
-      const userMsg = ticket.message.trim() ? {
-        sender: "user",
-        text: ticket.message,
-        timestamp: new Date()
-      } : null;
-      setChatMessages(userMsg ? [welcomeMsg, userMsg] : [welcomeMsg]);
-      setPreChatCompleted(true);
-      setStep(3);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error in pre-chat submit:", errorText);
+        setIsTyping(false);
+        return;
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json();
+        setConversationId(data.conversationId);
+
+        const welcomeMsg = {
+          sender: userWantsAdmin ? 'admin' : 'bot',
+          text: "Welcome to Vintra Support!",
+          timestamp: new Date()
+        };
+        const userMsg = ticket.message.trim()
+          ? {
+              sender: "user",
+              text: ticket.message,
+              timestamp: new Date()
+            }
+          : null;
+
+        setChatMessages(userMsg ? [welcomeMsg, userMsg] : [welcomeMsg]);
+        setPreChatCompleted(true);
+        setStep(3);
+      } else {
+        const errorText = await response.text();
+        console.error("Forventet JSON, men fikk noe annet:", errorText);
+      }
     } catch (error) {
       console.error("Error in pre-chat submit:", error);
     } finally {
@@ -575,11 +646,19 @@ const Bifrost = () => {
     setInputMessage("");
     try {
       setIsTyping(true);
-      await fetch("https://api.vintrastudio.com/api/chat", {
+      const response = await fetch("https://api.vintrastudio.com/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, message: messageToSend, userWantsAdmin })
+        body: JSON.stringify({
+          conversationId,
+          message: messageToSend,
+          userWantsAdmin
+        })
       });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error sending message:", errorText);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
@@ -620,7 +699,12 @@ const Bifrost = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ticketPayload),
       });
-      if (!res.ok) throw new Error("Failed to submit ticket");
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Error submitting ticket:", errorText);
+        alert("There was an error submitting your ticket. Please try again.");
+        return;
+      }
       alert("Ticket submitted successfully!");
       setShowTicketModal(false);
       setIsOpen(false);
@@ -638,7 +722,11 @@ const Bifrost = () => {
             {chatMessages.map((msg, index) => (
               <MessageBubble key={index} sender={msg.sender}>
                 <SenderLabel sender={msg.sender}>
-                  {msg.sender === 'user' ? 'You' : msg.sender === 'admin' ? 'Admin' : 'AI Bot'}
+                  {msg.sender === 'user'
+                    ? 'You'
+                    : msg.sender === 'admin'
+                    ? 'Admin'
+                    : 'AI Bot'}
                 </SenderLabel>
                 {msg.text}
               </MessageBubble>
@@ -787,23 +875,27 @@ const Bifrost = () => {
     <>
       <GlobalStyle />
       <FloatingButtonWrapper>
-        <FloatingButton onClick={isOpen ? () => setIsOpen(false) : () => setIsOpen(true)} isOpen={isOpen}>
+        <FloatingButton
+          onClick={isOpen ? () => setIsOpen(false) : () => setIsOpen(true)}
+          isOpen={isOpen}
+        >
           <img src={BUTTON_IMAGE} alt="Chat Icon" />
         </FloatingButton>
       </FloatingButtonWrapper>
+
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
             {step !== 0 && (
               <BackButton onClick={handleBack}>
-                <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="https://www.w3.org/2000/svg">
+                <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
                 </svg>
               </BackButton>
             )}
             <GreetingText>{getTimeGreeting()}</GreetingText>
             <CloseButton onClick={() => setIsOpen(false)}>
-              <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="https://www.w3.org/2000/svg">
+              <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
               </svg>
             </CloseButton>
@@ -813,6 +905,7 @@ const Bifrost = () => {
           </PanelBody>
         </ChatPanel>
       )}
+
       {/* Ticket Submission Modal */}
       {showTicketModal && (
         <ModalOverlay onClick={() => setShowTicketModal(false)}>
