@@ -18,6 +18,11 @@ import {
   FiCornerDownRight,
   FiInbox
 } from "react-icons/fi";
+import {
+  FcAssistant,
+  FcReadingEbook,
+  FcAndroidOs
+} from "react-icons/fc";
 import PieChartCard from "../components/pieChartCard";
 import BotAdminTicketChart from "../components/BotAdminTicketChart";
 import Bifrost from "../components/bifrost";
@@ -242,6 +247,19 @@ const ChatList = styled.div`
   max-width: 300px;
   padding-right: 16px;
   overflow-y: auto;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #0b1121; /* Mørk bakgrunn, samme som container */
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color:rgb(48, 49, 53); /* Grå scrollbar */
+    border-radius: 6px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(48, 49, 53);
+  }
 `;
 
 const ChatListItem = styled.div`
@@ -440,6 +458,21 @@ const ChatDashboard = () => {
       console.error("Error closing conversation:", error);
     }
   };
+  const lastSender =
+  selectedConversation?.messages?.length > 0
+    ? selectedConversation.messages[selectedConversation.messages.length - 1].sender.toLowerCase()
+    : "ingen";
+
+const senderColor =
+  lastSender === "bot"
+    ? "#7824BC"
+    : lastSender === "admin"
+    ? "#3B82F6"
+    : lastSender === "user"
+    ? "#484F5D"
+    : "#aaa";
+
+
 
   // Filter samtaler etter kategori
   const filteredConversations =
@@ -450,11 +483,21 @@ const ChatDashboard = () => {
   return (
     <ChatDashboardContainer >
       <CardTitle style={{ color: "white" }}>Live Chat</CardTitle>
-      <p style={{ marginBottom: "1rem", marginLeft: "1rem", color: "white", fontSize: "0.9rem" }}>
-        • Se alle pågående chatter.
-        • Reply som admin (blå tekst).
-        • Bot vises med lilla tekst.
-      </p>
+      <div style={{ marginTop: "-1.5rem", marginBottom: "3rem", marginLeft: "8rem" , color: "white", fontSize: "0.9rem"}}>
+        <p style={{ marginBottom: "1rem", marginLeft: "1rem", fontSize: "1rem"}}>
+           Se alle pågående chatter.
+        </p>
+        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+          • Admin vises med blå tekst. <FcAssistant style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+        </p>
+        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+          • Bot vises med lilla tekst. <FcAndroidOs style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+        </p>
+        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+            • User vises med grå tekst. <FcReadingEbook style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+        </p>
+      </div>
+      
       <CategoryFilter
         value={categoryFilter}
         onChange={(e) => setCategoryFilter(e.target.value)}
@@ -474,6 +517,9 @@ const ChatDashboard = () => {
               padding: "1rem",
               borderRadius: "6px",
               backgroundColor: "#0b1121",
+              maxHeight: "700px",      // Sett maks høyde
+              overflowY: "auto", 
+              
             }}>
           <h3 style={{ marginTop: 0 }}>Conversations</h3>
           {filteredConversations.length === 0 ? (
@@ -570,6 +616,13 @@ const ChatDashboard = () => {
                 value={adminReply}
                 onChange={handleAdminTextChange}
               />
+              <div style={{ fontSize: "0.75rem", color: "#aaa", marginBottom: "8px" }}>
+                Created: {new Date(selectedConversation.createdAt).toLocaleString()} | Last Edited{" "}
+                <strong style={{ color: senderColor }}>
+                  {lastSender.toUpperCase()}
+                </strong>{" "}
+                : {new Date(selectedConversation.updatedAt).toLocaleString()}
+              </div>
               <ActionButtons>
                 <ActionButton
                   bgColor="#2563eb"
@@ -577,7 +630,13 @@ const ChatDashboard = () => {
                     handleAdminReply(selectedConversation.conversationId)
                   }
                 >
-                   <FiCornerDownRight style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}}/> 
+                  <FiCornerDownRight
+                    style={{
+                      fontSize: "20px",
+                      marginLeft: "4px",
+                      marginRight: "4px"
+                    }}
+                  />
                 </ActionButton>
                 <ActionButton
                   bgColor="#f59e0b"
@@ -585,7 +644,13 @@ const ChatDashboard = () => {
                     handleCloseConversation(selectedConversation.conversationId)
                   }
                 >
-                <FiLock style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}} />
+                  <FiLock
+                    style={{
+                      fontSize: "20px",
+                      marginLeft: "4px",
+                      marginRight: "4px"
+                    }}
+                  />
                 </ActionButton>
                 <ActionButton
                   bgColor="#dc2626"
@@ -593,9 +658,16 @@ const ChatDashboard = () => {
                     handleDeleteConversation(selectedConversation.conversationId)
                   }
                 >
-                  <FiTrash2 style={{ fontSize: "20px", marginLeft: "4px", marginRight: "4px"}} />
+                  <FiTrash2
+                    style={{
+                      fontSize: "20px",
+                      marginLeft: "4px",
+                      marginRight: "4px"
+                    }}
+                  />
                 </ActionButton>
               </ActionButtons>
+
             </div>
           ) : (
             <p>Select a conversation.</p>
