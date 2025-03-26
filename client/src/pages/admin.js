@@ -25,6 +25,7 @@ import {
 } from "react-icons/fc";
 import PieChartCard from "../components/pieChartCard";
 import BotAdminTicketChart from "../components/BotAdminTicketChart";
+import LineChart from "../components/LineChart";
 import Bifrost from "../components/bifrost";
 // Tickets-komponenten legges til fra den andre koden
 import Tickets from "../components/Tickets";
@@ -482,20 +483,22 @@ const senderColor =
 
   return (
     <ChatDashboardContainer >
-      <CardTitle style={{ color: "white" }}>Live Chat</CardTitle>
-      <div style={{ marginTop: "-1.5rem", marginBottom: "3rem", marginLeft: "8rem" , color: "white", fontSize: "0.9rem"}}>
-        <p style={{ marginBottom: "1rem", marginLeft: "1rem", fontSize: "1rem"}}>
-           Se alle pågående chatter.
-        </p>
-        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
-          • Admin vises med blå tekst. <FcAssistant style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
-        </p>
-        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
-          • Bot vises med lilla tekst. <FcAndroidOs style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
-        </p>
-        <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
-            • User vises med grå tekst. <FcReadingEbook style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
-        </p>
+      <div style={{ borderBottom: "", display: "grid" }}>
+        <CardTitle style={{ color: "white",  marginLeft: "auto", marginRight: "auto", fontSize: "1.4rem" }}>Live Chat</CardTitle>
+        <div style={{ marginTop: "-0.5rem", marginBottom: "3rem", marginLeft: "6.2rem" , color: "white", fontSize: "0.9rem"}}>
+          <p style={{ marginBottom: "1rem", marginLeft: "1rem", fontSize: "1rem"}}>
+            Se alle pågående chatter.
+          </p>
+          <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+            • Admin vises med blå tekst. <FcAssistant style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+          </p>
+          <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+            • Bot vises med lilla tekst. <FcAndroidOs style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+          </p>
+          <p style={{ marginBottom: "1rem", marginLeft: "3rem"}}>
+              • User vises med grå tekst. <FcReadingEbook style={{ fontSize: "1.5rem", marginBottom: "-0.3rem" }}/>
+          </p>
+        </div>
       </div>
       
       <CategoryFilter
@@ -865,11 +868,7 @@ const Admin = () => {
             <Card>
               <CardTitle>Simple Analytics</CardTitle>
               <p>Dummy data:</p>
-              <ul>
-                <li>Visitors: 1,234</li>
-                <li>Conversions: 123</li>
-                <li>Engagement: 78%</li>
-              </ul>
+              <LineChart/>
             </Card>
           </>
         );
