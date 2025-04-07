@@ -4,7 +4,7 @@ import Header from '../components/header'; // Adjust path if needed
 import Footer from '../components/footer'; // Adjust path if needed
 import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
 import placeholderImage1 from '../bilder/1.webp'; // Placeholder image for cards
-import placeholderImage2 from '../bilder/2.webp'; // Placeholder image for cards
+import placeholderImage2 from '../bilder/smart_gnome.png'; // Placeholder image for cards
 import placeholderImage3 from '../bilder/3.webp'; // New placeholder image for cards
 
 const fadeInBounce = keyframes`
@@ -362,10 +362,10 @@ function App() {
               <CardImage image={placeholderImage2} />
               <CardContent>
                 <div>
-                  <CardDate>January 18, 2025</CardDate>
-                  <CardTitle>New Game Mode</CardTitle>
+                  <CardDate>V.O.T.E</CardDate>
+                  <CardTitle>Art Gallary</CardTitle>
                   <CardDescription>
-                    Experience V.O.T.E in a whole new way with our latest game mode. Challenge yourself and climb the ranks!
+                    Check out our art gallary of the landscape and creatures you might see in the game.
                   </CardDescription>
                 </div>
                 <CardButton>Explore</CardButton>
