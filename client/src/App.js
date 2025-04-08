@@ -8,6 +8,7 @@ import Admin from './pages/admin';
 // IMPORTER Bifrost i stedet for TicketingIframe:
 import Bifrost from './components/bifrost';
 import Login from './pages/login';
+import Artwork from './pages/artwork';
 
 function App() {
   return (
@@ -18,6 +19,8 @@ function App() {
         <Route path="/vote" element={<VotePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/artwork" element={<Artwork />} />
+
       </Routes>
       {/* Vis Bifrost på alle sider */}
       <Bifrost />

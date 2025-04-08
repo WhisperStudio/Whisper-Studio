@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import { Link } from 'react-router-dom';
 import Header from '../components/header'; // Adjust path if needed
 import Footer from '../components/footer'; // Adjust path if needed
 import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
@@ -64,6 +65,7 @@ const TitleContainer = styled.div`
   font-size: 6rem;
   font-weight: bold;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+
   @media (max-width: 768px) {
     top: 50%;
     left: 50%;
@@ -79,6 +81,7 @@ const ButtonContainer = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
+
   @media (max-width: 768px) {
     top: 90%;
     left: 50%;
@@ -99,6 +102,7 @@ const PlayButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+
   @media (max-width: 768px) {
     display: none;
   }
@@ -121,6 +125,7 @@ const WatchTrailerButton = styled.button`
   transition: all 0.3s ease;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   margin-left: 20px;
+
   @media (max-width: 768px) {
     margin-left: 0;
   }
@@ -149,6 +154,7 @@ const CustomCursor = styled.div`
   position: fixed;
   pointer-events: none;
   z-index: 9999;
+
   @media (max-width: 768px) {
     display: none;
   }
@@ -196,18 +202,17 @@ const Card = styled.div`
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
-  transform: translate3d(0, -10px, 0);
-  will-change: transform;
-  transition: transform 0.2s ease-out; /* Shorter, snappier transition */
-}
-
+    transform: translate3d(0, -10px, 0);
+    will-change: transform;
+    transition: transform 0.2s ease-out;
+  }
 `;
 
 const LargeCard = styled(Card)`
   grid-row: span 2;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Added to make the vote 2.0 box as tall as the other cards stackes is */
+  height: 100%;
 
   @media (max-width: 1024px) {
     grid-row: auto;
@@ -231,13 +236,12 @@ const SmallCard = styled(Card)`
 
 const CardImage = styled.div`
   width: 100%;
-  padding-top: ${props => props.large ? '70%' : '75%'}; // Increased from 56.25% to 70%
+  padding-top: ${props => props.large ? '70%' : '75%'};
   background-image: url(${props => props.image});
   background-size: cover;
   background-position: center;
   position: relative;
 `;
-
 
 const CardContent = styled.div`
   padding: ${props => props.large ? '40px' : '25px'};
@@ -297,7 +301,6 @@ const StyledHeader = styled.header`
   left: 0;
   right: 0;
   z-index: 1000;
-  /* Add any other styles you need for your header */
 `;
 
 function App() {
@@ -309,10 +312,7 @@ function App() {
     };
 
     window.addEventListener('mousemove', updateMousePosition);
-
-    return () => {
-      window.removeEventListener('mousemove', updateMousePosition);
-    };
+    return () => window.removeEventListener('mousemove', updateMousePosition);
   }, []);
 
   const handlePlayNowClick = () => {
@@ -347,10 +347,9 @@ function App() {
                 <CardDate>January 20, 2025</CardDate>
                 <CardTitle large>V.O.T.E 2.0 Update</CardTitle>
                 <CardDescription large>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                  <br />
-                  <br />
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  <br /><br />
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
                 </CardDescription>
               </div>
               <CardButton>Learn More</CardButton>
@@ -368,7 +367,10 @@ function App() {
                     Check out our art gallary of the landscape and creatures you might see in the game.
                   </CardDescription>
                 </div>
-                <CardButton>Explore</CardButton>
+                {/* Explore-knappen er nå en Link som navigerer til /artwork */}
+                <Link to="/artwork" style={{ textDecoration: 'none' }}>
+                  <CardButton>Explore</CardButton>
+                </Link>
               </CardContent>
             </SmallCard>
             
