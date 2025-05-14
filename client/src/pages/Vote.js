@@ -6,11 +6,9 @@ import AnimationSection from '../components/info';
 import AnimationSection2 from '../components/info2';
 import Header from '../components/header';
 import Norse from '../Fonts/Norse-KaWl.otf';
+import Countdown from '../components/Countdown';
+import backgroundMusic from '../bilder/VOTE THEME 1.mp3';
 
-import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
-import backgroundMusic from '../bilder/VOTE-MUSIC.mp3'; // Bytt til riktig path/filnavn
-
-// Global styles
 const GlobalStyle = createGlobalStyle`
   * {
     margin: 0;
@@ -18,11 +16,11 @@ const GlobalStyle = createGlobalStyle`
     box-sizing: border-box;
   }
   @font-face {
-      font-family: 'Norse';
-      src: url(${Norse}) format('opentype');
-      font-weight: normal;
-      font-style: normal;
-    }
+    font-family: 'Norse';
+    src: url(${Norse}) format('opentype');
+    font-weight: normal;
+    font-style: normal;
+  }
   body {
     font-family: Arial, Helvetica, sans-serif;
     background: #000;
@@ -31,7 +29,6 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Bakgrunnskomponenter
 const PageContainer = styled.div`
   position: relative;
   width: 100vw;
@@ -46,7 +43,7 @@ const StarryBackground = styled.div`
   height: 100%;
   background: #01161c;
   z-index: 0;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -79,7 +76,6 @@ const BackgroundVideo = styled.video`
   z-index: 1;
 `;
 
-// Oppdatert DarkOverlay – fra transparent øverst til helt sort nederst
 const DarkOverlay = styled.div`
   position: absolute;
   top: 0;
@@ -98,7 +94,6 @@ const DarkOverlay = styled.div`
   z-index: 2;
 `;
 
-// Innholdslag – holder alt over videoen
 const ContentWrapper = styled.div`
   position: relative;
   z-index: 3;
@@ -106,7 +101,6 @@ const ContentWrapper = styled.div`
   height: 100%;
 `;
 
-// Container for VOTE-teksten – alltid midt på skjermen
 const VoteContainer = styled.div`
   position: absolute;
   top: 50%;
@@ -114,7 +108,6 @@ const VoteContainer = styled.div`
   transform: translate(-50%, -50%);
 `;
 
-// Animasjonskeyframes for VOTE-bokstavene
 const fadeInUp = keyframes`
   from {
     opacity: 0;
@@ -126,7 +119,6 @@ const fadeInUp = keyframes`
   }
 `;
 
-// VOTE-teksten – animeres bokstav for bokstav
 const VoteText = styled.h1`
   font-size: 10rem;
   color: #ffffff;
@@ -141,7 +133,6 @@ const VoteText = styled.h1`
   }
 `;
 
-// TopOverlay – for "Whisper Studio", plassert 12rem over VOTE
 const TopOverlay = styled.div`
   position: absolute;
   top: calc(50% - 12rem);
@@ -159,7 +150,6 @@ const TopText = styled.h2`
   text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
 `;
 
-// UnderOverlay – for "Veil of the Eldertrees", plassert 12rem under VOTE
 const UnderOverlay = styled.div`
   position: absolute;
   top: calc(50% + 10rem);
@@ -168,6 +158,7 @@ const UnderOverlay = styled.div`
   z-index: 4;
   opacity: ${({ show }) => (show ? 1 : 0)};
   transition: opacity 1s ease;
+  text-align: center;
 `;
 
 const UnderText = styled.span`
@@ -178,36 +169,23 @@ const UnderText = styled.span`
   display: block;
 `;
 
-// DownloadOverlay – for DOWNLOAD-knappen, plassert 12rem under UnderOverlay
-const DownloadOverlay = styled.div`
-  position: absolute;
-  top: calc(50% + 24rem);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4;
-  opacity: ${({ show }) => (show ? 1 : 0)};
-  transition: opacity 1s ease;
-`;
-
-const DownloadButton = styled.button`
-  padding: 1rem 2rem;
-  font-size: 1.5rem;
+const PlayMusicButton = styled.button`
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.2rem;
   font-family: 'Cinzel', serif;
-  color: #ffffff;
-  background-color: #008080;
-  border: none;
+  background-color: #444;
+  color: #fff;
+  border: 2px solid #aaa;
   border-radius: 5px;
   cursor: pointer;
-  text-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  
+  transition: background-color 0.3s ease;
+
   &:hover {
-    background-color: #0a9396;
-    transform: scale(1.05);
+    background-color: #666;
   }
 `;
 
-// Fancy divider med vikingaktig design – ikke helt ut til kantene
 const FancyDivider = styled.div`
   position: absolute;
   bottom: -80px;
@@ -248,7 +226,6 @@ const PageWrapper = styled.div`
   display: block;
 `;
 
-// --- NYTT: Knapp for å mute musikken ---
 const MuteButton = styled.button`
   position: fixed;
   bottom: 2rem;
@@ -264,41 +241,32 @@ const MuteButton = styled.button`
   cursor: pointer;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
   transition: background-color 0.3s ease, transform 0.3s ease;
-  
+
   &:hover {
     background-color: #444;
     transform: scale(1.05);
   }
 `;
 
-
-
 const VotePage = () => {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
-
   const [showWhisper, setShowWhisper] = useState(false);
   const [showUnder, setShowUnder] = useState(false);
-  const [showDownload, setShowDownload] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
 
-  // --- NYTT: State for å håndtere om lyden er mutet eller ikke ---
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
 
-  // Bokstavene for VOTE
   const voteLetters = 'VOTE'.split('');
 
-  // Kalkuler dynamiske delays slik at bokstavene animeres med litt mellomrom
   const getDelay = (index) => {
-    if (!videoDuration) {
-      return `${index * 0.5}s`;
-    }
-    const totalAnimationTime = videoDuration - 1; // siste bokstav animeres 1 sekund før videoen stopper
+    if (!videoDuration) return `${index * 0.5}s`;
+    const totalAnimationTime = videoDuration - 1;
     const delay = (totalAnimationTime / (voteLetters.length - 1)) * index;
     return `${delay}s`;
   };
 
-  // Sett videoDuration når metadata er lastet inn
   useEffect(() => {
     const handleLoadedMetadata = () => {
       if (videoRef.current) {
@@ -317,7 +285,6 @@ const VotePage = () => {
     };
   }, []);
 
-  // Håndterer avspilling og sekvensiell visning når videoen nærmer seg slutt
   useEffect(() => {
     const handleTimeUpdate = () => {
       if (!videoRef.current || !videoDuration) return;
@@ -330,13 +297,9 @@ const VotePage = () => {
 
       if (timeLeft <= 0.5) {
         videoRef.current.pause();
-        // Start sekvensiell visning med en liten forsinkelse mellom hvert steg
         setShowWhisper(true);
         setTimeout(() => {
           setShowUnder(true);
-          setTimeout(() => {
-            setShowDownload(true);
-          }, 500);
         }, 500);
       }
     };
@@ -352,21 +315,30 @@ const VotePage = () => {
     };
   }, [videoDuration]);
 
-  // Forsøk å spille av musikken når komponenten rendres
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current
-        .play()
-        .catch((err) => {
-          // Hvis nettleseren blokkerer autoplay, kan du logge feilen eller vise en "Play"-knapp
-          console.warn('Autoplay blokkert: ', err);
-        });
+  const handlePlayMusic = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = false;
+      audio.play().then(() => {
+        setIsMuted(false);
+        setHasStarted(true);
+      }).catch(err => {
+        console.warn('Lyd kunne ikke spilles:', err);
+      });
     }
-  }, []);
+  };
 
-  // --- NYTT: Funksjon for å toggle muting ---
   const handleToggleMute = () => {
-    setIsMuted((prev) => !prev);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isMuted) {
+      audio.muted = false;
+      audio.play().catch(err => console.warn('Lyd kunne ikke spilles:', err));
+    } else {
+      audio.muted = true;
+    }
+    setIsMuted(prev => !prev);
   };
 
   return (
@@ -401,39 +373,29 @@ const VotePage = () => {
 
             <UnderOverlay show={showUnder}>
               <UnderText>Veil of the Eldertrees</UnderText>
-             {/* Nedtelling til desember 2026 */}
-            <Countdown />
+              <Countdown />
+              {!hasStarted && <PlayMusicButton onClick={handlePlayMusic}>Play music</PlayMusicButton>}
             </UnderOverlay>
-
-            {/* Ev. Download-knapp om du vil aktivere den igjen
-            <DownloadOverlay show={showDownload}>
-              <DownloadButton>DOWNLOAD</DownloadButton>
-            </DownloadOverlay>
-            */}
           </ContentWrapper>
 
           <FancyDivider>
             <CenterRune src={rune} alt="Rune" />
           </FancyDivider>
 
-          <audio
-            ref={audioRef}
-            src={backgroundMusic}
-            autoPlay
-            loop
-            muted={isMuted}
-          />
+          <audio ref={audioRef} src={backgroundMusic} loop muted />
         </PageContainer>
-        <MuteButton onClick={handleToggleMute}>
-          {isMuted ? 'Unmute' : 'Mute'}
-        </MuteButton>
-     
+
+        {hasStarted && (
+          <MuteButton onClick={handleToggleMute}>
+            {isMuted ? 'Unmute' : 'Mute'}
+          </MuteButton>
+        )}
+
         <AnimationSection />
         <FancyDivider2>
-            <CenterRune src={rune} alt="Rune" />
-          </FancyDivider2>
+          <CenterRune src={rune} alt="Rune" />
+        </FancyDivider2>
         <AnimationSection2 />
-
       </PageWrapper>
     </>
   );
