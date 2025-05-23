@@ -28,7 +28,7 @@ const galleryItems = [
   { id: 9, img: placeholderImage6, category: 'Environments', sub: 'Village',     title: 'Lantern in the Mist' },
 ];
 
-// ----------------------------------------------------
+// ---------------------------------------------------
 // 3D subcategories
 const models = ['Nokken','Troll','Shadow','Headset'];
 
