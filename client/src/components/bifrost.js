@@ -461,7 +461,7 @@ const Bifrost = () => {
   // --- Hent admin availability på mount
   const fetchAdminAvailability = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/availability', {
+      const res = await fetch('https://api.vintrastudio.com:5000/api/admin/availability', {
         credentials: 'include',
       });
       if (!res.ok) {
@@ -499,7 +499,7 @@ const Bifrost = () => {
 
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/conversations/${conversationId}`, {
+        const res = await fetch(`https://api.vintrastudio.com:5000/api/conversations/${conversationId}`, {
           credentials: 'include',
         });
         if (!res.ok) {
@@ -531,7 +531,7 @@ const Bifrost = () => {
   useEffect(() => {
     const fetchAdminTyping = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/typing', {
+        const res = await fetch('https://api.vintrastudio.com:5000/api/admin/typing', {
           credentials: 'include',
         });
         if (!res.ok) {
@@ -603,7 +603,7 @@ const Bifrost = () => {
     e.preventDefault();
     try {
       setIsTyping(true);
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const response = await fetch('https://api.vintrastudio.com:5000/api/chat', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -660,7 +660,7 @@ const Bifrost = () => {
     setInputMessage('');
     try {
       setIsTyping(true);
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const response = await fetch('https://api.vintrastudio.com:5000/api/chat', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -709,7 +709,7 @@ const Bifrost = () => {
         name: ticket.name,
         message: ticket.message,
       };
-      const res = await fetch('http://localhost:5000/api/tickets', {
+      const res = await fetch('https://api.vintrastudio.com:5000/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticketPayload),
