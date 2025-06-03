@@ -1,10 +1,10 @@
-// src/components/bifrost.js
+// src/components/Bifrost.js
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
-import { FiTrash2, FiCheckCircle } from "react-icons/fi";
 
 // Ikon til den flytende knappen
-const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
+const BUTTON_IMAGE =
+  'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
 
 // Farger brukt i komponenten
 const colors = {
@@ -17,10 +17,10 @@ const colors = {
   white: '#FFFFFF',
   buttonBorder: '#1c2e4e',
   buttonBg: '#1A1F2E',
-  buttonHover: '#2C354F'
+  buttonHover: '#2C354F',
 };
 
-// Global styling
+// Global styling (for autofill osv.)
 const GlobalStyle = createGlobalStyle`
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
@@ -73,7 +73,7 @@ const dotPulse = keyframes`
   100% { opacity: 0.2; }
 `;
 
-// Styled components for modal
+// Styled components for modal (ticket)
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -88,7 +88,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: ${({ theme }) => theme?.cardBg || colors.panelDark};
+  background-color: ${colors.panelDark};
   padding: 20px;
   border-radius: 8px;
   width: 400px;
@@ -189,7 +189,7 @@ const SubmitButton = styled.button`
   }
 `;
 
-// Hoved-styled components for livechat-panelet
+// Hoved‐styled components for livechat‐panelet
 const FloatingButtonWrapper = styled.div`
   position: fixed;
   bottom: 20px;
@@ -423,7 +423,11 @@ const InputField = styled.input`
 `;
 
 const Bifrost = () => {
-  // Pre-chat steg: 0: velg chatbot/admin, 0.5: fallback hvis admin ikke er tilgjengelig, 1: kategori, 2: detaljer, 3: chat
+  // Pre-chat steg: 0 = velg chatbot/admin,
+  //              0.5 = fallback hvis admin ikke er tilgjengelig,
+  //              1 = kategori,
+  //              2 = detaljer,
+  //              3 = chat‐modus
   const [step, setStep] = useState(0);
   const [preChatCompleted, setPreChatCompleted] = useState(false);
 
@@ -436,7 +440,7 @@ const Bifrost = () => {
   const [adminAvailable, setAdminAvailable] = useState(false);
 
   // Chat input
-  const [inputMessage, setInputMessage] = useState("");
+  const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [adminIsTyping, setAdminIsTyping] = useState(false);
 
@@ -446,7 +450,7 @@ const Bifrost = () => {
     email: '',
     name: '',
     message: '',
-    subCategory: ''
+    subCategory: '',
   });
 
   // State for livechat-panelet og ticket modal
@@ -454,30 +458,34 @@ const Bifrost = () => {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // --- Hent admin availability ---
+  // --- Hent admin availability på mount
   const fetchAdminAvailability = async () => {
     try {
-      const res = await fetch('https://api.vintrastudio.com/api/admin/availability');
+      const res = await fetch('http://localhost:5000/api/admin/availability', {
+        credentials: 'include',
+      });
       if (!res.ok) {
-        // F.eks. 429 => parse text
-        const errorText = await res.text();
-        console.error('Feil ved henting av admin availability:', errorText);
+        // F.eks. 403 = ikke logget inn / ikke admin => sett false
+        console.warn('Admin availability fetch ikke ok:', res.status);
+        setAdminAvailable(false);
         return;
       }
-      // Sjekk at content-type er JSON
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const data = await res.json();
         if (data?.adminAvailable !== undefined) {
           setAdminAvailable(data.adminAvailable);
+        } else {
+          setAdminAvailable(false);
         }
       } else {
-        // Fikk ikke JSON
-        const errorText = await res.text();
-        console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+        // Forventet JSON, men fikk noe annet
+        console.error('Admin availability: Forventet JSON, fikk:', await res.text());
+        setAdminAvailable(false);
       }
     } catch (err) {
       console.error('Error fetching admin availability:', err);
+      setAdminAvailable(false);
     }
   };
 
@@ -485,16 +493,17 @@ const Bifrost = () => {
     fetchAdminAvailability();
   }, []);
 
-  // --- Poll for conversation messages ---
+  // --- Poll for samtale‐meldinger hver 10 sekunder (hvis conversationId)
   useEffect(() => {
     if (!conversationId) return;
 
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`https://api.vintrastudio.com/api/conversations/${conversationId}`);
+        const res = await fetch(`http://localhost:5000/api/conversations/${conversationId}`, {
+          credentials: 'include',
+        });
         if (!res.ok) {
-          const errorText = await res.text();
-          console.error('Feil ved henting av samtale:', errorText);
+          console.error('Feil ved henting av samtale:', res.status, await res.text());
           return;
         }
         const contentType = res.headers.get('content-type') || '';
@@ -504,27 +513,29 @@ const Bifrost = () => {
             setChatMessages(data.messages);
           }
         } else {
-          const errorText = await res.text();
-          console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+          console.error('Forventet JSON fra /conversations, fikk:', await res.text());
         }
       } catch (err) {
         console.error('Polling error:', err);
       }
     };
 
-    // Øk intervall for å unngå 429
+    // Poll hver 10 sekunder
     const interval = setInterval(fetchMessages, 10000);
+    // Hent umiddelbart én gang
+    fetchMessages();
     return () => clearInterval(interval);
   }, [conversationId]);
 
-  // --- Poll for admin typing status ---
+  // --- Poll for admin typing status hver 10 sekunder
   useEffect(() => {
     const fetchAdminTyping = async () => {
       try {
-        const res = await fetch('https://api.vintrastudio.com/api/admin/typing');
+        const res = await fetch('http://localhost:5000/api/admin/typing', {
+          credentials: 'include',
+        });
         if (!res.ok) {
-          const errorText = await res.text();
-          console.error('Feil ved henting av admin typing-status:', errorText);
+          console.warn('Feil ved henting av admin typing-status:', res.status);
           setAdminIsTyping(false);
           return;
         }
@@ -533,28 +544,29 @@ const Bifrost = () => {
           const data = await res.json();
           setAdminIsTyping(data.adminTyping);
         } else {
-          const errorText = await res.text();
-          console.error('Feil: Forventet JSON, men fikk noe annet:', errorText);
+          console.error('Forventet JSON fra /admin/typing, fikk:', await res.text());
           setAdminIsTyping(false);
         }
       } catch (err) {
         console.error('Error fetching admin typing status:', err);
+        setAdminIsTyping(false);
       }
     };
 
-    // Øk intervall for å unngå 429
     const interval = setInterval(fetchAdminTyping, 10000);
+    // Hent umiddelbart én gang
+    fetchAdminTyping();
     return () => clearInterval(interval);
   }, []);
 
-  // --- Scroll til bunn ---
+  // --- Scroll til bunn av chat når noe oppdateres
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isTyping, adminIsTyping]);
 
-  // Funksjoner for pre-chat steg og chat
+  // --- Handlere for pre-chat steg og chat
   const handleChooseChatbot = () => {
     setUserWantsAdmin(false);
     setStep(1);
@@ -574,7 +586,7 @@ const Bifrost = () => {
     setStep(1);
   };
 
-  // Når fallback for ticket skal vises – åpne ticket modal
+  // Åpne ticket modal hvis admin ikke tilgjengelig
   const handleFallbackTicket = () => {
     setShowTicketModal(true);
   };
@@ -586,25 +598,26 @@ const Bifrost = () => {
     }
   };
 
+  // Når brukeren har fylt ut epost/navn/melding – send data til /api/chat for å opprette conversation
   const handlePreChatSubmit = async (e) => {
     e.preventDefault();
     try {
       setIsTyping(true);
-      const response = await fetch("https://api.vintrastudio.com/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: ticket.email,
           name: ticket.name,
           category: ticket.category,
           subCategory: ticket.subCategory,
           message: ticket.message,
-          userWantsAdmin
-        })
+          userWantsAdmin,
+        }),
       });
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error in pre-chat submit:", errorText);
+        console.error('Error i pre-chat submit:', response.status, await response.text());
         setIsTyping(false);
         return;
       }
@@ -613,16 +626,17 @@ const Bifrost = () => {
         const data = await response.json();
         setConversationId(data.conversationId);
 
+        // Legg på en innledende melding fra bruker eller velkomstmelding
         const welcomeMsg = {
           sender: userWantsAdmin ? 'admin' : 'bot',
-          text: "Welcome to Vintra Support!",
-          timestamp: new Date()
+          text: 'Welcome to Vintra Support!',
+          timestamp: new Date(),
         };
         const userMsg = ticket.message.trim()
           ? {
-              sender: "user",
+              sender: 'user',
               text: ticket.message,
-              timestamp: new Date()
+              timestamp: new Date(),
             }
           : null;
 
@@ -630,44 +644,45 @@ const Bifrost = () => {
         setPreChatCompleted(true);
         setStep(3);
       } else {
-        const errorText = await response.text();
-        console.error("Forventet JSON, men fikk noe annet:", errorText);
+        console.error('Forventet JSON fra /api/chat, fikk:', await response.text());
       }
     } catch (error) {
-      console.error("Error in pre-chat submit:", error);
+      console.error('Error i pre-chat submit:', error);
     } finally {
       setIsTyping(false);
     }
   };
 
+  // Send ny melding i chat‐modus
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-    const messageToSend = inputMessage;
-    setInputMessage("");
+    const messageToSend = inputMessage.trim();
+    setInputMessage('');
     try {
       setIsTyping(true);
-      const response = await fetch("https://api.vintrastudio.com/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId,
           message: messageToSend,
-          userWantsAdmin
-        })
+          userWantsAdmin,
+        }),
       });
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error sending message:", errorText);
+        console.error('Error sending message:', response.status, await response.text());
       }
+      // Vi forventer at polling‐hooken overlater å hente opp nye meldinger
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error('Error sending message:', error);
     } finally {
       setIsTyping(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       handleSendMessage();
     }
@@ -694,26 +709,26 @@ const Bifrost = () => {
         name: ticket.name,
         message: ticket.message,
       };
-      const res = await fetch("https://api.vintrastudio.com/api/tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('http://localhost:5000/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticketPayload),
       });
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error submitting ticket:", errorText);
-        alert("There was an error submitting your ticket. Please try again.");
+        console.error('Error submitting ticket:', res.status, await res.text());
+        alert('There was an error submitting your ticket. Please try again.');
         return;
       }
-      alert("Ticket submitted successfully!");
+      alert('Ticket submitted successfully!');
       setShowTicketModal(false);
       setIsOpen(false);
     } catch (error) {
-      console.error("Error submitting ticket:", error);
-      alert("There was an error submitting your ticket. Please try again.");
+      console.error('Error submitting ticket:', error);
+      alert('There was an error submitting your ticket. Please try again.');
     }
   };
 
+  // Render‐funksjon avhengig av steg
   const renderContent = () => {
     if (step === 3 && preChatCompleted) {
       return (
@@ -731,7 +746,7 @@ const Bifrost = () => {
                 {msg.text}
               </MessageBubble>
             ))}
-            {adminIsTyping && (
+            {adminIsTyping && userWantsAdmin && (
               <TypingIndicator>
                 Admin is typing <Dot /><Dot /><Dot />
               </TypingIndicator>
@@ -748,7 +763,7 @@ const Bifrost = () => {
               type="text"
               placeholder="Type a message..."
               value={inputMessage}
-              onChange={e => setInputMessage(e.target.value)}
+              onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
             />
             <NextButton onClick={handleSendMessage}>Send</NextButton>
@@ -798,7 +813,9 @@ const Bifrost = () => {
                 onChange={(e) => setTicket({ ...ticket, category: e.target.value })}
                 required
               >
-                <option value="" disabled>-- Select category --</option>
+                <option value="" disabled>
+                  -- Select category --
+                </option>
                 <option value="Games">Games</option>
                 <option value="General">General</option>
                 <option value="Work">Work</option>
@@ -876,7 +893,7 @@ const Bifrost = () => {
       <GlobalStyle />
       <FloatingButtonWrapper>
         <FloatingButton
-          onClick={isOpen ? () => setIsOpen(false) : () => setIsOpen(true)}
+          onClick={() => setIsOpen((prev) => !prev)}
           isOpen={isOpen}
         >
           <img src={BUTTON_IMAGE} alt="Chat Icon" />
@@ -886,23 +903,31 @@ const Bifrost = () => {
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
-            {step !== 0 && (
+            {[
+              1, 2, 3, 0.5, // i disse stegene kan man gå “Back”
+            ].includes(step) && (
               <BackButton onClick={handleBack}>
-                <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  fill="#ffffff"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
                 </svg>
               </BackButton>
             )}
             <GreetingText>{getTimeGreeting()}</GreetingText>
             <CloseButton onClick={() => setIsOpen(false)}>
-              <svg fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                fill="#ffffff"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
               </svg>
             </CloseButton>
           </PanelHeader>
-          <PanelBody>
-            {renderContent()}
-          </PanelBody>
+          <PanelBody>{renderContent()}</PanelBody>
         </ChatPanel>
       )}
 
@@ -911,19 +936,19 @@ const Bifrost = () => {
         <ModalOverlay onClick={() => setShowTicketModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={() => setShowTicketModal(false)}>×</CloseButton>
-            <h3>Submit a Ticket</h3>
+            <h3 style={{ color: colors.textLight }}>Submit a Ticket</h3>
             <form onSubmit={handleTicketSubmit}>
               <FormField>
                 <Label htmlFor="ticketCategory">Category:</Label>
                 <Select
                   id="ticketCategory"
                   value={ticket.category}
-                  onChange={(e) =>
-                    setTicket({ ...ticket, category: e.target.value })
-                  }
+                  onChange={(e) => setTicket({ ...ticket, category: e.target.value })}
                   required
                 >
-                  <option value="" disabled>-- Select category --</option>
+                  <option value="" disabled>
+                    -- Select category --
+                  </option>
                   <option value="Games">Games</option>
                   <option value="General">General</option>
                   <option value="Work">Work</option>
@@ -933,7 +958,7 @@ const Bifrost = () => {
                   <option value="Other">Other</option>
                 </Select>
               </FormField>
-              {ticket.category === "Games" && (
+              {ticket.category === 'Games' && (
                 <FormField>
                   <Label htmlFor="ticketSubCategory">Game sub-category:</Label>
                   <Input

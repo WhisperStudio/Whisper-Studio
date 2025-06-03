@@ -151,7 +151,7 @@ const Tickets = () => {
   // Hent alle tickets fra backend
   const fetchTickets = async () => {
     try {
-      const res = await fetch("https://api.vintrastudio.com/api/tickets");
+      const res = await fetch("http://localhost/api/tickets");
       const data = await res.json();
       setTickets(data);
     } catch (error) {
@@ -177,7 +177,7 @@ const Tickets = () => {
         status: selectedTicket.status
       };
       const res = await fetch(
-        `https://api.vintrastudio.com/api/tickets/${selectedTicket._id}`,
+        `http://localhost/api/tickets/${selectedTicket._id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -197,7 +197,7 @@ const Tickets = () => {
   // Slett et ticket
   const handleDeleteTicket = async (ticketId) => {
     try {
-      const res = await fetch(`https://api.vintrastudio.com/api/tickets/${ticketId}`, {
+      const res = await fetch(`http://localhost/api/tickets/${ticketId}`, {
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Failed to delete ticket");
