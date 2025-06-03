@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+// src/pages/Login.js
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios'; // For API-kall
+import api from '../utils/api';    // <–– importér den konfigurerte Axios‐instansen
+import { useNavigate } from 'react-router-dom';
 
-// Styled Components (samme som før)
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  
   @media (min-width: 768px) {
     flex-direction: row;
   }
 `;
-
 const LeftSection = styled.div`
   flex: 1;
   display: flex;
@@ -23,18 +22,12 @@ const LeftSection = styled.div`
   padding: 40px;
   min-height: 100vh;
   position: relative;
-  
-  @media (min-width: 768px) {
-    min-height: 100vh;
-  }
 `;
-
 const LogoContainer = styled.div`
   position: absolute;
   top: 40px;
   left: 40px;
 `;
-
 const Logo = styled.h1`
   font-size: 24px;
   font-weight: 800;
@@ -43,7 +36,6 @@ const Logo = styled.h1`
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   text-transform: uppercase;
 `;
-
 const RightSection = styled.div`
   flex: 1;
   position: relative;
@@ -51,11 +43,6 @@ const RightSection = styled.div`
   background-size: cover;
   background-position: center;
   min-height: 100vh;
-  
-  @media (min-width: 768px) {
-    min-height: 100vh;
-  }
-  
   &::before {
     content: '';
     position: absolute;
@@ -67,7 +54,6 @@ const RightSection = styled.div`
     z-index: 1;
   }
 `;
-
 const LoginForm = styled.form`
   background-color: #141414;
   padding: 48px;
@@ -78,7 +64,6 @@ const LoginForm = styled.form`
   z-index: 2;
   border: 1px solid rgba(255, 255, 255, 0.03);
 `;
-
 const FormTitle = styled.h2`
   font-size: 28px;
   font-weight: 700;
@@ -86,7 +71,6 @@ const FormTitle = styled.h2`
   margin-bottom: 10px;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 `;
-
 const FormSubtitle = styled.p`
   margin-bottom: 36px;
   color: #9e9e9e;
@@ -94,12 +78,10 @@ const FormSubtitle = styled.p`
   font-weight: 400;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 `;
-
 const InputGroup = styled.div`
   position: relative;
   margin-bottom: 28px;
 `;
-
 const InputLabel = styled.label`
   display: block;
   margin-bottom: 10px;
@@ -108,7 +90,6 @@ const InputLabel = styled.label`
   font-weight: 500;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 `;
-
 const Input = styled.input`
   width: 100%;
   padding: 16px;
@@ -119,18 +100,15 @@ const Input = styled.input`
   font-size: 15px;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   transition: all 0.3s ease;
-  
   &::placeholder {
     color: #666;
   }
-  
   &:focus {
     outline: none;
     border-color: #1a5bb6;
     box-shadow: 0 0 0 2px rgba(26, 91, 182, 0.2);
   }
 `;
-
 const Button = styled.button`
   width: 100%;
   padding: 16px;
@@ -144,18 +122,56 @@ const Button = styled.button`
   transition: all 0.3s ease;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   margin-top: 16px;
-  
   &:hover {
     background-color: #174a94;
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(23, 74, 148, 0.25);
   }
-  
   &:active {
     transform: translateY(0);
   }
 `;
-
+const RememberMeContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+const Checkbox = styled.input`
+  margin-right: 10px;
+  cursor: pointer;
+`;
+const RememberMeLabel = styled.label`
+  color: #9e9e9e;
+  font-size: 14px;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  cursor: pointer;
+`;
+const ForgotPassword = styled.a`
+  display: block;
+  text-align: right;
+  color: #4e89e8;
+  font-size: 14px;
+  margin-top: 20px;
+  cursor: pointer;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  &:hover {
+    text-decoration: underline;
+    color: #5e99f8;
+  }
+`;
+const Footer = styled.div`
+  margin-top: 30px;
+  text-align: center;
+  color: #666;
+  font-size: 13px;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+`;
+const ErrorMessage = styled.div`
+  color: #ff6b6b;
+  font-size: 14px;
+  margin-bottom: 16px;
+  text-align: center;
+`;
 const AdminPortalText = styled.div`
   position: absolute;
   top: 40px;
@@ -169,91 +185,62 @@ const AdminPortalText = styled.div`
   letter-spacing: 1px;
 `;
 
-const RememberMeContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-`;
-
-const Checkbox = styled.input`
-  margin-right: 10px;
-  cursor: pointer;
-`;
-
-const RememberMeLabel = styled.label`
-  color: #9e9e9e;
-  font-size: 14px;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  cursor: pointer;
-`;
-
-const ForgotPassword = styled.a`
-  display: block;
-  text-align: right;
-  color: #4e89e8;
-  font-size: 14px;
-  margin-top: 20px;
-  cursor: pointer;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  
-  &:hover {
-    text-decoration: underline;
-    color: #5e99f8;
-  }
-`;
-
-const Footer = styled.div`
-  margin-top: 30px;
-  text-align: center;
-  color: #666;
-  font-size: 13px;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-`;
-
-const ErrorMessage = styled.div`
-  color: #ff6b6b;
-  font-size: 14px;
-  margin-bottom: 16px;
-  text-align: center;
-`;
-
-// Login-komponent
-const Login = () => {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState(''); // For registrering
+  const [username, setUsername] = useState(''); // Hvis du ønsker å tilby registrering
   const [rememberMe, setRememberMe] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false); // For å veksle mellom login og registrering
-  const [error, setError] = useState(''); // For feilmeldinger
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // Når komponent mountes: sjekk /api/me for å se om vi allerede har en gyldig token-cookie
+  useEffect(() => {
+    api
+      .get('/api/me')
+      .then((res) => {
+        const user = res.data.user;
+        if (user) {
+          if (user.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        }
+      })
+      .catch(() => {
+        // Ikke logget inn – gjør ingenting
+      });
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Fjern tidligere feilmeldinger
+    setError('');
 
     try {
-      const url = isRegistering
-        ? 'https://api.vintrastudio.com/api/register'
-        : 'https://api.vintrastudio.com/api/login';
+      const url = isRegistering ? '/api/register' : '/api/login';
       const payload = isRegistering
         ? { username, email, password }
         : { email, password };
 
-      const response = await axios.post(url, payload, {
-        withCredentials: true, // For å håndtere cookies
-      });
-
-      console.log('API Response:', response.data);
-
+      const res = await api.post(url, payload);
+      // Hvis du kjører /api/register, får du bare `{ message: 'Registrering vellykket.' }`
       if (isRegistering) {
         alert('Registrering vellykket! Vennligst logg inn.');
-        setIsRegistering(false); // Bytt tilbake til login-skjema
+        setIsRegistering(false);
+        return;
+      }
+
+      // Etter /api/login: res.data.user skal være { id, username, email, role }
+      const loggedInUser = res.data.user;
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin');
       } else {
-        alert('Innlogging vellykket!');
-        // Omdiriger eller oppdater tilstand etter behov
+        navigate('/');
       }
     } catch (err) {
       console.error('API Error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Noe gikk galt. Vennligst prøv igjen.');
+      setError(err.response?.data?.message || 'Noe gikk galt. Prøv igjen.');
     }
   };
 
@@ -267,7 +254,9 @@ const Login = () => {
         <LoginForm onSubmit={handleSubmit}>
           <FormTitle>{isRegistering ? 'Opprett konto' : 'Velkommen tilbake'}</FormTitle>
           <FormSubtitle>
-            {isRegistering ? 'Registrer deg for å komme i gang' : 'Logg inn for å få tilgang til kontoen din'}
+            {isRegistering
+              ? 'Registrer deg for å komme i gang'
+              : 'Logg inn for å få tilgang til kontoen din'}
           </FormSubtitle>
 
           {isRegistering && (
@@ -316,7 +305,7 @@ const Login = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              <RememberMeLabel htmlFor="rememberMe">Husk meg i 30 dager</RememberMeLabel>
+              <RememberMeLabel htmlFor="rememberMe">Husk meg</RememberMeLabel>
             </RememberMeContainer>
           )}
 
@@ -326,9 +315,7 @@ const Login = () => {
             {isRegistering ? 'Registrer deg' : 'Logg inn'}
           </Button>
 
-          {!isRegistering && (
-            <ForgotPassword>Glemt passordet ditt?</ForgotPassword>
-          )}
+          {!isRegistering && <ForgotPassword>Glemt passordet ditt?</ForgotPassword>}
 
           <Footer>
             {isRegistering ? (
@@ -369,6 +356,4 @@ const Login = () => {
       </RightSection>
     </Container>
   );
-};
-
-export default Login;
+}
