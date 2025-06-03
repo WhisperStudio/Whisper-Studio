@@ -16,7 +16,7 @@ const app = express();
 app.use(
   cors({
     origin: [
-      'http://localhost:3000',         // React dev‐server
+      'http://localhost:3000',         // React dev‐server.
       'https://app.vintrastudio.com'   // Eksempel prod‐URL
     ],
     credentials: true
@@ -533,5 +533,5 @@ app.delete('/api/conversations/:id', verifyJWT, async (req, res) => {
 // -----------------------------------------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server kjører på http://localhost:${PORT}`);
+  console.log(`🚀 Server kjører på https://api.vintrastudio.com:${PORT}`);
 });
