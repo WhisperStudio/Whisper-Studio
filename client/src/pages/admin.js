@@ -363,7 +363,7 @@ export default function Admin() {
   // 1) På mount: sjekk om vi allerede er logget inn (persistent login)
   useEffect(() => {
     axios
-      .get('http://localhost:5000/api/me', { withCredentials: true })
+      .get('https://api.vintrastudio.com:5000/api/me', { withCredentials: true })
       .then((res) => {
         const user = res.data.user;
         if (!user || user.role !== 'admin') {
@@ -382,7 +382,7 @@ export default function Admin() {
     if (!authChecked) return;
     const fetchAdminAvailability = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/admin/availability', {
+        const res = await axios.get('https://api.vintrastudio.com:5000/api/admin/availability', {
           withCredentials: true
         });
         setAdminAvailable(res.data.adminAvailable);
@@ -398,7 +398,7 @@ export default function Admin() {
     if (!authChecked) return;
     const fetchConversations = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/conversations', {
+        const res = await axios.get('https://api.vintrastudio.com:5000/api/conversations', {
           withCredentials: true
         });
         setConversations(res.data);
@@ -419,7 +419,7 @@ export default function Admin() {
     try {
       const newVal = !adminAvailable;
       const res = await axios.post(
-        'http://localhost:5000/api/admin/availability',
+        'https://api.vintrastudio.com:5000/api/admin/availability',
         { available: newVal },
         { withCredentials: true }
       );
@@ -453,7 +453,7 @@ export default function Admin() {
   const setAdminTyping = async (typing) => {
     try {
       await axios.post(
-        'http://localhost:5000/api/admin/typing',
+        'https://api.vintrastudio.com:5000/api/admin/typing',
         { typing },
         { withCredentials: true }
       );
@@ -466,7 +466,7 @@ export default function Admin() {
     if (!adminReply.trim()) return;
     try {
       await axios.post(
-        `http://localhost:5000/api/conversations/${conversationId}/reply`,
+        `https://api.vintrastudio.com:5000/api/conversations/${conversationId}/reply`,
         { replyText: adminReply },
         { withCredentials: true }
       );
@@ -474,14 +474,14 @@ export default function Admin() {
       setAdminReply('');
 
       // Oppdater samtalelisten
-      const resConvs = await axios.get('http://localhost:5000/api/conversations', {
+      const resConvs = await axios.get('https://api.vintrastudio.com:5000/api/conversations', {
         withCredentials: true
       });
       setConversations(resConvs.data);
 
       // Oppdater valgt samtale
       const updatedRes = await axios.get(
-        `http://localhost:5000/api/conversations/${conversationId}`,
+        `https://api.vintrastudio.com:5000/api/conversations/${conversationId}`,
         { withCredentials: true }
       );
       setSelectedConversation(updatedRes.data);
@@ -492,10 +492,10 @@ export default function Admin() {
 
   const handleDeleteConversation = async (conversationId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/conversations/${conversationId}`, {
+      await axios.delete(`https://api.vintrastudio.com:5000/api/conversations/${conversationId}`, {
         withCredentials: true
       });
-      const resConvs = await axios.get('http://localhost:5000/api/conversations', {
+      const resConvs = await axios.get('https://api.vintrastudio.com:5000/api/conversations', {
         withCredentials: true
       });
       setConversations(resConvs.data);
@@ -508,16 +508,16 @@ export default function Admin() {
   const handleCloseConversation = async (conversationId) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/conversations/${conversationId}`,
+        `https://api.vintrastudio.com:5000/api/conversations/${conversationId}`,
         { status: 'closed' },
         { withCredentials: true }
       );
-      const resConvs = await axios.get('http://localhost:5000/api/conversations', {
+      const resConvs = await axios.get('https://api.vintrastudio.com:5000/api/conversations', {
         withCredentials: true
       });
       setConversations(resConvs.data);
       const updatedRes = await axios.get(
-        `http://localhost:5000/api/conversations/${conversationId}`,
+        `https://api.vintrastudio.com:5000/api/conversations/${conversationId}`,
         { withCredentials: true }
       );
       setSelectedConversation(updatedRes.data);
