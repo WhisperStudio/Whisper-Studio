@@ -3,27 +3,103 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import axios from 'axios';
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// 1) Connect to MongoDB
+/**
+ * --------------- CORS‐OPPSETT ----------------
+ */
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000',         // React dev‐server.
+      'https://app.vintrastudio.com'   // Eksempel prod‐URL
+    ],
+    credentials: true
+  })
+);
+
+// Parse JSON‐body og cookies
+app.use(express.json());
+app.use(cookieParser());
+
+
+// -----------------------------------------------------
+// --- 1) CONNECT TIL MONGODB ---------------------------
+// -----------------------------------------------------
 const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {
-  console.error('MONGO_URI missing in .env');
+  console.error('❌ MONGO_URI mangler i .env!');
   process.exit(1);
 }
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => {
-    console.error('Error connecting to MongoDB:', err);
+    console.error('❌ Error connecting to MongoDB:', err);
     process.exit(1);
   });
 
-// 2) Ticket model + routes
+
+// -----------------------------------------------------
+// --- 2) MILJØVARIABLER -------------------------------
+// -----------------------------------------------------
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('❌ JWT_SECRET mangler i .env!');
+  process.exit(1);
+}
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+if (!OPENAI_API_KEY) {
+  console.error('❌ OPENAI_API_KEY mangler i .env!');
+  process.exit(1);
+}
+
+
+// -----------------------------------------------------
+// --- 3) JWT‐HJELPERE ---------------------------------
+// -----------------------------------------------------
+function signToken(user) {
+  const payload = { id: user._id, role: user.role };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+function verifyJWT(req, res, next) {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).json({ message: 'Mangler token' });
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { id, role, iat, exp }
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Ugyldig token' });
+  }
+}
+
+
+// -----------------------------------------------------
+// --- 4) USER‐SCHEMA & MODELL (Autentisering) --------
+// -----------------------------------------------------
+const userSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true },
+    email:    { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role:     { type: String, enum: ['user', 'admin'], default: 'user' }
+  },
+  { timestamps: true }
+);
+const User = mongoose.model('User', userSchema);
+
+// -----------------------------------------------------
+// --- 5) TICKET‐SCHEMA & MODELL ----------------------
+// -----------------------------------------------------
 const ticketSchema = new mongoose.Schema(
   {
     category: {
@@ -31,11 +107,11 @@ const ticketSchema = new mongoose.Schema(
       required: true,
       enum: ['Games', 'General', 'Work', 'Billing', 'Support', 'Sales', 'Other']
     },
-    email: { type: String, required: true },
-    name: { type: String, required: true },
-    message: { type: String, required: true },
+    email:       { type: String, required: true },
+    name:        { type: String, required: true },
+    message:     { type: String, required: true },
     subCategory: { type: String, default: '' },
-    reply: { type: String, default: '' },
+    reply:       { type: String, default: '' },
     status: {
       type: String,
       enum: ['open', 'pending', 'closed'],
@@ -46,66 +122,23 @@ const ticketSchema = new mongoose.Schema(
 );
 const Ticket = mongoose.model('Ticket', ticketSchema);
 
-// CRUD for tickets
-app.get('/api/tickets', async (req, res) => {
-  try {
-    const tickets = await Ticket.find().sort({ createdAt: -1 });
-    res.json(tickets);
-  } catch (error) {
-    res.status(500).json({ message: 'Could not fetch tickets', error });
-  }
-});
-
-app.post('/api/tickets', async (req, res) => {
-  try {
-    const { category, email, name, message, subCategory } = req.body;
-    const newTicket = await Ticket.create({ category, email, name, message, subCategory });
-    res.status(201).json(newTicket);
-  } catch (error) {
-    res.status(400).json({ message: 'Could not create ticket', error });
-  }
-});
-
-app.put('/api/tickets/:id', async (req, res) => {
-  try {
-    const updated = await Ticket.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
-    res.json(updated);
-  } catch (error) {
-    res.status(400).json({ message: 'Could not update ticket', error });
-  }
-});
-
-app.delete('/api/tickets/:id', async (req, res) => {
-  try {
-    const deleted = await Ticket.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
-    res.json({ message: 'Ticket deleted' });
-  } catch (error) {
-    res.status(400).json({ message: 'Could not delete ticket', error });
-  }
-});
-
-// 3) Conversation model (with userWantsAdmin)
+// -----------------------------------------------------
+// --- 6) CONVERSATION‐SCHEMA & MODELL ----------------
+// -----------------------------------------------------
 const messageSchema = new mongoose.Schema({
-  sender: { type: String, enum: ['user', 'bot', 'admin'], default: 'user' },
-  text: String,
+  sender:    { type: String, enum: ['user', 'bot', 'admin'], default: 'user' },
+  text:      { type: String, required: true },
   timestamp: { type: Date, default: Date.now }
 });
-
 const conversationSchema = new mongoose.Schema(
   {
-    conversationId: { type: String, unique: true },
-    email: String,
-    name: String,
-    category: String,
-    subCategory: String,
-    userWantsAdmin: { type: Boolean, default: false },
-    messages: [messageSchema],
+    conversationId:  { type: String, unique: true },
+    email:           { type: String, default: '' },
+    name:            { type: String, default: '' },
+    category:        { type: String, default: '' },
+    subCategory:     { type: String, default: '' },
+    userWantsAdmin:  { type: Boolean, default: false },
+    messages:        [messageSchema],
     status: {
       type: String,
       enum: ['open', 'pending', 'closed'],
@@ -116,38 +149,212 @@ const conversationSchema = new mongoose.Schema(
 );
 const Conversation = mongoose.model('Conversation', conversationSchema);
 
-// 4) Admin availability & typing (in-memory)
+
+// -----------------------------------------------------
+// --- 7) ADMIN AVAILABILITY & TYPING (IN‐MEMORY) ------
+// -----------------------------------------------------
 let adminAvailable = false;
 let adminTyping = false;
 
-app.get('/api/admin/availability', (req, res) => {
-  res.json({ adminAvailable });
+
+// -----------------------------------------------------
+// --- 8) AUTENTISERINGSRUTER: REGISTER & LOGIN & ME ----
+// -----------------------------------------------------
+
+// POST /api/register
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Alle felter må fylles ut.' });
+    }
+    const exists = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+    if (exists) {
+      return res.status(409).json({ message: 'Bruker eksisterer allerede.' });
+    }
+    const hashed = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      username,
+      email,
+      password: hashed,
+      role: 'user'
+    });
+    await newUser.save();
+    return res.status(201).json({ message: 'Registrering vellykket.' });
+  } catch (err) {
+    console.error('Error i /api/register:', err);
+    return res.status(500).json({ message: 'Kunne ikke opprette bruker.' });
+  }
 });
 
-app.post('/api/admin/availability', (req, res) => {
+// POST /api/login
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email og passord må fylles ut.' });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Feil epost eller passord.' });
+    }
+    const passOk = await bcrypt.compare(password, user.password);
+    if (!passOk) {
+      return res.status(401).json({ message: 'Feil epost eller passord.' });
+    }
+    const token = signToken(user);
+    // Sett HTTP‐only cookie
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 3600 * 1000
+      })
+      .json({
+        message: 'Innlogging vellykket',
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        }
+      });
+  } catch (err) {
+    console.error('Error i /api/login:', err);
+    return res.status(500).json({ message: 'Kunne ikke logge inn.' });
+  }
+});
+
+// GET /api/me
+app.get('/api/me', verifyJWT, async (req, res) => {
+  try {
+    // Her bruker vi User-modellen – den er nå definert lenger opp
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Bruker ikke funnet.' });
+    }
+    return res.json({ user });
+  } catch (err) {
+    console.error('Error i /api/me:', err);
+    return res.status(500).json({ message: 'Kunne ikke hente bruker.' });
+  }
+});
+
+
+// -----------------------------------------------------
+// --- 9) ADMIN AVAILABILITY & TYPING -----------------
+// -----------------------------------------------------
+
+// GET /api/admin/availability
+app.get('/api/admin/availability', verifyJWT, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+  return res.json({ adminAvailable });
+});
+
+// POST /api/admin/availability
+app.post('/api/admin/availability', verifyJWT, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   const { available } = req.body;
-  adminAvailable = available;
-  res.json({ adminAvailable });
+  adminAvailable = !!available;
+  return res.json({ adminAvailable });
 });
 
-// NEW: admin typing endpoints
+// GET /api/admin/typing
 app.get('/api/admin/typing', (req, res) => {
-  res.json({ adminTyping });
+  return res.json({ adminTyping });
 });
 
-app.post('/api/admin/typing', (req, res) => {
+// POST /api/admin/typing
+app.post('/api/admin/typing', verifyJWT, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   const { typing } = req.body;
-  adminTyping = !!typing; // cast til boolean
-  res.json({ adminTyping });
+  adminTyping = !!typing;
+  return res.json({ adminTyping });
 });
 
-// 5) ChatGPT endpoint
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-if (!OPENAI_API_KEY) {
-  console.error('Missing OPENAI_API_KEY in .env');
-  process.exit(1);
-}
 
+// -----------------------------------------------------
+// --- 10) TICKET‐ROUTER (CRUD) ------------------------
+// -----------------------------------------------------
+
+// GET /api/tickets
+app.get('/api/tickets', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+  try {
+    const tickets = await Ticket.find().sort({ createdAt: -1 });
+    return res.json(tickets);
+  } catch (err) {
+    return res.status(500).json({ message: 'Kunne ikke hente tickets', err });
+  }
+});
+
+// POST /api/tickets (åpen for alle)
+app.post('/api/tickets', async (req, res) => {
+  try {
+    const { category, email, name, message, subCategory } = req.body;
+    if (!category || !email || !name || !message) {
+      return res.status(400).json({ message: 'Alle felter må fylles ut.' });
+    }
+    const newTicket = await Ticket.create({
+      category,
+      email,
+      name,
+      message,
+      subCategory: subCategory || ''
+    });
+    return res.status(201).json(newTicket);
+  } catch (err) {
+    return res.status(400).json({ message: 'Kunne ikke opprette ticket', err });
+  }
+});
+
+// PUT /api/tickets/:id
+app.put('/api/tickets/:id', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+  try {
+    const updated = await Ticket.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) {
+      return res.status(404).json({ message: 'Ticket ikke funnet' });
+    }
+    return res.json(updated);
+  } catch (err) {
+    return res.status(400).json({ message: 'Kunne ikke oppdatere ticket', err });
+  }
+});
+
+// DELETE /api/tickets/:id
+app.delete('/api/tickets/:id', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+  try {
+    const deleted = await Ticket.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Ticket ikke funnet' });
+    }
+    return res.json({ message: 'Ticket slettet' });
+  } catch (err) {
+    return res.status(400).json({ message: 'Kunne ikke slette ticket', err });
+  }
+});
+
+
+// -----------------------------------------------------
+// --- 11) CHAT GPT‐ENDPOINT ---------------------------
+// -----------------------------------------------------
 app.post('/api/chat', async (req, res) => {
   try {
     const {
@@ -160,14 +367,13 @@ app.post('/api/chat', async (req, res) => {
       userWantsAdmin
     } = req.body;
 
-    // Find or create conversation
     let conv = null;
     if (conversationId) {
       conv = await Conversation.findOne({ conversationId });
     }
     if (!conv) {
       const newId = conversationId || `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-      conv = await Conversation.create({
+      conv = new Conversation({
         conversationId: newId,
         email: email || '',
         name: name || '',
@@ -176,14 +382,13 @@ app.post('/api/chat', async (req, res) => {
         userWantsAdmin: userWantsAdmin === true,
         messages: []
       });
+      await conv.save();
     }
 
-    // If user wants admin, skip ChatGPT
     if (conv.userWantsAdmin === true || userWantsAdmin === true) {
       if (!conv.userWantsAdmin && userWantsAdmin) {
         conv.userWantsAdmin = true;
       }
-      // Add the user's message
       if (message) {
         conv.messages.push({ sender: 'user', text: message, timestamp: new Date() });
       }
@@ -191,14 +396,13 @@ app.post('/api/chat', async (req, res) => {
       return res.json({ reply: '', conversationId: conv.conversationId });
     }
 
-    // Otherwise, call ChatGPT
-    let messagesForGPT = [
+    const messagesForGPT = [
       {
         role: 'system',
         content: 'You are a helpful assistant. Provide support to the user.'
       }
     ];
-    for (let m of conv.messages) {
+    for (const m of conv.messages) {
       messagesForGPT.push({
         role: m.sender === 'user' ? 'user' : 'assistant',
         content: m.text
@@ -210,7 +414,10 @@ app.post('/api/chat', async (req, res) => {
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
-      { model: 'gpt-3.5-turbo', messages: messagesForGPT },
+      {
+        model: 'gpt-3.5-turbo',
+        messages: messagesForGPT
+      },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -220,90 +427,111 @@ app.post('/api/chat', async (req, res) => {
     );
     const reply = response.data.choices[0].message.content;
 
-    // Store the user's message + bot reply
     if (message) {
       conv.messages.push({ sender: 'user', text: message, timestamp: new Date() });
     }
     conv.messages.push({ sender: 'bot', text: reply, timestamp: new Date() });
     await conv.save();
 
-    res.json({ reply, conversationId: conv.conversationId });
-  } catch (error) {
-    console.error('Error communicating with ChatGPT:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Error communicating with ChatGPT' });
+    return res.json({ reply, conversationId: conv.conversationId });
+  } catch (err) {
+    console.error('Error communicating with ChatGPT:', err.response?.data || err.message);
+    return res.status(500).json({ error: 'Error communicating with ChatGPT' });
   }
 });
 
-// 6) Conversation routes
-app.get('/api/conversations', async (req, res) => {
+
+// -----------------------------------------------------
+// --- 12) CONVERSATION‐ROUTER: CRUD FOR ADMIN ---------
+// -----------------------------------------------------
+app.get('/api/conversations', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   try {
     const allConvs = await Conversation.find().sort({ createdAt: -1 });
-    res.json(allConvs);
-  } catch (error) {
-    res.status(500).json({ error: 'Could not fetch conversations' });
+    return res.json(allConvs);
+  } catch (err) {
+    return res.status(500).json({ error: 'Kunne ikke hente conversations' });
   }
 });
 
-app.get('/api/conversations/:id', async (req, res) => {
+app.get('/api/conversations/:id', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
-    if (!conv) return res.status(404).json({ error: 'Conversation not found' });
-    res.json(conv);
-  } catch (error) {
-    res.status(500).json({ error: 'Could not fetch conversation' });
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation ikke funnet' });
+    }
+    return res.json(conv);
+  } catch (err) {
+    return res.status(500).json({ error: 'Kunne ikke hente conversation' });
   }
 });
 
-// Admin can reply
-app.post('/api/conversations/:id/reply', async (req, res) => {
+app.post('/api/conversations/:id/reply', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   try {
     const { replyText } = req.body;
+    if (!replyText) {
+      return res.status(400).json({ message: 'replyText må gis' });
+    }
     const conv = await Conversation.findOne({ conversationId: req.params.id });
-    if (!conv) return res.status(404).json({ error: 'Conversation not found' });
-
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation ikke funnet' });
+    }
     conv.messages.push({ sender: 'admin', text: replyText, timestamp: new Date() });
     await conv.save();
-    res.json({ message: 'Admin reply added successfully' });
-  } catch (error) {
-    console.error('Error adding admin reply:', error);
-    res.status(500).json({ error: 'Failed to add admin reply' });
+    return res.json({ message: 'Admin reply lagt til' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Kunne ikke legge til admin reply' });
   }
 });
 
-// Update conversation status
-app.put('/api/conversations/:id', async (req, res) => {
+app.put('/api/conversations/:id', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
-    if (!conv) return res.status(404).json({ error: 'Conversation not found' });
-
+    if (!conv) {
+      return res.status(404).json({ error: 'Conversation ikke funnet' });
+    }
     if (req.body.status) {
       conv.status = req.body.status;
     }
     await conv.save();
-    res.json({ message: 'Conversation updated', conversation: conv });
-  } catch (error) {
-    console.error('Error updating conversation:', error);
-    res.status(500).json({ error: 'Failed to update conversation' });
+    return res.json({ message: 'Conversation oppdatert', conversation: conv });
+  } catch (err) {
+    return res.status(500).json({ error: 'Kunne ikke oppdatere conversation' });
   }
 });
 
-// Delete conversation
-app.delete('/api/conversations/:id', async (req, res) => {
+app.delete('/api/conversations/:id', verifyJWT, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
   try {
     const conv = await Conversation.findOne({ conversationId: req.params.id });
     if (!conv) {
-      return res.status(404).json({ error: 'Conversation not found' });
+      return res.status(404).json({ error: 'Conversation ikke funnet' });
     }
     await conv.deleteOne();
-    res.json({ message: 'Conversation deleted' });
-  } catch (error) {
-    console.error('Error deleting conversation:', error);
-    res.status(500).json({ error: 'Failed to delete conversation' });
+    return res.json({ message: 'Conversation slettet' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Kunne ikke slette conversation' });
   }
 });
 
-// 7) Start server
+
+// -----------------------------------------------------
+// --- 13) START SERVER -------------------------------
+// -----------------------------------------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server kjører på https://api.vintrastudio.com:${PORT}`);
 });
