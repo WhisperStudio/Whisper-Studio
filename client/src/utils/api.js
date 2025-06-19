@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000', 
+  baseURL: 'http://104.248.132.57', 
   withCredentials: true     // Sender automatisk cookie (JWT‐token) til backend
 });
 

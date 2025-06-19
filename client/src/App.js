@@ -9,6 +9,7 @@ import Admin from './pages/admin';
 import Bifrost from './components/bifrost';
 import Login from './pages/login';
 import Artwork from './pages/artwork';
+import PostLogin from './pages/PostLogin';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/artwork" element={<Artwork />} />
+        <Route path="/post-login" element={<PostLogin />} />
 
       </Routes>
       {/* Vis Bifrost på alle sider */}
