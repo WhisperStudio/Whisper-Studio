@@ -1,6 +1,6 @@
-// ✅ Fullstendig og fungerende Bifrost.js – bruker POST /chat og ikke /chat/start
+// ✅ Bifrost.js med ticket-integrasjon i stedet for chat-endepunkt
 import React, { useState, useRef, useEffect } from 'react';
-import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
+import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import api from '../utils/api';
 
 const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
@@ -16,18 +16,12 @@ const colors = {
   buttonBorder: '#1c2e4e',
   buttonBg: '#1A1F2E',
   buttonHover: '#2C354F',
-  error: '#D32F2F',
-  success: '#4CAF50',
 };
 
 const GlobalStyle = createGlobalStyle`
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover, 
-  input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-      -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
-      -webkit-text-fill-color: #E0E0E0 !important;
-      transition: background-color 5000s ease-in-out 0s;
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
+    -webkit-text-fill-color: #E0E0E0 !important;
   }
 `;
 
@@ -168,83 +162,42 @@ const SendButton = styled.button`
 const Bifrost = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [conversationId, setConversationId] = useState(null);
+  const [ticketId, setTicketId] = useState(null);
   const [inputMessage, setInputMessage] = useState('');
   const [adminTyping, setAdminTyping] = useState(false);
-  const [adminOnline, setAdminOnline] = useState(false);
 
   const endRef = useRef(null);
-
-  useEffect(() => {
-    const fetchChat = async () => {
-      if (!conversationId) return;
-      try {
-        const res = await api.get(`/conversations/${conversationId}`);
-        if (Array.isArray(res.data?.messages)) {
-          setChatMessages(res.data.messages);
-        }
-      } catch (err) {
-        console.error('Failed to fetch messages:', err);
-      }
-    };
-    const interval = setInterval(fetchChat, 5000);
-    fetchChat();
-    return () => clearInterval(interval);
-  }, [conversationId]);
 
   useEffect(() => {
     if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const onlineRes = await api.get('/admin/availability');
-        setAdminOnline(!!onlineRes.data?.adminAvailable);
-        const typingRes = await api.get('/admin/typing');
-        setAdminTyping(!!typingRes.data?.adminTyping);
-      } catch (err) {
-        console.error('Admin status fetch failed:', err);
-      }
-    };
-    if (isOpen) {
-      checkStatus();
-      const interval = setInterval(checkStatus, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [isOpen]);
-
   const startConversation = async () => {
     try {
-      const res = await api.post('/chat', {
-        name: 'Guest',
-        email: 'guest@example.com',
-        category: 'General',
-        message: 'Hello!',
-        userWantsAdmin: false
+      const res = await api.post('/tickets', {
+        subject: 'Live Chat',
+        message: 'Hei! Jeg trenger hjelp...'
       });
-      if (res.data?.conversationId) {
-        setConversationId(res.data.conversationId);
-        setChatMessages([{ sender: 'bot', text: 'Welcome to support!' }]);
+      if (res.data && res.data._id) {
+        setTicketId(res.data._id);
+        setChatMessages([{ sender: 'bot', text: 'En supportticket er opprettet. En admin svarer snart.' }]);
       }
     } catch (err) {
-      console.error('Failed to start chat:', err);
+      console.error('❌ Could not start ticket:', err);
     }
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !conversationId) return;
+    if (!inputMessage.trim() || !ticketId) return;
     const msg = { sender: 'user', text: inputMessage };
     setChatMessages(prev => [...prev, msg]);
     setInputMessage('');
     try {
-      await api.post('/chat', {
-        conversationId,
-        message: inputMessage,
-        userWantsAdmin: false
+      await api.post(`/tickets/${ticketId}/reply`, {
+        reply: inputMessage
       });
     } catch (err) {
-      console.error('Message send error:', err);
+      console.error('❌ Failed to send reply:', err);
     }
   };
 
@@ -263,7 +216,7 @@ const Bifrost = () => {
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
-            Chat with us {adminOnline ? '(Admin online)' : '(Bot only)'}
+            Kontakt oss
             <CloseButton onClick={() => setIsOpen(false)}>×</CloseButton>
           </PanelHeader>
 
@@ -274,7 +227,7 @@ const Bifrost = () => {
               ))}
               {adminTyping && (
                 <TypingIndicator>
-                  Admin is typing <Dot /><Dot /><Dot />
+                  Admin skriver <Dot /><Dot /><Dot />
                 </TypingIndicator>
               )}
               <div ref={endRef} />
@@ -282,7 +235,7 @@ const Bifrost = () => {
             <InputRow>
               <InputField
                 type="text"
-                placeholder="Your message..."
+                placeholder="Skriv melding..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
