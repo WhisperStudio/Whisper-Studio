@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
-import { Analytics } from "@vercel/analytics/react"
 import { Link } from 'react-router-dom';
 import Header from '../components/header'; // Adjust path if needed
 import Footer from '../components/footer'; // Adjust path if needed
