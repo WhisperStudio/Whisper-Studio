@@ -1,9 +1,8 @@
-// ✅ Fullstendig og forbedret Bifrost.js med adminstøtte og stabil chat
+// ✅ Fullstendig og fikset Bifrost.js med fungerende sendeknapp og admin-integrasjon
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
 import api from '../utils/api';
 
-// --- ASSETS & KONFIG ---
 const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
 
 const colors = {
@@ -217,11 +216,16 @@ const Bifrost = () => {
 
   const startConversation = async () => {
     try {
-      const res = await api.post('/chat', {
-        name: 'Guest', email: 'guest@example.com', message: 'Hello!', category: 'General', userWantsAdmin: false
+      const res = await api.post('/chat/start', {
+        name: 'Guest',
+        email: 'guest@example.com',
+        category: 'General',
+        message: 'Hello!',
       });
-      setConversationId(res.data?.conversationId);
-      setChatMessages([{ sender: 'bot', text: 'Welcome to support!' }]);
+      if (res.data?.conversationId) {
+        setConversationId(res.data.conversationId);
+        setChatMessages([{ sender: 'bot', text: 'Welcome to support!' }]);
+      }
     } catch (err) {
       console.error('Failed to start chat:', err);
     }
@@ -233,7 +237,10 @@ const Bifrost = () => {
     setChatMessages(prev => [...prev, msg]);
     setInputMessage('');
     try {
-      await api.post('/chat', { conversationId, message: inputMessage, userWantsAdmin: false });
+      await api.post('/chat/message', {
+        conversationId,
+        message: inputMessage,
+      });
     } catch (err) {
       console.error('Message send error:', err);
     }
