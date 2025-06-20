@@ -1,12 +1,11 @@
-// src/components/Bifrost.js
+// ✅ Fullstendig og forbedret Bifrost.js med adminstøtte og stabil chat
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
+import api from '../utils/api';
 
-// Ikon til den flytende knappen
-const BUTTON_IMAGE =
-  'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
+// --- ASSETS & KONFIG ---
+const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
 
-// Farger brukt i komponenten
 const colors = {
   backgroundDark: '#0b1121',
   panelDark: '#152238',
@@ -18,9 +17,10 @@ const colors = {
   buttonBorder: '#1c2e4e',
   buttonBg: '#1A1F2E',
   buttonHover: '#2C354F',
+  error: '#D32F2F',
+  success: '#4CAF50',
 };
 
-// Global styling (for autofill osv.)
 const GlobalStyle = createGlobalStyle`
   input:-webkit-autofill,
   input:-webkit-autofill:hover, 
@@ -32,39 +32,10 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-// Funksjon for å hente en tidsspesifikk hilsen
-const getTimeGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-};
-
-// Animasjoner
 const popUp = keyframes`
-  0% {
-    transform: translateY(50%) scale(0.3);
-    opacity: 0;
-  }
-  70% {
-    transform: translateY(-10px) scale(1.05);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-`;
-
-const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.07); }
-  100% { transform: scale(1); }
-`;
-
-const spinGradient = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% { transform: translateY(50%) scale(0.3); opacity: 0; }
+  70% { transform: translateY(-10px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 `;
 
 const dotPulse = keyframes`
@@ -73,174 +44,25 @@ const dotPulse = keyframes`
   100% { opacity: 0.2; }
 `;
 
-// Styled components for modal (ticket)
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 1500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const ModalContent = styled.div`
-  background-color: ${colors.panelDark};
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-  position: relative;
-`;
-
-// Styled components for formfelter i modalen
-const FormField = styled.div`
-  margin-bottom: 18px;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: ${colors.textLight};
-`;
-
-const Input = styled.input`
-  width: 90%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color: rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color: rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 90%;
-  padding: 12px 16px;
-  border: 2px solid ${colors.buttonBorder};
-  background-color: rgb(11, 9, 29);
-  color: ${colors.textLight};
-  border-radius: 8px;
-  font-size: 1rem;
-  resize: vertical;
-  transition: border-color 0.2s ease;
-  &:focus {
-    border-color: ${colors.buttonHover};
-    outline: none;
-  }
-`;
-
-// Styled knapper for skjema
-const NextButton = styled.button`
-  border: 2px solid ${colors.buttonBorder};
-  background-color: ${colors.buttonBg};
-  color: ${colors.white};
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: bold;
-  width: 100%;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
-  &:hover {
-    background-color: ${colors.buttonHover};
-  }
-`;
-
-const SubmitButton = styled.button`
-  border: 2px solid ${colors.buttonBorder};
-  background-color: ${colors.buttonBg};
-  color: ${colors.white};
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: bold;
-  width: 100%;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
-  &:hover {
-    background-color: ${colors.buttonHover};
-  }
-`;
-
-// Hoved‐styled components for livechat‐panelet
 const FloatingButtonWrapper = styled.div`
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 `;
 
 const FloatingButton = styled.button`
-  position: relative;
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  ${props =>
-    !props.isOpen &&
-    css`
-      animation: ${pulse} 2s infinite;
-    `}
-  &:hover {
-    transform: scale(1.1);
-  }
-  &:hover::after {
-    content: "";
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background: conic-gradient(
-      from 0deg,
-      rgba(255,255,255,0.4),
-      rgba(255,255,255,0) 40%,
-      rgba(255,255,255,0.4) 80%,
-      rgba(255,255,255,0)
-    );
-    animation: ${spinGradient} 1s linear infinite;
-    z-index: 1;
-    pointer-events: none;
-  }
+  animation: ${popUp} 0.6s ease;
+  &:hover { transform: scale(1.05); }
   img {
-    position: relative;
-    z-index: 2;
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
   }
 `;
 
@@ -248,643 +70,172 @@ const ChatPanel = styled.div`
   position: fixed;
   bottom: 120px;
   right: 20px;
-  width: 350px;
-  max-width: 90%;
+  width: 370px;
+  height: 600px;
   background: ${colors.panelDark};
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-  animation: ${popUp} 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
-  transform-origin: bottom right;
-  z-index: 1200;
   display: flex;
   flex-direction: column;
+  z-index: 1200;
 `;
 
 const PanelHeader = styled.div`
   background: linear-gradient(135deg, #152238, #1c2e4e);
-  padding: 15px 20px;
+  padding: 15px;
   color: ${colors.textLight};
-  font-size: 1.2rem;
   font-weight: bold;
   text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: relative;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  height: 60px;
-`;
-
-const GreetingText = styled.span`
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: ${colors.textLight};
 `;
 
 const CloseButton = styled.button`
   position: absolute;
   right: 20px;
+  top: 15px;
   background: transparent;
   border: none;
   color: ${colors.textLight};
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: scale(1.2);
-  }
-  &:active {
-    transform: scale(0.9);
-  }
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-const BackButton = styled.button`
-  position: absolute;
-  left: 20px;
-  background: transparent;
-  border: none;
-  color: ${colors.textLight};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: scale(1.2);
-  }
-  &:active {
-    transform: scale(0.9);
-  }
-  svg {
-    width: 100%;
-    height: 100%;
-  }
+  font-size: 1.5rem;
 `;
 
 const PanelBody = styled.div`
-  padding: 10px;
-  background: ${colors.backgroundDark};
   flex: 1;
+  padding: 15px;
+  background: ${colors.backgroundDark};
   display: flex;
   flex-direction: column;
-  color: ${colors.textLight};
 `;
 
 const MessagesContainer = styled.div`
-  flex: 1;
+  flex-grow: 1;
   overflow-y: auto;
-  margin-bottom: 10px;
-  padding: 0 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 `;
 
 const MessageBubble = styled.div`
-  background: ${props =>
-    props.sender === 'bot'
-      ? colors.botBubble
-      : props.sender === 'admin'
-      ? colors.adminBubble
-      : colors.userBubble};
-  color: ${props =>
-    props.sender === 'bot' ? colors.textLight : colors.white};
-  align-self: ${props =>
-    props.sender === 'bot' ? 'flex-start' : 'flex-end'};
-  margin-right: ${props => (props.sender === 'admin' ? '20px' : '0')};
+  align-self: ${props => props.sender === 'user' ? 'flex-end' : 'flex-start'};
+  background: ${props => props.sender === 'bot' ? colors.botBubble : props.sender === 'admin' ? colors.adminBubble : colors.userBubble};
+  color: ${colors.white};
   padding: 10px 14px;
   border-radius: 16px;
-  margin: 4px 0;
-  max-width: 80%;
-  box-shadow: 0px 2px 8px rgba(0,0,0,0.2);
+  max-width: 85%;
   font-size: 0.95rem;
-  line-height: 1.3;
-`;
-
-const SenderLabel = styled.div`
-  font-size: 0.75rem;
-  font-weight: bold;
-  margin-bottom: 2px;
-  color: ${props =>
-    props.sender === 'bot' ? colors.textLight : colors.white};
 `;
 
 const TypingIndicator = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 4px 0;
   font-style: italic;
   color: ${colors.textLight};
+  display: flex;
+  gap: 4px;
 `;
 
 const Dot = styled.span`
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  margin: 0 2px;
-  background-color: ${colors.textLight};
+  width: 6px;
+  height: 6px;
+  background: ${colors.textLight};
   border-radius: 50%;
   animation: ${dotPulse} 1.4s infinite both;
-  &:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  &:nth-child(3) {
-    animation-delay: 0.4s;
-  }
 `;
 
-const InputContainer = styled.div`
+const InputRow = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 10px;
 `;
 
 const InputField = styled.input`
   flex: 1;
   padding: 10px;
   border: 2px solid ${colors.buttonBorder};
-  background-color: rgb(11, 9, 29);
-  color: ${colors.textLight};
   border-radius: 8px;
-  font-size: 1rem;
-  &:focus {
-    outline: none;
-    border-color: ${colors.buttonHover};
-  }
+  background: ${colors.backgroundDark};
+  color: ${colors.textLight};
+`;
+
+const SendButton = styled.button`
+  background: ${colors.buttonBg};
+  color: ${colors.white};
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
 `;
 
 const Bifrost = () => {
-  // Pre-chat steg: 0 = velg chatbot/admin,
-  //              0.5 = fallback hvis admin ikke er tilgjengelig,
-  //              1 = kategori,
-  //              2 = detaljer,
-  //              3 = chat‐modus
-  const [step, setStep] = useState(0);
-  const [preChatCompleted, setPreChatCompleted] = useState(false);
-
-  // Chat data
-  const [conversationId, setConversationId] = useState(null);
-  const [chatMessages, setChatMessages] = useState([]);
-
-  // Valg
-  const [userWantsAdmin, setUserWantsAdmin] = useState(false);
-  const [adminAvailable, setAdminAvailable] = useState(false);
-
-  // Chat input
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [adminIsTyping, setAdminIsTyping] = useState(false);
-
-  // Pre-chat / ticket data
-  const [ticket, setTicket] = useState({
-    category: '',
-    email: '',
-    name: '',
-    message: '',
-    subCategory: '',
-  });
-
-  // State for livechat-panelet og ticket modal
   const [isOpen, setIsOpen] = useState(false);
-  const [showTicketModal, setShowTicketModal] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
+  const [inputMessage, setInputMessage] = useState('');
+  const [adminTyping, setAdminTyping] = useState(false);
+  const [adminOnline, setAdminOnline] = useState(false);
 
-  // --- Hent admin availability på mount
-  const fetchAdminAvailability = async () => {
-    try {
-      const res = await fetch('https://api.vintrastudio.com:5000/api/admin/availability', {
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        // F.eks. 403 = ikke logget inn / ikke admin => sett false
-        console.warn('Admin availability fetch ikke ok:', res.status);
-        setAdminAvailable(false);
-        return;
-      }
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data?.adminAvailable !== undefined) {
-          setAdminAvailable(data.adminAvailable);
-        } else {
-          setAdminAvailable(false);
-        }
-      } else {
-        // Forventet JSON, men fikk noe annet
-        console.error('Admin availability: Forventet JSON, fikk:', await res.text());
-        setAdminAvailable(false);
-      }
-    } catch (err) {
-      console.error('Error fetching admin availability:', err);
-      setAdminAvailable(false);
-    }
-  };
+  const endRef = useRef(null);
 
   useEffect(() => {
-    fetchAdminAvailability();
-  }, []);
-
-  // --- Poll for samtale‐meldinger hver 10 sekunder (hvis conversationId)
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const fetchMessages = async () => {
+    const fetchChat = async () => {
+      if (!conversationId) return;
       try {
-        const res = await fetch(`https://api.vintrastudio.com:5000/api/conversations/${conversationId}`, {
-          credentials: 'include',
-        });
-        if (!res.ok) {
-          console.error('Feil ved henting av samtale:', res.status, await res.text());
-          return;
-        }
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await res.json();
-          if (data.messages) {
-            setChatMessages(data.messages);
-          }
-        } else {
-          console.error('Forventet JSON fra /conversations, fikk:', await res.text());
+        const res = await api.get(`/conversations/${conversationId}`);
+        if (Array.isArray(res.data?.messages)) {
+          setChatMessages(res.data.messages);
         }
       } catch (err) {
-        console.error('Polling error:', err);
+        console.error('Failed to fetch messages:', err);
       }
     };
-
-    // Poll hver 10 sekunder
-    const interval = setInterval(fetchMessages, 10000);
-    // Hent umiddelbart én gang
-    fetchMessages();
+    const interval = setInterval(fetchChat, 5000);
+    fetchChat();
     return () => clearInterval(interval);
   }, [conversationId]);
 
-  // --- Poll for admin typing status hver 10 sekunder
   useEffect(() => {
-    const fetchAdminTyping = async () => {
+    if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  useEffect(() => {
+    const checkStatus = async () => {
       try {
-        const res = await fetch('https://api.vintrastudio.com:5000/api/admin/typing', {
-          credentials: 'include',
-        });
-        if (!res.ok) {
-          console.warn('Feil ved henting av admin typing-status:', res.status);
-          setAdminIsTyping(false);
-          return;
-        }
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await res.json();
-          setAdminIsTyping(data.adminTyping);
-        } else {
-          console.error('Forventet JSON fra /admin/typing, fikk:', await res.text());
-          setAdminIsTyping(false);
-        }
+        const onlineRes = await api.get('/admin/availability');
+        setAdminOnline(!!onlineRes.data?.adminAvailable);
+        const typingRes = await api.get('/admin/typing');
+        setAdminTyping(!!typingRes.data?.adminTyping);
       } catch (err) {
-        console.error('Error fetching admin typing status:', err);
-        setAdminIsTyping(false);
+        console.error('Admin status fetch failed:', err);
       }
     };
-
-    const interval = setInterval(fetchAdminTyping, 10000);
-    // Hent umiddelbart én gang
-    fetchAdminTyping();
-    return () => clearInterval(interval);
-  }, []);
-
-  // --- Scroll til bunn av chat når noe oppdateres
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen) {
+      checkStatus();
+      const interval = setInterval(checkStatus, 5000);
+      return () => clearInterval(interval);
     }
-  }, [chatMessages, isTyping, adminIsTyping]);
+  }, [isOpen]);
 
-  // --- Handlere for pre-chat steg og chat
-  const handleChooseChatbot = () => {
-    setUserWantsAdmin(false);
-    setStep(1);
-  };
-
-  const handleChooseAdmin = () => {
-    setUserWantsAdmin(true);
-    if (adminAvailable) {
-      setStep(1);
-    } else {
-      setStep(0.5);
-    }
-  };
-
-  const handleFallbackChatbot = () => {
-    setUserWantsAdmin(false);
-    setStep(1);
-  };
-
-  // Åpne ticket modal hvis admin ikke tilgjengelig
-  const handleFallbackTicket = () => {
-    setShowTicketModal(true);
-  };
-
-  const handleCategorySubmit = (e) => {
-    e.preventDefault();
-    if (ticket.category) {
-      setStep(2);
-    }
-  };
-
-  // Når brukeren har fylt ut epost/navn/melding – send data til /api/chat for å opprette conversation
-  const handlePreChatSubmit = async (e) => {
-    e.preventDefault();
+  const startConversation = async () => {
     try {
-      setIsTyping(true);
-      const response = await fetch('https://api.vintrastudio.com:5000/api/chat', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: ticket.email,
-          name: ticket.name,
-          category: ticket.category,
-          subCategory: ticket.subCategory,
-          message: ticket.message,
-          userWantsAdmin,
-        }),
+      const res = await api.post('/chat', {
+        name: 'Guest', email: 'guest@example.com', message: 'Hello!', category: 'General', userWantsAdmin: false
       });
-      if (!response.ok) {
-        console.error('Error i pre-chat submit:', response.status, await response.text());
-        setIsTyping(false);
-        return;
-      }
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await response.json();
-        setConversationId(data.conversationId);
-
-        // Legg på en innledende melding fra bruker eller velkomstmelding
-        const welcomeMsg = {
-          sender: userWantsAdmin ? 'admin' : 'bot',
-          text: 'Welcome to Vintra Support!',
-          timestamp: new Date(),
-        };
-        const userMsg = ticket.message.trim()
-          ? {
-              sender: 'user',
-              text: ticket.message,
-              timestamp: new Date(),
-            }
-          : null;
-
-        setChatMessages(userMsg ? [welcomeMsg, userMsg] : [welcomeMsg]);
-        setPreChatCompleted(true);
-        setStep(3);
-      } else {
-        console.error('Forventet JSON fra /api/chat, fikk:', await response.text());
-      }
-    } catch (error) {
-      console.error('Error i pre-chat submit:', error);
-    } finally {
-      setIsTyping(false);
+      setConversationId(res.data?.conversationId);
+      setChatMessages([{ sender: 'bot', text: 'Welcome to support!' }]);
+    } catch (err) {
+      console.error('Failed to start chat:', err);
     }
   };
 
-  // Send ny melding i chat‐modus
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    const messageToSend = inputMessage.trim();
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || !conversationId) return;
+    const msg = { sender: 'user', text: inputMessage };
+    setChatMessages(prev => [...prev, msg]);
     setInputMessage('');
     try {
-      setIsTyping(true);
-      const response = await fetch('https://api.vintrastudio.com:5000/api/chat', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversationId,
-          message: messageToSend,
-          userWantsAdmin,
-        }),
-      });
-      if (!response.ok) {
-        console.error('Error sending message:', response.status, await response.text());
-      }
-      // Vi forventer at polling‐hooken overlater å hente opp nye meldinger
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleBack = () => {
-    if (step === 3) {
-      setStep(2);
-    } else if (step === 2) {
-      setStep(1);
-    } else if (step === 1 || step === 0.5) {
-      setStep(0);
-    }
-  };
-
-  // Funksjon for å sende ticket (brukes i ticket modal)
-  const handleTicketSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const ticketPayload = {
-        category: ticket.category,
-        subCategory: ticket.subCategory,
-        email: ticket.email,
-        name: ticket.name,
-        message: ticket.message,
-      };
-      const res = await fetch('https://api.vintrastudio.com:5000/api/tickets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ticketPayload),
-      });
-      if (!res.ok) {
-        console.error('Error submitting ticket:', res.status, await res.text());
-        alert('There was an error submitting your ticket. Please try again.');
-        return;
-      }
-      alert('Ticket submitted successfully!');
-      setShowTicketModal(false);
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Error submitting ticket:', error);
-      alert('There was an error submitting your ticket. Please try again.');
-    }
-  };
-
-  // Render‐funksjon avhengig av steg
-  const renderContent = () => {
-    if (step === 3 && preChatCompleted) {
-      return (
-        <>
-          <MessagesContainer>
-            {chatMessages.map((msg, index) => (
-              <MessageBubble key={index} sender={msg.sender}>
-                <SenderLabel sender={msg.sender}>
-                  {msg.sender === 'user'
-                    ? 'You'
-                    : msg.sender === 'admin'
-                    ? 'Admin'
-                    : 'AI Bot'}
-                </SenderLabel>
-                {msg.text}
-              </MessageBubble>
-            ))}
-            {adminIsTyping && userWantsAdmin && (
-              <TypingIndicator>
-                Admin is typing <Dot /><Dot /><Dot />
-              </TypingIndicator>
-            )}
-            {isTyping && !userWantsAdmin && (
-              <TypingIndicator>
-                AI Bot is typing <Dot /><Dot /><Dot />
-              </TypingIndicator>
-            )}
-            <div ref={messagesEndRef} />
-          </MessagesContainer>
-          <InputContainer>
-            <InputField
-              type="text"
-              placeholder="Type a message..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
-            <NextButton onClick={handleSendMessage}>Send</NextButton>
-          </InputContainer>
-        </>
-      );
-    }
-
-    switch (step) {
-      case 0:
-        return (
-          <>
-            <ul style={{ marginBottom: '1rem' }}>
-              <li>Would you prefer a Chatbot or an Admin to talk to?</li>
-            </ul>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <NextButton onClick={handleChooseChatbot}>Chatbot</NextButton>
-              <NextButton onClick={handleChooseAdmin}>Admin</NextButton>
-            </div>
-          </>
-        );
-      case 0.5:
-        return (
-          <>
-            <ul style={{ marginBottom: '1rem' }}>
-              <li>No admin is available right now.</li>
-              <li>Do you want to use a Chatbot or submit a ticket?</li>
-            </ul>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <NextButton onClick={handleFallbackChatbot}>Chatbot</NextButton>
-              <NextButton onClick={handleFallbackTicket}>Ticket</NextButton>
-            </div>
-          </>
-        );
-      case 1:
-        return (
-          <form onSubmit={handleCategorySubmit}>
-            <ul style={{ marginBottom: '1rem' }}>
-              <li>Choose category</li>
-            </ul>
-            <FormField>
-              <Label htmlFor="category">Category</Label>
-              <Select
-                id="category"
-                name="category"
-                value={ticket.category}
-                onChange={(e) => setTicket({ ...ticket, category: e.target.value })}
-                required
-              >
-                <option value="" disabled>
-                  -- Select category --
-                </option>
-                <option value="Games">Games</option>
-                <option value="General">General</option>
-                <option value="Work">Work</option>
-                <option value="Billing">Billing</option>
-                <option value="Support">Support</option>
-                <option value="Sales">Sales</option>
-                <option value="Other">Other</option>
-              </Select>
-            </FormField>
-            {ticket.category === 'Games' && (
-              <FormField>
-                <Label htmlFor="subCategory">Game sub-category</Label>
-                <Input
-                  type="text"
-                  id="subCategory"
-                  name="subCategory"
-                  placeholder="For example, 'Level 10 help'"
-                  value={ticket.subCategory}
-                  onChange={(e) => setTicket({ ...ticket, subCategory: e.target.value })}
-                />
-              </FormField>
-            )}
-            <NextButton type="submit">Next</NextButton>
-          </form>
-        );
-      case 2:
-        return (
-          <form onSubmit={handlePreChatSubmit}>
-            <ul style={{ marginBottom: '1rem' }}>
-              <li>Enter your details</li>
-            </ul>
-            <FormField>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                value={ticket.email}
-                onChange={(e) => setTicket({ ...ticket, email: e.target.value })}
-                required
-              />
-            </FormField>
-            <FormField>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                type="text"
-                id="name"
-                name="name"
-                value={ticket.name}
-                onChange={(e) => setTicket({ ...ticket, name: e.target.value })}
-                required
-              />
-            </FormField>
-            <FormField>
-              <Label htmlFor="message">Message</Label>
-              <TextArea
-                id="message"
-                name="message"
-                rows="4"
-                value={ticket.message}
-                onChange={(e) => setTicket({ ...ticket, message: e.target.value })}
-                required
-              />
-            </FormField>
-            <SubmitButton type="submit">Start Chat</SubmitButton>
-          </form>
-        );
-      default:
-        return null;
+      await api.post('/chat', { conversationId, message: inputMessage, userWantsAdmin: false });
+    } catch (err) {
+      console.error('Message send error:', err);
     }
   };
 
@@ -892,126 +243,45 @@ const Bifrost = () => {
     <>
       <GlobalStyle />
       <FloatingButtonWrapper>
-        <FloatingButton
-          onClick={() => setIsOpen((prev) => !prev)}
-          isOpen={isOpen}
-        >
-          <img src={BUTTON_IMAGE} alt="Chat Icon" />
+        <FloatingButton onClick={() => {
+          if (!isOpen) startConversation();
+          setIsOpen(prev => !prev);
+        }}>
+          <img src={BUTTON_IMAGE} alt="Chat" />
         </FloatingButton>
       </FloatingButtonWrapper>
 
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
-            {[
-              1, 2, 3, 0.5, // i disse stegene kan man gå “Back”
-            ].includes(step) && (
-              <BackButton onClick={handleBack}>
-                <svg
-                  fill="#ffffff"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M14.657 18.657a1 1 0 0 1-.707-.293l-5.657-5.657a1 1 0 0 1 0-1.414l5.657-5.657a1 1 0 0 1 1.414 1.414L10.414 12l4.95 4.95a1 1 0 0 1-.707 1.707z"></path>
-                </svg>
-              </BackButton>
-            )}
-            <GreetingText>{getTimeGreeting()}</GreetingText>
-            <CloseButton onClick={() => setIsOpen(false)}>
-              <svg
-                fill="#ffffff"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M13.414 12l4.95-4.95a1 1 0 0 0-1.414-1.414L12 10.586l-4.95-4.95A1 1 0 0 0 5.636 7.05l4.95 4.95-4.95 4.95a1 1 0 0 0 1.414 1.414l4.95-4.95 4.95 4.95a1 1 0 0 0 1.414-1.414z"></path>
-              </svg>
-            </CloseButton>
+            Chat with us {adminOnline ? '(Admin online)' : '(Bot only)'}
+            <CloseButton onClick={() => setIsOpen(false)}>×</CloseButton>
           </PanelHeader>
-          <PanelBody>{renderContent()}</PanelBody>
-        </ChatPanel>
-      )}
 
-      {/* Ticket Submission Modal */}
-      {showTicketModal && (
-        <ModalOverlay onClick={() => setShowTicketModal(false)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => setShowTicketModal(false)}>×</CloseButton>
-            <h3 style={{ color: colors.textLight }}>Submit a Ticket</h3>
-            <form onSubmit={handleTicketSubmit}>
-              <FormField>
-                <Label htmlFor="ticketCategory">Category:</Label>
-                <Select
-                  id="ticketCategory"
-                  value={ticket.category}
-                  onChange={(e) => setTicket({ ...ticket, category: e.target.value })}
-                  required
-                >
-                  <option value="" disabled>
-                    -- Select category --
-                  </option>
-                  <option value="Games">Games</option>
-                  <option value="General">General</option>
-                  <option value="Work">Work</option>
-                  <option value="Billing">Billing</option>
-                  <option value="Support">Support</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Other">Other</option>
-                </Select>
-              </FormField>
-              {ticket.category === 'Games' && (
-                <FormField>
-                  <Label htmlFor="ticketSubCategory">Game sub-category:</Label>
-                  <Input
-                    type="text"
-                    id="ticketSubCategory"
-                    placeholder="For example, 'Level 10 help'"
-                    value={ticket.subCategory}
-                    onChange={(e) =>
-                      setTicket({ ...ticket, subCategory: e.target.value })
-                    }
-                  />
-                </FormField>
+          <PanelBody>
+            <MessagesContainer>
+              {chatMessages.map((m, i) => (
+                <MessageBubble key={i} sender={m.sender}>{m.text}</MessageBubble>
+              ))}
+              {adminTyping && (
+                <TypingIndicator>
+                  Admin is typing <Dot /><Dot /><Dot />
+                </TypingIndicator>
               )}
-              <FormField>
-                <Label htmlFor="ticketEmail">Email:</Label>
-                <Input
-                  type="email"
-                  id="ticketEmail"
-                  value={ticket.email}
-                  onChange={(e) =>
-                    setTicket({ ...ticket, email: e.target.value })
-                  }
-                  required
-                />
-              </FormField>
-              <FormField>
-                <Label htmlFor="ticketName">Name:</Label>
-                <Input
-                  type="text"
-                  id="ticketName"
-                  value={ticket.name}
-                  onChange={(e) =>
-                    setTicket({ ...ticket, name: e.target.value })
-                  }
-                  required
-                />
-              </FormField>
-              <FormField>
-                <Label htmlFor="ticketMessage">Message:</Label>
-                <TextArea
-                  id="ticketMessage"
-                  rows="4"
-                  value={ticket.message}
-                  onChange={(e) =>
-                    setTicket({ ...ticket, message: e.target.value })
-                  }
-                  required
-                />
-              </FormField>
-              <NextButton type="submit">Submit Ticket</NextButton>
-            </form>
-          </ModalContent>
-        </ModalOverlay>
+              <div ref={endRef} />
+            </MessagesContainer>
+            <InputRow>
+              <InputField
+                type="text"
+                placeholder="Your message..."
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              />
+              <SendButton onClick={sendMessage}>Send</SendButton>
+            </InputRow>
+          </PanelBody>
+        </ChatPanel>
       )}
     </>
   );
