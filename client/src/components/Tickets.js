@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FiTrash2, FiCheckCircle } from "react-icons/fi";
+import api from "../utils/api";
 
 // Styled components
 const TicketsContainer = styled.div`
@@ -129,7 +130,6 @@ const Select = styled.select`
   margin-top: 4px;
 `;
 
-// StatusBadge med farge basert på status
 const StatusBadge = styled.span`
   padding: 2px 6px;
   border-radius: 4px;
@@ -148,12 +148,10 @@ const Tickets = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [replyText, setReplyText] = useState("");
 
-  // Hent alle tickets fra backend
   const fetchTickets = async () => {
     try {
-      const res = await fetch("http://localhost/api/tickets");
-      const data = await res.json();
-      setTickets(data);
+      const res = await api.get("/api/tickets");
+      setTickets(res.data);
     } catch (error) {
       console.error("Error fetching tickets:", error);
     }
@@ -163,30 +161,19 @@ const Tickets = () => {
     fetchTickets();
   }, []);
 
-  // Velg et ticket for visning
   const handleSelectTicket = (ticket) => {
     setSelectedTicket(ticket);
     setReplyText(ticket.reply || "");
   };
 
-  // Oppdater ticket – vi sender både status og reply
   const handleUpdateTicket = async () => {
     try {
       const updatePayload = {
         reply: replyText,
         status: selectedTicket.status
       };
-      const res = await fetch(
-        `http://localhost/api/tickets/${selectedTicket._id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatePayload)
-        }
-      );
-      if (!res.ok) throw new Error("Failed to update ticket");
-      const updatedTicket = await res.json();
-      // Oppdater lista og modalen
+      const res = await api.put(`/api/tickets/${selectedTicket._id}`, updatePayload);
+      const updatedTicket = res.data;
       await fetchTickets();
       setSelectedTicket(updatedTicket);
     } catch (error) {
@@ -194,13 +181,9 @@ const Tickets = () => {
     }
   };
 
-  // Slett et ticket
   const handleDeleteTicket = async (ticketId) => {
     try {
-      const res = await fetch(`http://localhost/api/tickets/${ticketId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete ticket");
+      await api.delete(`/api/tickets/${ticketId}`);
       await fetchTickets();
       setSelectedTicket(null);
     } catch (error) {
@@ -242,7 +225,6 @@ const Tickets = () => {
         ))}
       </TicketList>
 
-      {/* Modal for visning og oppdatering av ticket */}
       {selectedTicket && (
         <ModalOverlay onClick={() => setSelectedTicket(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -251,15 +233,13 @@ const Tickets = () => {
             <p>
               <strong>Name:</strong> {selectedTicket.name} <br />
               <strong>Email:</strong> {selectedTicket.email} <br />
-              <strong>Category:</strong> {selectedTicket.category}{" "}
-              {selectedTicket.subCategory && `(${selectedTicket.subCategory})`}
+              <strong>Category:</strong> {selectedTicket.category} {selectedTicket.subCategory && `(${selectedTicket.subCategory})`}
             </p>
             <p>
               <strong>Message:</strong><br /> {selectedTicket.message}
             </p>
             <p>
-              <strong>Status:</strong>{" "}
-              <StatusBadge status={selectedTicket.status}>{selectedTicket.status}</StatusBadge>
+              <strong>Status:</strong> <StatusBadge status={selectedTicket.status}>{selectedTicket.status}</StatusBadge>
             </p>
             {selectedTicket.reply && (
               <p>
@@ -270,9 +250,7 @@ const Tickets = () => {
             <Select
               id="ticketStatus"
               value={selectedTicket.status}
-              onChange={(e) =>
-                setSelectedTicket({ ...selectedTicket, status: e.target.value })
-              }
+              onChange={(e) => setSelectedTicket({ ...selectedTicket, status: e.target.value })}
             >
               <option value="open">Open</option>
               <option value="pending">Pending</option>
