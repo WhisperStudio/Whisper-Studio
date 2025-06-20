@@ -1,8 +1,9 @@
-// ✅ Fullstendig og fikset Bifrost.js med fungerende sendeknapp og admin-integrasjon
+// ✅ Bifrost.js – full fungerende chatbot med ticket fallback
 import React, { useState, useRef, useEffect } from 'react';
 import styled, { keyframes, css, createGlobalStyle } from 'styled-components';
 import api from '../utils/api';
 
+// --- Konfigurasjon og visuelle elementer ---
 const BUTTON_IMAGE = 'https://i.ibb.co/yFxWgc0s/AJxt1-KNy-Zw-Rvqjji1-Teum-EKW2-C4qw-Tpl-RTJVy-M5s-Zx-VCwbq-Ogpyhnpz-T44-QB9-RF51-XVUc1-Ci-Pf8-N0-Bp.png';
 
 const colors = {
@@ -16,18 +17,16 @@ const colors = {
   buttonBorder: '#1c2e4e',
   buttonBg: '#1A1F2E',
   buttonHover: '#2C354F',
-  error: '#D32F2F',
-  success: '#4CAF50',
 };
 
 const GlobalStyle = createGlobalStyle`
   input:-webkit-autofill,
-  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
-      -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
-      -webkit-text-fill-color: #E0E0E0 !important;
-      transition: background-color 5000s ease-in-out 0s;
+    -webkit-box-shadow: 0 0 0 30px rgb(11, 9, 29) inset !important;
+    -webkit-text-fill-color: #E0E0E0 !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 `;
 
@@ -53,15 +52,12 @@ const FloatingButtonWrapper = styled.div`
 const FloatingButton = styled.button`
   background: transparent;
   border: none;
-  padding: 0;
   cursor: pointer;
-  animation: ${popUp} 0.6s ease;
-  &:hover { transform: scale(1.05); }
   img {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
   }
 `;
 
@@ -74,175 +70,114 @@ const ChatPanel = styled.div`
   background: ${colors.panelDark};
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  z-index: 1200;
+  animation: ${popUp} 0.6s ease forwards;
 `;
 
 const PanelHeader = styled.div`
-  background: linear-gradient(135deg, #152238, #1c2e4e);
-  padding: 15px;
-  color: ${colors.textLight};
+  background: #1c2e4e;
+  padding: 1rem;
+  color: ${colors.white};
   font-weight: bold;
   text-align: center;
-  position: relative;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  right: 20px;
-  top: 15px;
-  background: transparent;
-  border: none;
-  color: ${colors.textLight};
-  cursor: pointer;
-  font-size: 1.5rem;
 `;
 
 const PanelBody = styled.div`
-  flex: 1;
-  padding: 15px;
   background: ${colors.backgroundDark};
+  flex: 1;
   display: flex;
   flex-direction: column;
-`;
-
-const MessagesContainer = styled.div`
-  flex-grow: 1;
+  padding: 1rem;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 `;
 
 const MessageBubble = styled.div`
   align-self: ${props => props.sender === 'user' ? 'flex-end' : 'flex-start'};
-  background: ${props => props.sender === 'bot' ? colors.botBubble : props.sender === 'admin' ? colors.adminBubble : colors.userBubble};
+  background: ${props => props.sender === 'user' ? colors.userBubble : props.sender === 'admin' ? colors.adminBubble : colors.botBubble};
   color: ${colors.white};
-  padding: 10px 14px;
-  border-radius: 16px;
-  max-width: 85%;
-  font-size: 0.95rem;
-`;
-
-const TypingIndicator = styled.div`
-  font-style: italic;
-  color: ${colors.textLight};
-  display: flex;
-  gap: 4px;
-`;
-
-const Dot = styled.span`
-  width: 6px;
-  height: 6px;
-  background: ${colors.textLight};
-  border-radius: 50%;
-  animation: ${dotPulse} 1.4s infinite both;
+  padding: 10px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  max-width: 80%;
 `;
 
 const InputRow = styled.div`
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  padding: 0.5rem;
+  background: ${colors.panelDark};
+  gap: 0.5rem;
 `;
 
 const InputField = styled.input`
   flex: 1;
   padding: 10px;
-  border: 2px solid ${colors.buttonBorder};
   border-radius: 8px;
-  background: ${colors.backgroundDark};
+  border: 2px solid ${colors.buttonBorder};
+  background-color: ${colors.backgroundDark};
   color: ${colors.textLight};
 `;
 
 const SendButton = styled.button`
   background: ${colors.buttonBg};
-  color: ${colors.white};
+  color: white;
+  padding: 10px 16px;
   border: none;
   border-radius: 8px;
-  padding: 10px 16px;
   cursor: pointer;
 `;
 
-const Bifrost = () => {
+export default function Bifrost() {
   const [isOpen, setIsOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState(null);
-  const [inputMessage, setInputMessage] = useState('');
-  const [adminTyping, setAdminTyping] = useState(false);
-  const [adminOnline, setAdminOnline] = useState(false);
-
-  const endRef = useRef(null);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
-    const fetchChat = async () => {
-      if (!conversationId) return;
-      try {
-        const res = await api.get(`/conversations/${conversationId}`);
-        if (Array.isArray(res.data?.messages)) {
-          setChatMessages(res.data.messages);
-        }
-      } catch (err) {
-        console.error('Failed to fetch messages:', err);
-      }
-    };
-    const interval = setInterval(fetchChat, 5000);
-    fetchChat();
-    return () => clearInterval(interval);
-  }, [conversationId]);
-
-  useEffect(() => {
-    if (endRef.current) endRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const onlineRes = await api.get('/admin/availability');
-        setAdminOnline(!!onlineRes.data?.adminAvailable);
-        const typingRes = await api.get('/admin/typing');
-        setAdminTyping(!!typingRes.data?.adminTyping);
-      } catch (err) {
-        console.error('Admin status fetch failed:', err);
-      }
-    };
-    if (isOpen) {
-      checkStatus();
-      const interval = setInterval(checkStatus, 5000);
+    if (isOpen && conversationId) {
+      const interval = setInterval(async () => {
+        try {
+          const res = await api.get(`/conversations/${conversationId}`);
+          setMessages(res.data.messages);
+        } catch {}
+      }, 5000);
       return () => clearInterval(interval);
     }
-  }, [isOpen]);
+  }, [isOpen, conversationId]);
 
-  const startConversation = async () => {
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const startChat = async () => {
     try {
       const res = await api.post('/chat/start', {
         name: 'Guest',
         email: 'guest@example.com',
         category: 'General',
-        message: 'Hello!',
+        message: 'Hello!'
       });
-      if (res.data?.conversationId) {
-        setConversationId(res.data.conversationId);
-        setChatMessages([{ sender: 'bot', text: 'Welcome to support!' }]);
-      }
+      setConversationId(res.data.conversationId);
+      setMessages([{ sender: 'bot', text: 'Velkommen til support!' }]);
     } catch (err) {
-      console.error('Failed to start chat:', err);
+      console.error('Kunne ikke starte chat:', err);
     }
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !conversationId) return;
-    const msg = { sender: 'user', text: inputMessage };
-    setChatMessages(prev => [...prev, msg]);
-    setInputMessage('');
+    if (!input.trim() || !conversationId) return;
+    const msg = { sender: 'user', text: input };
+    setMessages(prev => [...prev, msg]);
+    setInput('');
     try {
-      await api.post('/chat/message', {
+      await api.post('/chat', {
         conversationId,
-        message: inputMessage,
+        message: msg.text,
+        userWantsAdmin: false
       });
     } catch (err) {
-      console.error('Message send error:', err);
+      console.error('Feil ved sending:', err);
     }
   };
 
@@ -251,7 +186,7 @@ const Bifrost = () => {
       <GlobalStyle />
       <FloatingButtonWrapper>
         <FloatingButton onClick={() => {
-          if (!isOpen) startConversation();
+          if (!isOpen) startChat();
           setIsOpen(prev => !prev);
         }}>
           <img src={BUTTON_IMAGE} alt="Chat" />
@@ -261,37 +196,25 @@ const Bifrost = () => {
       {isOpen && (
         <ChatPanel>
           <PanelHeader>
-            Chat with us {adminOnline ? '(Admin online)' : '(Bot only)'}
-            <CloseButton onClick={() => setIsOpen(false)}>×</CloseButton>
+            Chat med oss
           </PanelHeader>
-
           <PanelBody>
-            <MessagesContainer>
-              {chatMessages.map((m, i) => (
-                <MessageBubble key={i} sender={m.sender}>{m.text}</MessageBubble>
-              ))}
-              {adminTyping && (
-                <TypingIndicator>
-                  Admin is typing <Dot /><Dot /><Dot />
-                </TypingIndicator>
-              )}
-              <div ref={endRef} />
-            </MessagesContainer>
-            <InputRow>
-              <InputField
-                type="text"
-                placeholder="Your message..."
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              />
-              <SendButton onClick={sendMessage}>Send</SendButton>
-            </InputRow>
+            {messages.map((m, i) => (
+              <MessageBubble key={i} sender={m.sender}>{m.text}</MessageBubble>
+            ))}
+            <div ref={scrollRef} />
           </PanelBody>
+          <InputRow>
+            <InputField
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Skriv en melding..."
+              onKeyDown={e => e.key === 'Enter' && sendMessage()}
+            />
+            <SendButton onClick={sendMessage}>Send</SendButton>
+          </InputRow>
         </ChatPanel>
       )}
     </>
   );
-};
-
-export default Bifrost;
+}
