@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FiMessageSquare, FiUsers, FiSettings, FiActivity, FiFileText } from 'react-icons/fi';
+import ChatDashboard from '../components/ChatDashboard';
+import Tickets from '../components/Tickets';
 
 const Container = styled.div`
   background: #0b1121;
@@ -60,6 +62,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState(null);
+  const [activeComponent, setActiveComponent] = useState('dashboard');
 
   useEffect(() => {
     axios
@@ -77,37 +80,49 @@ export default function Admin() {
 
   if (!authChecked) return <Container>Laster adminpanel…</Container>;
 
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case 'chat':
+        return <ChatDashboard />;
+      case 'tickets':
+        return <Tickets />;
+      default:
+        return (
+          <Grid>
+            <Card onClick={() => setActiveComponent('chat')}>
+              <CardTitle><FiMessageSquare /> Chat Dashboard</CardTitle>
+              <CardText>Manage and respond to live chat conversations in real time.</CardText>
+            </Card>
+
+            <Card onClick={() => setActiveComponent('tickets')}>
+              <CardTitle><FiFileText /> Ticket Manager</CardTitle>
+              <CardText>Review, update, and respond to support tickets.</CardText>
+            </Card>
+
+            <Card>
+              <CardTitle><FiUsers /> User Management</CardTitle>
+              <CardText>View or manage user access, roles, and permissions.</CardText>
+            </Card>
+
+            <Card>
+              <CardTitle><FiSettings /> System Settings</CardTitle>
+              <CardText>Configure system options, appearance, and backend integrations.</CardText>
+            </Card>
+
+            <Card>
+              <CardTitle><FiActivity /> Logs & Activity</CardTitle>
+              <CardText>View recent system actions, login activity, and error logs.</CardText>
+            </Card>
+          </Grid>
+        );
+    }
+  };
+
   return (
     <Container>
       <Title>Welcome, Admin {user.username || user.email}</Title>
       <SubTitle>You are logged in as administrator. Explore your tools below:</SubTitle>
-
-      <Grid>
-        <Card onClick={() => navigate('../components/ChatDashboard')}>
-          <CardTitle><FiMessageSquare /> Chat Dashboard</CardTitle>
-          <CardText>Manage and respond to live chat conversations in real time.</CardText>
-        </Card>
-
-        <Card onClick={() => navigate('../components/tickets')}>
-          <CardTitle><FiFileText /> Ticket Manager</CardTitle>
-          <CardText>Review, update, and respond to support tickets.</CardText>
-        </Card>
-
-        <Card>
-          <CardTitle><FiUsers /> User Management</CardTitle>
-          <CardText>View or manage user access, roles, and permissions.</CardText>
-        </Card>
-
-        <Card>
-          <CardTitle><FiSettings /> System Settings</CardTitle>
-          <CardText>Configure system options, appearance, and backend integrations.</CardText>
-        </Card>
-
-        <Card>
-          <CardTitle><FiActivity /> Logs & Activity</CardTitle>
-          <CardText>View recent system actions, login activity, and error logs.</CardText>
-        </Card>
-      </Grid>
+      {renderComponent()}
     </Container>
   );
 }
