@@ -83,12 +83,12 @@ export default function Admin() {
       <SubTitle>You are logged in as administrator. Explore your tools below:</SubTitle>
 
       <Grid>
-        <Card onClick={() => navigate('/chat-dashboard')}>
+        <Card onClick={() => navigate('../components/ChatDashboard')}>
           <CardTitle><FiMessageSquare /> Chat Dashboard</CardTitle>
           <CardText>Manage and respond to live chat conversations in real time.</CardText>
         </Card>
 
-        <Card onClick={() => navigate('/tickets')}>
+        <Card onClick={() => navigate('../components/tickets')}>
           <CardTitle><FiFileText /> Ticket Manager</CardTitle>
           <CardText>Review, update, and respond to support tickets.</CardText>
         </Card>
