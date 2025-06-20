@@ -7,7 +7,6 @@ import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
 import placeholderImage1 from '../bilder/1.webp'; // Placeholder image for cards
 import placeholderImage2 from '../bilder/smart_gnome.png'; // Placeholder image for cards
 import placeholderImage3 from '../bilder/3.webp'; // New placeholder image for cards
-import { Analytics } from "@vercel/analytics/react"
 
 const fadeInBounce = keyframes`
   0% {
