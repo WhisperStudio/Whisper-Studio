@@ -1,284 +1,189 @@
-// src/components/Tickets.js
-import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { FiTrash2, FiCheckCircle } from "react-icons/fi";
-import api from "../utils/api";
+// ✅ Tickets.js (med støtte for admin-svar til tickets) - Fikset
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import api from '../utils/api';
 
-// Styled components
-const TicketsContainer = styled.div`
-  padding: 20px;
-  background-color: ${({ theme }) => theme.cardBg};
-  border-radius: 8px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
+const Wrapper = styled.div`
+  background: #1e293b;
+  padding: 2rem;
+  border-radius: 12px;
 `;
 
-const Title = styled.h2`
-  margin-bottom: 16px;
-`;
-
-const TicketList = styled.div`
+const TicketForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-`;
-
-const TicketItem = styled.div`
-  padding: 12px;
-  background-color: ${({ theme }) => theme.bodyBg};
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: ${({ theme }) => theme.inputFocus};
-  }
-`;
-
-const TicketHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const TicketDetail = styled.div`
-  margin-top: 8px;
-  font-size: 0.9rem;
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-`;
-
-const ActionButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: ${({ bgColor }) => bgColor || "#2563eb"};
-  color: #fff;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  &:hover {
-    opacity: 0.9;
-  }
+  gap: 1rem;
+  margin-bottom: 2rem;
 `;
 
 const Input = styled.input`
-  padding: 6px;
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 4px;
-  width: 100%;
-  margin-top: 4px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: #0f172a;
+  color: white;
 `;
 
 const TextArea = styled.textarea`
-  padding: 6px;
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 4px;
-  width: 100%;
-  margin-top: 4px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: #0f172a;
+  color: white;
   resize: vertical;
 `;
 
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 1500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const ModalContent = styled.div`
-  background-color: ${({ theme }) => theme.cardBg};
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-  position: relative;
-`;
-
-const CloseButton = styled.button`
-  background: transparent;
+const Button = styled.button`
+  background: #2d72d9;
+  color: white;
+  padding: 0.75rem 1rem;
   border: none;
-  font-size: 1.2rem;
+  border-radius: 8px;
   cursor: pointer;
-  position: absolute;
-  right: 16px;
-  top: 16px;
 `;
 
-const Label = styled.label`
-  font-weight: 500;
-  margin-top: 8px;
-  display: block;
+const TicketList = styled.div`
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
 `;
 
-const Select = styled.select`
+const TicketItem = styled.div`
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+`;
+
+const ReplyInput = styled.textarea`
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #0f172a;
+  color: white;
+  border: 1px solid #2d72d9;
+  border-radius: 6px;
   width: 100%;
-  padding: 6px;
-  border: 1px solid ${({ theme }) => theme.inputBorder};
-  border-radius: 4px;
-  margin-top: 4px;
+  resize: vertical;
 `;
 
-const StatusBadge = styled.span`
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: #fff;
-  background-color: ${({ status }) => {
-    if (status === "open") return "green";
-    if (status === "pending") return "orange";
-    if (status === "closed") return "red";
-    return "#aaa";
-  }};
-`;
-
-const Tickets = () => {
+export default function Tickets() {
   const [tickets, setTickets] = useState([]);
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [replyText, setReplyText] = useState("");
-
-  const fetchTickets = async () => {
-    try {
-      const res = await api.get("/api/tickets");
-      setTickets(res.data);
-    } catch (error) {
-      console.error("Error fetching tickets:", error);
-    }
-  };
+  const [form, setForm] = useState({ subject: '', message: '' });
+  const [error, setError] = useState(null);
+  const [replyMap, setReplyMap] = useState({});
 
   useEffect(() => {
-    fetchTickets();
+    api.get('/tickets')
+      .then(res => {
+        const data = res.data;
+        // FIX: Robustly find the array in the response. The API might return the array
+        // directly, or nested under a "data" or "tickets" key.
+        const ticketsArray = Array.isArray(data)
+          ? data
+          : (data && (Array.isArray(data.data) ? data.data : Array.isArray(data.tickets) ? data.tickets : null));
+
+        if (ticketsArray) {
+          setTickets(ticketsArray);
+        } else {
+          console.warn('⚠️ Received data is not an array or a recognized wrapper object:', data);
+          setTickets([]); // Default to empty array if format is unexpected
+        }
+      })
+      .catch(err => {
+        console.error('❌ Feil ved henting av tickets:', err);
+        setError('Kunne ikke hente tickets');
+        // FIX: Ensure state is a clean array on API error to prevent crashes.
+        setTickets([]);
+      });
   }, []);
 
-  const handleSelectTicket = (ticket) => {
-    setSelectedTicket(ticket);
-    setReplyText(ticket.reply || "");
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.subject || !form.message) return;
 
-  const handleUpdateTicket = async () => {
     try {
-      const updatePayload = {
-        reply: replyText,
-        status: selectedTicket.status
-      };
-      const res = await api.put(`/api/tickets/${selectedTicket._id}`, updatePayload);
-      const updatedTicket = res.data;
-      await fetchTickets();
-      setSelectedTicket(updatedTicket);
-    } catch (error) {
-      console.error("Error updating ticket:", error);
+      const res = await api.post('/tickets', form);
+      // FIX: Ensure the response data is a valid object before adding it. This prevents
+      // adding null, an array, or other primitives to the tickets list.
+      if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+        setTickets(prev => [...prev, res.data]);
+        setForm({ subject: '', message: '' });
+      } else {
+        console.error('❌ Received unexpected data after creating ticket:', res.data);
+        setError('An error occurred while updating the ticket list.');
+      }
+    } catch (err) {
+      console.error('❌ Feil ved innsending av ticket:', err);
+      setError('Kunne ikke sende ticket');
     }
   };
 
-  const handleDeleteTicket = async (ticketId) => {
+  const handleReply = async (ticketId) => {
+    const reply = replyMap[ticketId];
+    if (!reply?.trim()) return;
+
     try {
-      await api.delete(`/api/tickets/${ticketId}`);
-      await fetchTickets();
-      setSelectedTicket(null);
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
+      await api.post(`/tickets/${ticketId}/reply`, { reply });
+      // This is an optimistic update, which is fine. It assumes the API call succeeds.
+      const updated = tickets.map(t =>
+        t._id === ticketId ? { ...t, adminReply: reply } : t
+      );
+      setTickets(updated);
+      setReplyMap(prev => ({ ...prev, [ticketId]: '' }));
+    } catch (err) {
+      console.error('❌ Feil ved admin-svar:', err);
     }
   };
 
   return (
-    <TicketsContainer>
-      <Title>Tickets</Title>
+    <Wrapper>
+      <h2>Support Tickets</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      <TicketForm onSubmit={handleSubmit}>
+        <Input
+          type="text"
+          placeholder="Subject"
+          value={form.subject}
+          onChange={e => setForm({ ...form, subject: e.target.value })}
+        />
+        <TextArea
+          rows="4"
+          placeholder="Describe your issue..."
+          value={form.message}
+          onChange={e => setForm({ ...form, message: e.target.value })}
+        />
+        <Button type="submit">Submit Ticket</Button>
+      </TicketForm>
+
       <TicketList>
-        {tickets.map((ticket) => (
-          <TicketItem key={ticket._id} onClick={() => handleSelectTicket(ticket)}>
-            <TicketHeader>
-              <div>
-                <strong>{ticket.name}</strong> ({ticket.email})
-              </div>
-              <div>
-                Status: <StatusBadge status={ticket.status}>{ticket.status}</StatusBadge>
-              </div>
-            </TicketHeader>
-            <TicketDetail>
-              <em>
-                Category: {ticket.category}
-                {ticket.subCategory ? ` (${ticket.subCategory})` : ""}
-              </em>
-            </TicketDetail>
-            <TicketDetail>
-              {ticket.message.length > 60
-                ? ticket.message.slice(0, 60) + "..."
-                : ticket.message}
-            </TicketDetail>
-            {ticket.reply && (
-              <TicketDetail>
-                <strong>Reply:</strong> {ticket.reply.length > 60 ? ticket.reply.slice(0, 60) + "..." : ticket.reply}
-              </TicketDetail>
-            )}
-          </TicketItem>
-        ))}
+        {/* This check is correct, but was failing because `tickets` was not an array */}
+        {!Array.isArray(tickets) || tickets.length === 0 ? (
+          <p style={{ color: '#ccc' }}>Ingen tickets ennå.</p>
+        ) : (
+          tickets.map(ticket => (
+            // Ensure ticket is a valid object before trying to render it
+            (ticket && typeof ticket === 'object') && (
+              <TicketItem key={ticket._id}>
+                <strong>{ticket.subject}</strong>
+                <p>{ticket.message}</p>
+                {ticket.adminReply && (
+                  <p style={{ marginTop: '0.5rem', color: '#4CAF50' }}>
+                    <strong>Admin svarte:</strong> {ticket.adminReply}
+                  </p>
+                )}
+                <ReplyInput
+                  rows="2"
+                  placeholder="Svar på denne ticketen..."
+                  value={replyMap[ticket._id] || ''}
+                  onChange={e => setReplyMap(prev => ({ ...prev, [ticket._id]: e.target.value }))}
+                />
+                <Button onClick={() => handleReply(ticket._id)}>Send svar</Button>
+              </TicketItem>
+            )
+          ))
+        )}
       </TicketList>
-
-      {selectedTicket && (
-        <ModalOverlay onClick={() => setSelectedTicket(null)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => setSelectedTicket(null)}>×</CloseButton>
-            <h3>Ticket Details</h3>
-            <p>
-              <strong>Name:</strong> {selectedTicket.name} <br />
-              <strong>Email:</strong> {selectedTicket.email} <br />
-              <strong>Category:</strong> {selectedTicket.category} {selectedTicket.subCategory && `(${selectedTicket.subCategory})`}
-            </p>
-            <p>
-              <strong>Message:</strong><br /> {selectedTicket.message}
-            </p>
-            <p>
-              <strong>Status:</strong> <StatusBadge status={selectedTicket.status}>{selectedTicket.status}</StatusBadge>
-            </p>
-            {selectedTicket.reply && (
-              <p>
-                <strong>Existing Reply:</strong> {selectedTicket.reply}
-              </p>
-            )}
-            <Label htmlFor="ticketStatus">Change Status:</Label>
-            <Select
-              id="ticketStatus"
-              value={selectedTicket.status}
-              onChange={(e) => setSelectedTicket({ ...selectedTicket, status: e.target.value })}
-            >
-              <option value="open">Open</option>
-              <option value="pending">Pending</option>
-              <option value="closed">Closed</option>
-            </Select>
-            <Label htmlFor="ticketReply">Your Reply:</Label>
-            <TextArea
-              id="ticketReply"
-              rows="4"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-            />
-            <ButtonGroup>
-              <ActionButton bgColor="#2563eb" onClick={handleUpdateTicket}>
-                <FiCheckCircle /> Oppdater
-              </ActionButton>
-              <ActionButton
-                bgColor="#dc2626"
-                onClick={() => handleDeleteTicket(selectedTicket._id)}
-              >
-                <FiTrash2 /> Slett
-              </ActionButton>
-            </ButtonGroup>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-    </TicketsContainer>
+    </Wrapper>
   );
-};
-
-export default Tickets;
+}
