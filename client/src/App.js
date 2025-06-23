@@ -6,7 +6,6 @@ import VotePage from './pages/Vote';
 import ContactPage from './pages/ContactPage';
 import Admin from './pages/admin';
 // IMPORTER Bifrost i stedet for TicketingIframe:
-import Bifrost from './components/bifrost';
 import Login from './pages/login';
 import Artwork from './pages/artwork';
 import PostLogin from './pages/PostLogin';
@@ -25,7 +24,6 @@ function App() {
 
       </Routes>
       {/* Vis Bifrost på alle sider */}
-      <Bifrost />
     </BrowserRouter>
   );
 }
