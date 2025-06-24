@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
 
-const socket = io("https://chat.vintrastudio.com");
+const socket = io("https://chat.vintrastudio.com", {
+  transports: ["websocket"],
+});
 
 const Container = styled.div`
   display: flex;
