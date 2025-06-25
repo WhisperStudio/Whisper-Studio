@@ -1,8 +1,15 @@
+// src/pages/login.js
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { API_URL } from '../config';
-import axios from 'axios';
+import {
+  auth,
+  provider,
+  signInWithPopup,
+  db,
+  collection,
+  getDocs
+} from '../firebase';
 
 const Container = styled.div`
   display: flex;
@@ -41,6 +48,7 @@ const Button = styled.button`
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(66, 133, 244, 0.3);
   }
+
   &:active {
     transform: translateY(0);
   }
@@ -49,24 +57,37 @@ const Button = styled.button`
 export default function Login() {
   const navigate = useNavigate();
 
-  // Sjekk om bruker allerede er logget inn
   useEffect(() => {
-    axios.get(`${API_URL}/api/me`, { withCredentials: true })
-      .then((res) => {
-        const user = res.data.user;
-        if (user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/main');
-        }
-      })
-      .catch(() => {
-        // Ikke logget inn, vis login-knapp
-      });
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user?.role === "admin") {
+      navigate("/admin");
+    } else if (user) {
+      navigate("/");
+    }
   }, [navigate]);
 
-  const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/auth/google`;
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email;
+
+      // 🧠 Hent admin-liste fra Firestore
+      const adminsSnapshot = await getDocs(collection(db, "admins"));
+      const adminEmails = adminsSnapshot.docs.map(doc => doc.data().email);
+      const isAdmin = adminEmails.includes(email);
+
+      const user = {
+        name: result.user.displayName,
+        email,
+        role: isAdmin ? "admin" : "user",
+      };
+
+      localStorage.setItem("user", JSON.stringify(user));
+      navigate(isAdmin ? "/admin" : "/");
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Innlogging feilet. Prøv igjen.");
+    }
   };
 
   return (
