@@ -27,6 +27,7 @@
     "crypto-browserify": "^3.12.1",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "firebase": "^11.9.1",
     "framer-motion": "^11.3.29",
     "image-average-color": "^1.0.0",
     "install": "^0.13.0",
