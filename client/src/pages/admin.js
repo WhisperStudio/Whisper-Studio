@@ -3,8 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
-// 🔌 Socket.io
 const socket = io("https://chat.vintrastudio.com", {
   transports: ["websocket"],
 });
@@ -14,6 +15,7 @@ const Container = styled.div`
   display: flex;
   height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
 `;
 
 const Sidebar = styled.div`
@@ -88,7 +90,23 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
-// 🧠 Hovedkomponent
+const LogoutButton = styled.button`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #ff4d4d;
+  color: white;
+  padding: 10px 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: #d93636;
+  }
+`;
+
 function AdminPanel() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState({});
@@ -106,7 +124,7 @@ function AdminPanel() {
     }
   }, [navigate]);
 
-  // 🔌 Socket.io kobling
+  // 🔌 Socket.io-kobling
   useEffect(() => {
     socket.on("init", (initialMessages) => {
       const convos = {};
@@ -129,7 +147,6 @@ function AdminPanel() {
     };
   }, []);
 
-  // ✉️ Send svar
   const sendMessage = () => {
     if (!input.trim() || !selected) return;
     const msg = { from: 'admin', text: input, userId: selected };
@@ -141,7 +158,6 @@ function AdminPanel() {
     setInput("");
   };
 
-  // 🗑️ Slett samtale
   const deleteConversation = (id) => {
     const updated = { ...conversations };
     delete updated[id];
@@ -149,8 +165,16 @@ function AdminPanel() {
     if (selected === id) setSelected(null);
   };
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   return (
     <Container>
+      <LogoutButton onClick={handleLogout}>Logg ut</LogoutButton>
+
       <Sidebar>
         <h3>Aktive samtaler</h3>
         {Object.keys(conversations).map((id) => (
