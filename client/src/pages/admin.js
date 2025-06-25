@@ -5,7 +5,6 @@ import styled from 'styled-components';
 
 const socket = io("https://chat.vintrastudio.com", {
   transports: ["websocket"],
-});
 
 const Container = styled.div`
   display: flex;
