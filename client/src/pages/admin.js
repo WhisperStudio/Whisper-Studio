@@ -4,10 +4,12 @@ import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 
+// 🔌 Socket.io
 const socket = io("https://chat.vintrastudio.com", {
   transports: ["websocket"],
 });
 
+// 🧱 Styled Components
 const Container = styled.div`
   display: flex;
   height: 100vh;
@@ -86,21 +88,25 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
+// 🧠 Hovedkomponent
 function AdminPanel() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState({});
   const [selected, setSelected] = useState(null);
   const [input, setInput] = useState("");
 
-  // 🔐 Beskytt siden mot uautoriserte brukere
+  // 🔐 Sikkerhetskontroll
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
+    console.log("AdminPanel: bruker →", user);
+
     if (!user || user.role !== "admin") {
+      localStorage.removeItem("user");
       navigate("/login");
     }
   }, [navigate]);
 
-  // 🧠 Socket.io-oppsett
+  // 🔌 Socket.io kobling
   useEffect(() => {
     socket.on("init", (initialMessages) => {
       const convos = {};
@@ -123,6 +129,7 @@ function AdminPanel() {
     };
   }, []);
 
+  // ✉️ Send svar
   const sendMessage = () => {
     if (!input.trim() || !selected) return;
     const msg = { from: 'admin', text: input, userId: selected };
@@ -134,6 +141,7 @@ function AdminPanel() {
     setInput("");
   };
 
+  // 🗑️ Slett samtale
   const deleteConversation = (id) => {
     const updated = { ...conversations };
     delete updated[id];
