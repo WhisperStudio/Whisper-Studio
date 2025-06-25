@@ -86,9 +86,17 @@ const DeleteButton = styled.button`
 `;
 
 function AdminPanel() {
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState({});
   const [selected, setSelected] = useState(null);
   const [input, setInput] = useState("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || user.role !== "admin") {
+      navigate("/login"); // 🔒 Redirect hvis ikke admin
+    }
+  }, [navigate]);
 
   useEffect(() => {
     socket.on("init", (initialMessages) => {
