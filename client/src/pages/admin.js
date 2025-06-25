@@ -1,219 +1,266 @@
 // src/pages/AdminPanel.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 
-const socket = io("https://chat.vintrastudio.com", {
-  transports: ["websocket"],
-});
+import ChatDashboard from '../components/ChatDashboard';
+import TicketDashboard from '../components/TicketDashboard';
+import Tickets from '../components/Tickets';
+import LineChartCard from '../components/LineChart';
+import PieChartCard from '../components/pieChartCard';
+import BotAdminChart from '../components/BotAdminTicketChart';
 
-// 🧱 Styled Components
-const Container = styled.div`
+import {
+  FiMessageSquare,
+  FiFileText,
+  FiUsers,
+  FiBarChart2,
+  FiPieChart,
+  FiCpu
+} from 'react-icons/fi';
+
+const socket = io("https://chat.vintrastudio.com", { transports: ["websocket"] });
+
+// ─── Styled Components ───────────────────────────────────────────────────────
+const Page = styled.div`
   display: flex;
-  height: 100vh;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  background: #0b1121;
+  color: #E0E0E0;
+  font-family: 'Segoe UI', sans-serif;
+`;
+
+const Sidebar = styled.nav`
+  width: 240px;
+  background: #152238;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
   position: relative;
-`;
-
-const Sidebar = styled.div`
-  width: 280px;
-  background: #1f1f1f;
-  color: white;
-  padding: 20px;
-  overflow-y: auto;
-  border-right: 1px solid #333;
-`;
-
-const ChatWindow = styled.div`
-  flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f9f9f9;
 `;
 
-const MessagesContainer = styled.div`
+const Sections = styled.div`
   flex: 1;
-  overflow-y: auto;
-  padding: 20px;
 `;
 
-const Message = styled.div`
-  margin-bottom: 12px;
-  background: ${props => (props.from === 'admin' ? '#cce5ff' : '#e2e2e2')};
-  padding: 10px;
-  border-radius: 10px;
-  align-self: ${props => (props.from === 'admin' ? 'flex-end' : 'flex-start')};
-  max-width: 60%;
+const SectionTitle = styled.h4`
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9rem;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
-const InputArea = styled.div`
+const NavList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const NavItem = styled.li`
+  margin: 0.5rem 0;
+`;
+
+const NavButton = styled.button`
+  width: 100%;
   display: flex;
-  padding: 20px;
-  border-top: 1px solid #ddd;
-`;
-
-const Input = styled.input`
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-`;
-
-const Button = styled.button`
-  margin-left: 10px;
-  padding: 10px 16px;
-  background: #1f7cff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-`;
-
-const Conversation = styled.div`
-  margin-bottom: 10px;
-  padding: 10px;
-  background: ${props => (props.active ? '#333' : '#2a2a2a')};
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-`;
-
-const DeleteButton = styled.button`
-  background: none;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: ${({ active }) => (active ? '#263154' : 'transparent')};
+  color: ${({ active }) => (active ? '#fff' : '#ccc')};
   border: none;
-  color: red;
+  border-radius: 6px;
   cursor: pointer;
-`;
-
-const LogoutButton = styled.button`
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #ff4d4d;
-  color: white;
-  padding: 10px 16px;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.3s, transform 0.3s;
+  position: relative;
 
   &:hover {
-    background: #d93636;
+    background: #2d3a6a;
+    transform: translateX(4px);
   }
 `;
 
-function AdminPanel() {
+const Highlight = styled.div`
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 40px;
+  background: #4a6fc3;
+  border-radius: 0 4px 4px 0;
+  transition: top 0.3s;
+`;
+
+const LogoutButton = styled.button`
+  margin-top: auto;
+  background: #ff4d4d;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+
+  &:hover { background: #d93636; }
+`;
+
+const Content = styled.main`
+  flex: 1;
+  position: relative;
+  padding: 2rem;
+  background: #1f273f;
+  overflow: auto;
+`;
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+export default function AdminPanel() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState({});
-  const [selected, setSelected] = useState(null);
+  const [selectedConv, setSelectedConv] = useState(null);
   const [input, setInput] = useState("");
+  const [active, setActive] = useState("chat");
+  const [userChecked, setUserChecked] = useState(false);
+  const highlightRef = useRef();
+  const buttonRefs = useRef([]);
 
-  // 🔐 Sikkerhetskontroll
+  // Auth guard
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    console.log("AdminPanel: bruker →", user);
-
-    if (!user || user.role !== "admin") {
+    const u = JSON.parse(localStorage.getItem("user"));
+    if (!u || u.role !== "admin") {
       localStorage.removeItem("user");
       navigate("/login");
+    } else {
+      setUserChecked(true);
     }
   }, [navigate]);
 
-  // 🔌 Socket.io-kobling
+  // Socket init for chat
   useEffect(() => {
-    socket.on("init", (initialMessages) => {
+    if (active !== "chat") return;
+    socket.on("init", msgs => {
       const convos = {};
-      initialMessages.forEach((msg) => {
-        if (!convos[msg.userId]) convos[msg.userId] = [];
-        convos[msg.userId].push(msg);
+      msgs.forEach(m => {
+        convos[m.userId] = (convos[m.userId] || []).concat(m);
       });
       setConversations(convos);
     });
-
-    socket.on("new_message", (msg) => {
+    socket.on("new_message", m => {
       setConversations(prev => ({
         ...prev,
-        [msg.userId]: [...(prev[msg.userId] || []), msg]
+        [m.userId]: (prev[m.userId] || []).concat(m)
       }));
     });
+    return () => socket.disconnect();
+  }, [active]);
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  const sendMessage = () => {
-    if (!input.trim() || !selected) return;
-    const msg = { from: 'admin', text: input, userId: selected };
+  const sendChat = () => {
+    if (!input.trim() || !selectedConv) return;
+    const msg = { from: 'admin', text: input, userId: selectedConv };
     socket.emit("admin_reply", msg);
     setConversations(prev => ({
       ...prev,
-      [selected]: [...(prev[selected] || []), msg]
+      [selectedConv]: (prev[selectedConv] || []).concat(msg)
     }));
     setInput("");
   };
 
-  const deleteConversation = (id) => {
-    const updated = { ...conversations };
-    delete updated[id];
-    setConversations(updated);
-    if (selected === id) setSelected(null);
+  const deleteConv = id => {
+    const c = { ...conversations };
+    delete c[id];
+    setConversations(c);
+    if (selectedConv === id) setSelectedConv(null);
   };
 
-  const handleLogout = async () => {
+  const logout = async () => {
     await signOut(auth);
     localStorage.removeItem("user");
     navigate("/login");
   };
 
-  return (
-    <Container>
-      <LogoutButton onClick={handleLogout}>Logg ut</LogoutButton>
+  // on nav click, set active and move highlight
+  const handleNavClick = (key, idx) => {
+    setActive(key);
+    const btn = buttonRefs.current[idx];
+    if (btn && highlightRef.current) {
+      highlightRef.current.style.top = btn.offsetTop + 'px';
+    }
+  };
 
+  if (!userChecked) return null;
+
+  const MENU = [
+    { section: "Support", items: [
+      { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare /> },
+      { key: "ticketDashboard", label: "Ticket Dashboard", icon: <FiFileText /> },
+      { key: "tickets", label: "Tickets", icon: <FiUsers /> }
+    ]},
+    { section: "Statistics", items: [
+      { key: "lineChart", label: "Line Chart", icon: <FiBarChart2 /> },
+      { key: "pieChart", label: "Pie Chart", icon: <FiPieChart /> },
+      { key: "botAdmin", label: "Bot Admin Chart", icon: <FiCpu /> }
+    ]}
+  ];
+
+  const CONTENT = {
+    chat: (
+      <ChatDashboard
+        conversations={conversations}
+        selected={selectedConv}
+        onSelect={setSelectedConv}
+        onSend={sendChat}
+        input={input}
+        setInput={setInput}
+        onDelete={deleteConv}
+      />
+    ),
+    ticketDashboard: <TicketDashboard />,
+    tickets: <Tickets />,
+    lineChart: <LineChartCard />,
+    pieChart: <PieChartCard />,
+    botAdmin: <BotAdminChart />
+  };
+
+  return (
+    <Page>
       <Sidebar>
-        <h3>Aktive samtaler</h3>
-        {Object.keys(conversations).map((id) => (
-          <Conversation
-            key={id}
-            active={selected === id}
-            onClick={() => setSelected(id)}
-          >
-            <span>Bruker {id.slice(-4)}</span>
-            <DeleteButton onClick={(e) => {
-              e.stopPropagation();
-              deleteConversation(id);
-            }}>🗑️</DeleteButton>
-          </Conversation>
-        ))}
+        <Highlight ref={highlightRef} />
+        <Sections>
+          {MENU.map((cat, secIdx) => (
+            <div key={cat.section}>
+              <SectionTitle>{cat.section}</SectionTitle>
+              <NavList>
+                {cat.items.map((it, idx) => {
+                  const globalIdx = MENU
+                    .slice(0, secIdx)
+                    .reduce((sum, s) => sum + s.items.length, 0) + idx;
+                  return (
+                    <NavItem key={it.key}>
+                      <NavButton
+                        ref={el => buttonRefs.current[globalIdx] = el}
+                        active={active === it.key}
+                        onClick={() => handleNavClick(it.key, globalIdx)}
+                      >
+                        {it.icon}{it.label}
+                      </NavButton>
+                    </NavItem>
+                  );
+                })}
+              </NavList>
+            </div>
+          ))}
+        </Sections>
+        <LogoutButton onClick={logout}>Logg ut</LogoutButton>
       </Sidebar>
 
-      <ChatWindow>
-        <MessagesContainer>
-          {selected && conversations[selected] && conversations[selected].map((msg, i) => (
-            <Message key={i} from={msg.from}>
-              <strong>{msg.from}:</strong> {msg.text}
-            </Message>
-          ))}
-        </MessagesContainer>
-
-        {selected && (
-          <InputArea>
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Skriv et svar..."
-            />
-            <Button onClick={sendMessage}>Send</Button>
-          </InputArea>
-        )}
-      </ChatWindow>
-    </Container>
+      <Content>
+        {CONTENT[active]}
+      </Content>
+    </Page>
   );
 }
-
-export default AdminPanel;

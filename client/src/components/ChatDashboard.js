@@ -3,9 +3,9 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FiLock, FiTrash2 } from "react-icons/fi";
 
-// Styled components
+
 const ChatDashboardContainer = styled.div`
-  background: #0b1121; 
+  background: #0b1121;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 30px 40px rgba(0, 0, 0, 0.25);
