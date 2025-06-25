@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 const socket = io("https://chat.vintrastudio.com", {
   transports: ["websocket"],
@@ -91,13 +92,15 @@ function AdminPanel() {
   const [selected, setSelected] = useState(null);
   const [input, setInput] = useState("");
 
+  // 🔐 Beskytt siden mot uautoriserte brukere
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user || user.role !== "admin") {
-      navigate("/login"); // 🔒 Redirect hvis ikke admin
+      navigate("/login");
     }
   }, [navigate]);
 
+  // 🧠 Socket.io-oppsett
   useEffect(() => {
     socket.on("init", (initialMessages) => {
       const convos = {};
@@ -149,7 +152,10 @@ function AdminPanel() {
             onClick={() => setSelected(id)}
           >
             <span>Bruker {id.slice(-4)}</span>
-            <DeleteButton onClick={(e) => { e.stopPropagation(); deleteConversation(id); }}>🗑️</DeleteButton>
+            <DeleteButton onClick={(e) => {
+              e.stopPropagation();
+              deleteConversation(id);
+            }}>🗑️</DeleteButton>
           </Conversation>
         ))}
       </Sidebar>
