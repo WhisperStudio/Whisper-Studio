@@ -10,6 +10,7 @@ import {
   collection,
   getDocs
 } from '../firebase';
+import { signOut } from "firebase/auth";
 
 const Container = styled.div`
   display: flex;
@@ -69,24 +70,36 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-      const email = result.user.email;
+      const user = result.user;
+      const email = user?.email;
 
-      // 🧠 Hent admin-liste fra Firestore
-      const adminsSnapshot = await getDocs(collection(db, "admins"));
-      const adminEmails = adminsSnapshot.docs.map(doc => doc.data().email);
-      const isAdmin = adminEmails.includes(email);
+      if (!email) {
+        alert("E-postadresse ikke funnet.");
+        return;
+      }
 
-      const user = {
-        name: result.user.displayName,
+      console.log("Logger inn med:", email);
+
+      const snapshot = await getDocs(collection(db, "admins"));
+      const adminEmails = snapshot.docs.map(doc => doc.data().email);
+      const isAdmin = adminEmails.includes(email) || email === "vintrastudio@gmail.com";
+
+      console.log("Admins:", adminEmails);
+      console.log("Er admin:", isAdmin);
+
+      const userData = {
+        name: user.displayName,
         email,
-        role: isAdmin ? "admin" : "user",
+        role: isAdmin ? "admin" : "user"
       };
 
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify(userData));
       navigate(isAdmin ? "/admin" : "/");
+
     } catch (error) {
-      console.error("Login failed:", error);
-      alert("Innlogging feilet. Prøv igjen.");
+      console.error("Login feilet:", error);
+      localStorage.removeItem("user");
+      alert("Innlogging feilet: " + error.message);
     }
   };
 
