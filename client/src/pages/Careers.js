@@ -112,6 +112,7 @@ const Careers = () => {
           <JobInfo>
             <JobTitle>Frontend Developer (React)</JobTitle>
             <JobDetails>Oslo, Norway | Full-time</JobDetails>
+            <JobDetails>1 Positions avaiable</JobDetails>
           </JobInfo>
           <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Frontend Developer">Apply Now</ApplyButton>
         </JobListing>
@@ -119,15 +120,25 @@ const Careers = () => {
           <JobInfo>
             <JobTitle>Backend Developer (Node.js)</JobTitle>
             <JobDetails>Oslo, Norway | Full-time</JobDetails>
+            <JobDetails>2 Positions avaiable</JobDetails>
           </JobInfo>
           <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Backend Developer">Apply Now</ApplyButton>
         </JobListing>
         <JobListing style={{ animationDelay: '0.8s' }}>
           <JobInfo>
-            <JobTitle>UI/UX Designer</JobTitle>
+            <JobTitle>UI/UX/Blender Designer</JobTitle>
             <JobDetails>Remote | Part-time</JobDetails>
+            <JobDetails>2 Positions avaiable</JobDetails>
           </JobInfo>
           <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for UI/UX Designer">Apply Now</ApplyButton>
+        </JobListing>
+                <JobListing style={{ animationDelay: '1s' }}>
+          <JobInfo>
+            <JobTitle>Game Developer "Unreal Engine"</JobTitle>
+            <JobDetails>Oslo, Norway | Full-time</JobDetails>
+            <JobDetails>2 Positions avaiable</JobDetails>
+          </JobInfo>
+          <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Backend Developer">Apply Now</ApplyButton>
         </JobListing>
       </JobListings>
     </CareersContainer>
