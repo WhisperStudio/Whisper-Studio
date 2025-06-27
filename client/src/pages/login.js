@@ -1,4 +1,4 @@
-// src/pages/login.js
+
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -59,12 +59,30 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.role === "admin") {
-      navigate("/admin");
-    } else if (user) {
-      navigate("/");
-    }
+    // More secure: Check session with the server instead of localStorage
+    const checkUserSession = async () => {
+      try {
+        const response = await fetch('/api/me', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const { user } = await response.json();
+          if (user.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        }
+        // If not response.ok, do nothing, let the user log in.
+      } catch (error) {
+        // It's okay if this fails, it just means the user is not logged in.
+        console.log('No active session found.');
+      }
+    };
+
+    checkUserSession();
   }, [navigate]);
 
   const handleGoogleLogin = async () => {
@@ -78,24 +96,29 @@ export default function Login() {
         return;
       }
 
-      console.log("Logger inn med:", email);
+      const idToken = await user.getIdToken();
 
-      const snapshot = await getDocs(collection(db, "admins"));
-      const adminEmails = snapshot.docs.map(doc => doc.data().email);
-      const isAdmin = adminEmails.includes(email) || email === "vintrastudio@gmail.com";
+      // Send the ID token to your backend
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
 
-      console.log("Admins:", adminEmails);
-      console.log("Er admin:", isAdmin);
+      if (!response.ok) {
+        throw new Error('Google authentication with backend failed.');
+      }
 
-      const userData = {
-        name: user.displayName,
-        email,
-        role: isAdmin ? "admin" : "user"
-      };
+      const { user: loggedInUser } = await response.json();
 
-      localStorage.setItem("user", JSON.stringify(userData));
-      navigate(isAdmin ? "/admin" : "/");
-
+      // Navigate based on the role confirmed by the server
+      if (loggedInUser.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error("Login feilet:", error);
       localStorage.removeItem("user");

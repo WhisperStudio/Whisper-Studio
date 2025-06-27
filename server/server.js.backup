@@ -1,4 +1,4 @@
-
+// server.js
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -7,15 +7,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import axios from 'axios';
-import admin from 'firebase-admin';
-
-// Initialize Firebase Admin SDK
-// IMPORTANT: Make sure 'serviceAccountKey.json' is in your /server directory
-import serviceAccount from './serviceAccountKey.json' assert { type: 'json' };
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 
 const app = express();
 
@@ -70,26 +61,23 @@ if (!OPENAI_API_KEY) {
 
 
 // -----------------------------------------------------
-// --- 3) JWT‐HJELPERE ---------------------------------
+// --- 3) START SERVER ---------------------------------
 // -----------------------------------------------------
-function signToken(user) {
-  const payload = { id: user._id, role: user.role };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-}
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 Server kjører på port ${PORT}`);
+});
 
-function verifyJWT(req, res, next) {
-  const token = req.cookies?.token;
-  if (!token) {
-    return res.status(401).json({ message: 'Mangler token' });
-  }
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { id, role, iat, exp }
-    next();
-  } catch {
-    return res.status(401).json({ message: 'Ugyldig token' });
-  }
-}
+// Error handling
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
 
 
 // -----------------------------------------------------
@@ -234,60 +222,6 @@ app.post('/api/login', async (req, res) => {
   } catch (err) {
     console.error('Error i /api/login:', err);
     return res.status(500).json({ message: 'Kunne ikke logge inn.' });
-  }
-});
-
-// POST /api/auth/google - Google Sign-In
-app.post('/api/auth/google', async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { email, name } = decodedToken;
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      // List of admin emails - keep this on the server for security
-      const ADMIN_EMAILS = ['vintrastudio@gmail.com']; 
-      const role = ADMIN_EMAILS.includes(email) ? 'admin' : 'user';
-
-      // Create a new user
-      // Note: A secure random password is required by the schema, but won't be used for login.
-      const randomPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-
-      user = new User({
-        username: name, // Or generate a unique username if needed
-        email,
-        password: hashedPassword,
-        role
-      });
-      await user.save();
-    }
-
-    // At this point, we have a user (either found or newly created)
-    // Now, we issue a JWT for them, just like in the regular login.
-    const token = signToken(user);
-    res
-      .cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 3600 * 1000 // 7 days
-      })
-      .json({
-        message: 'Innlogging med Google vellykket',
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role
-        }
-      });
-
-  } catch (err) {
-    console.error('Error in /api/auth/google:', err);
-    return res.status(500).json({ message: 'Kunne ikke autentisere med Google.' });
   }
 });
 
