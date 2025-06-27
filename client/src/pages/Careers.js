@@ -114,7 +114,7 @@ const Careers = () => {
             <JobDetails>Oslo, Norway | Full-time</JobDetails>
             <JobDetails>1 Positions avaiable</JobDetails>
           </JobInfo>
-          <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Frontend Developer">Apply Now</ApplyButton>
+          <ApplyButton href="mailto:jobs@vintrastudio.com?subject=Application for Frontend Developer">Apply Now</ApplyButton>
         </JobListing>
         <JobListing style={{ animationDelay: '0.6s' }}>
           <JobInfo>
@@ -122,7 +122,7 @@ const Careers = () => {
             <JobDetails>Oslo, Norway | Full-time</JobDetails>
             <JobDetails>2 Positions avaiable</JobDetails>
           </JobInfo>
-          <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Backend Developer">Apply Now</ApplyButton>
+          <ApplyButton href="mailto:jobs@vintrastudio.com?subject=Application for Backend Developer">Apply Now</ApplyButton>
         </JobListing>
         <JobListing style={{ animationDelay: '0.8s' }}>
           <JobInfo>
@@ -130,7 +130,7 @@ const Careers = () => {
             <JobDetails>Remote | Part-time</JobDetails>
             <JobDetails>2 Positions avaiable</JobDetails>
           </JobInfo>
-          <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for UI/UX Designer">Apply Now</ApplyButton>
+          <ApplyButton href="mailto:jobs@vintrastudio.com?subject=Application for UI/UX Designer">Apply Now</ApplyButton>
         </JobListing>
                 <JobListing style={{ animationDelay: '1s' }}>
           <JobInfo>
@@ -138,7 +138,7 @@ const Careers = () => {
             <JobDetails>Oslo, Norway | Full-time</JobDetails>
             <JobDetails>2 Positions avaiable</JobDetails>
           </JobInfo>
-          <ApplyButton href="mailto:jobs@whisperstudio.com?subject=Application for Backend Developer">Apply Now</ApplyButton>
+          <ApplyButton href="mailto:jobs@vintrastudio.com?subject=Application for Game Developer">Apply Now</ApplyButton>
         </JobListing>
       </JobListings>
     </CareersContainer>
