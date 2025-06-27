@@ -200,9 +200,9 @@ const Header = () => {
       </Logo>
 
       <NavMenu isScrolled={isScrolled}>
-        <NavItem href="/vote" textColor={textColor}>VOTE</NavItem>
-        <NavItem href="/who-we-are" textColor={textColor}>Who we are</NavItem>
-        <NavItem href="/work-with-us" textColor={textColor}>Work with us</NavItem>
+        <NavItem href="/vote" textColor={textColor}>Vote</NavItem>
+        <NavItem href="/about-us" textColor={textColor}>About Us</NavItem>
+        <NavItem href="/careers" textColor={textColor}>Careers</NavItem>
         <NavItem href="/contact" textColor={textColor}>Support</NavItem>
       </NavMenu>
 
@@ -229,9 +229,9 @@ const Header = () => {
         isOpen={menuState.isOpen}
         isVisible={menuState.isVisible}
       >
-        <MobileNavItem href="/vote"   onClick={toggleMenu}>VOTE</MobileNavItem>
-        <MobileNavItem href="/who-we-are" onClick={toggleMenu}>Who we are</MobileNavItem>
-        <MobileNavItem href="/work-with-us" onClick={toggleMenu}>Work with us</MobileNavItem>
+        <MobileNavItem href="/vote"   onClick={toggleMenu}>Vote</MobileNavItem>
+        <MobileNavItem href="/about-us" onClick={toggleMenu}>About Us</MobileNavItem>
+        <MobileNavItem href="/careers" onClick={toggleMenu}>Careers</MobileNavItem>
         <MobileNavItem href="/contact" onClick={toggleMenu}>Support</MobileNavItem>
       </MobileNavMenu>
     </HeaderContainer>
