@@ -12,7 +12,7 @@ import TicketDashboard from '../components/TicketDashboard';
 import Tickets from '../components/Tickets';
 import LineChartCard from '../components/LineChart';
 import PieChartCard from '../components/pieChartCard';
-import BotAdminChart from '../components/BotAdminTicketChart';
+import ChatActivityChart from '../components/ChatActivityChart';
 
 import {
   FiMessageSquare,
@@ -224,7 +224,7 @@ export default function AdminPanel() {
     tickets: <Tickets />,
     lineChart: <LineChartCard />,
     pieChart: <PieChartCard />,
-    botAdmin: <BotAdminChart />
+    botAdmin: <ChatActivityChart />
   };
 
   return (

@@ -1,9 +1,16 @@
-// Import the functions you need from the SDKs you need
+// client/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
-
-// TODO: Add SDKs for Firebase products that you want to use
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  onSnapshot,      // <— add this
+  query,           // <— optional, if you want to do queries
+  where,           // <— optional
+  orderBy,         // <— optional
+  Timestamp        // <— optional, if you need to construct timestamps
+} from "firebase/firestore";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
@@ -34,5 +41,11 @@ export {
   signInWithPopup,
   db,
   collection,
-  getDocs
+  getDocs,
+   // Firestore exports
+  onSnapshot,   // <— now exported
+  query,        // <— if you need it
+  where,        // <— if you need it
+  orderBy,      // <— if you need it
+  Timestamp 
 };
