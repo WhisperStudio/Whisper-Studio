@@ -19,6 +19,7 @@
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
     "chart.js": "^4.4.9",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "color-thief-browser": "^2.0.2",
     "color-thief-react": "^2.1.0",
     "cookie-parser": "^1.4.7",
