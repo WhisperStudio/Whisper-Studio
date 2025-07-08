@@ -13,6 +13,7 @@ import Tickets from '../components/Tickets';
 import LineChartCard from '../components/LineChart';
 import PieChartCard from '../components/pieChartCard';
 import ChatActivityChart from '../components/ChatActivityChart';
+import ChatGeoChart      from "../components/ChatGeoChart";
 
 import {
   FiMessageSquare,
@@ -209,23 +210,28 @@ export default function AdminPanel() {
   ];
 
   const CONTENT = {
-    chat: (
-      <ChatDashboard
-        conversations={conversations}
-        selected={selectedConv}
-        onSelect={setSelectedConv}
-        onSend={sendChat}
-        input={input}
-        setInput={setInput}
-        onDelete={deleteConv}
-      />
-    ),
-    ticketDashboard: <TicketDashboard />,
-    tickets: <Tickets />,
-    lineChart: <LineChartCard />,
-    pieChart: <PieChartCard />,
-    botAdmin: <ChatActivityChart />
-  };
+  chat: (
+    <ChatDashboard
+      conversations={conversations}
+      selected={selectedConv}
+      onSelect={setSelectedConv}
+      onSend={sendChat}
+      input={input}
+      setInput={setInput}
+      onDelete={deleteConv}
+    />
+  ),
+  ticketDashboard: <TicketDashboard />,
+  tickets:           <Tickets />,
+  lineChart:         <LineChartCard />,
+  pieChart:          <PieChartCard />,
+  botAdmin: (
+    <>
+      <ChatActivityChart />
+      <ChatGeoChart />
+    </>
+  ),
+};
 
   return (
     <Page>
