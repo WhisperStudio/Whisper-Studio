@@ -13,6 +13,12 @@ import placeholderImage3 from '../images/siu.png';
 import placeholderImage4 from '../bilder/assets_task_01jqzwt0nqf4ttddc4ykksgj87_img_0.webp';
 import placeholderImage5 from '../bilder/assets_task_01jqzyj308f1s8ph7d3pz8fy24_img_0.webp';
 import placeholderImage6 from '../bilder/assets_task_01jqebmy91fw3r80bh65pceeam_img_1.webp';
+import placeholderImage7 from '../bilder/GnomeSitting.png';
+import placeholderImage8 from '../bilder/Villiage.png';
+import placeholderImage9 from '../bilder/Nøkken.png';
+import placeholderImage10 from '../bilder/Troll.png';
+import placeholderImage11 from '../bilder/HorseAndGirl.png';
+import placeholderImage12 from '../bilder/Pesta.png';
 
 // ----------------------------------------------------
 // Gallery content
@@ -24,8 +30,13 @@ const galleryItems = [
   { id: 5, img: placeholderImage1, category: 'Environments', sub: 'Village',     title: 'VR-Headset?' },
   { id: 6, img: placeholderImage3, category: 'Environments', sub: 'Waterfront',  title: 'Foggy Shore' },
   { id: 7, img: placeholderImage6, category: 'Environments', sub: 'Waterfront',  title: 'Misty Lake' },
-  { id: 8, img: placeholderImage1, category: 'Environments', sub: 'Mountain Hills', title: 'Deep Woods' },
+  { id: 8, img: placeholderImage11, category: 'Environments', sub: 'Waterfront', title: 'Pretty Horse?' },
   { id: 9, img: placeholderImage6, category: 'Environments', sub: 'Village',     title: 'Lantern in the Mist' },
+  { id: 10, img: placeholderImage8, category: 'Environments', sub: 'Village',     title: 'Nisse Village' },
+  { id: 11, img: placeholderImage7, category: 'Creatures', sub: 'Unfriendly',     title: 'Silent shivering' },
+  { id: 12, img: placeholderImage9, category: 'Creatures', sub: 'Unfriendly',     title: 'Nøkken' },
+  { id: 13, img: placeholderImage10, category: 'Creatures', sub: 'Unfriendly',     title: 'Troll' },
+  { id: 14, img: placeholderImage12, category: 'Creatures', sub: 'Unfriendly',     title: 'Pesta' },
 ];
 
 // ----------------------------------------------------
@@ -93,16 +104,30 @@ const Cursor       = styled.div`
   @media(max-width:768px){ display:none; }
 `;
 const Main         = styled.div`
-  display: flex; 
-  flex: 1; 
-  width: 100%;               /* <-- span entire viewport width */
-  max-width: 1200px;         /* optional cap */
-  margin: 120px auto 0;      /* center horizontally */
+  display: flex;
+  flex: 1;
+  /* flytt innhold forbi Sidebar */
+  margin: 120px 0 0 270px;
+  @media(max-width:768px){
+    margin-left: 200px;
+  }
+  /* valgfritt max-bredde på selve innholdet: */
+  max-width: calc(100% - 270px);
 `;
 const Sidebar      = styled.nav`
-  width: 270px; background: #0a0a0a; padding: 40px 20px;
-  @media(max-width:768px){ width:200px; padding:20px; }
-`;
+   position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 270px;
+  background: #0a0a0a;
+  padding: 40px 20px;
+  overflow-y: auto;
+  @media(max-width:768px){
+    width: 200px;
+    padding: 20px;
+  }
+ `;
 const Title        = styled.h2`
   font-size:1.4rem; margin-bottom:1rem; text-transform:uppercase;
 `;
@@ -115,17 +140,40 @@ const Item         = styled.li`
 const Content      = styled.main`
   flex:1; padding:40px; background: rgba(0,0,0,0.3);
 `;
-const GalleryGrid  = styled.div`
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
-  gap:30px;
+const GalleryGrid = styled.div`
+  display: grid;
+  /* 3 kolonner med lik bredde */
+  grid-template-columns: repeat(3, 1fr);
+  /* luft mellom både rader og kolonner */
+  gap: 40px;
+  /* sentrer eventuelle færre elementer i siste rad */
+  justify-items: center;
+
+  /* responsivt: én kolonne på very smale skjermer */
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+  /* to kolonner på medium skjermer */
+  @media (min-width: 601px) and (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 `;
-const Box          = styled.div`
-  background:#1a1a1a; border-radius:6px; overflow:hidden;
-  box-shadow:0 4px 12px rgba(0,0,0,0.5); text-align:center;
-  transition:transform .3s ease; cursor:pointer;
-  &:hover{ transform:translateY(-5px); }
-`;
-const Img          = styled.img` width:100%; display:block; `;
+const Box = styled.div`
+   background: #1a1a1a;
+   border-radius: 6px;
+   overflow: hidden;
+   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+   text-align: center;
+   transition: transform .3s ease;
+   cursor: pointer;
+   &:hover { transform: translateY(-5px); }
+ `;
+const Img = styled.img`
+   display: block;
+   width: 100%;
+   height: auto;
+   object-fit: cover;
+ `;
 const Cap          = styled.div` padding:10px; color:#ccc; font-size:.9rem; `;
 const ChartArea    = styled.div` width:100%; height:400px; `;
 
