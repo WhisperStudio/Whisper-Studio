@@ -1,55 +1,33 @@
-// src/components/ChatGeoChart.js
-import React, { useEffect, useState } from 'react'
-import { Chart } from 'react-google-charts'
-import { collectionGroup, onSnapshot } from 'firebase/firestore'
-import { db } from '../firebase'
+// src/components/CountryGeoChart.js
+import React, { useEffect, useState } from 'react';
+import { Chart } from 'react-google-charts';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
-// Intl helper to turn ISO ↔ full country name
-const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+const db = getFirestore();
 
-export default function ChatGeoChart() {
-  // [ ['Country', 'Messages', { role:'tooltip', type:'string' } ], ... ]
-  const [chartData, setChartData] = useState([
-    ['Country','Messages',{ role:'tooltip', type:'string' }]
-  ])
-  const [counts, setCounts] = useState({})
-  const [total,  setTotal ] = useState(0)
+export default function CountryGeoChart() {
+  const [data, setData] = useState([['Country', 'Visits']]);
+  const [counts, setCounts] = useState({});
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collectionGroup(db, 'messages'),
-      snap => {
-        const agg = {}
-        snap.docs.forEach(doc => {
-          const c = doc.data().country
-          if (!c || c === 'unknown') return
-          agg[c] = (agg[c] || 0) + 1
-        })
-        setCounts(agg)
-        const sum = Object.values(agg).reduce((a,b)=>a+b,0)
-        setTotal(sum)
-        // build google-charts rows
-        const rows = Object.entries(agg).map(([iso, cnt]) => {
-          const full = regionNames.of(iso) || iso
-          const tip  = `
-                          ${full}
-                          Messages: ${cnt}
-                        `
-          return [iso, cnt, tip]
-        })
-        setChartData([
-          ['Country','Messages',{ role:'tooltip', type:'string' }],
-          ...rows
-        ])
-      }
-    )
-    return ()=>unsub()
-  }, [])
+    (async () => {
+      const snap = await getDocs(collection(db, 'visitors'));
+      const agg = {};
+      snap.forEach(doc => {
+        const country = doc.data().country || 'Unknown';
+        agg[country] = (agg[country] || 0) + 1;
+      });
+      setCounts(agg);
+      setTotal(Object.values(agg).reduce((s, v) => s + v, 0));
+      setData([['Country','Visits'], ...Object.entries(agg)]);
+    })();
+  }, []);
 
-  // get top 10
+  // pick top 10
   const top10 = Object.entries(counts)
-    .sort(([,a],[,b])=>b-a)
-    .slice(0,10)
+    .sort(([,a],[,b]) => b - a)
+    .slice(0,10);
 
   const styles = {
     container: {
@@ -110,21 +88,21 @@ export default function ChatGeoChart() {
       fontSize: 18,
       color: '#ffffff',
     },
-  }
+  };
 
   const options = {
     displayMode: 'regions',
     resolution: 'countries',
     backgroundColor: '#0a0f1a',
     datalessRegionColor: '#1a2130',
-    defaultColor: '#003366',
+    defaultColor: '#8D7FB3',
     colorAxis: { colors: ['#ebeaec','#63548C','#934397'] },
-    legend: 'none',
+    legend: 'none',           
     tooltip: {
-      isHtml: true,
-      trigger: 'hover',
+      textStyle: { color: '#000' },
+      backgroundColor: '#e0ffff',
     },
-  }
+  };
 
   return (
     <div style={styles.container}>
@@ -133,7 +111,7 @@ export default function ChatGeoChart() {
           chartType="GeoChart"
           width="100%"
           height="100%"
-          data={chartData}
+          data={data}
           options={options}
         />
       </div>
@@ -141,7 +119,7 @@ export default function ChatGeoChart() {
         <div>
           <h2 style={styles.title}>Top 10 Countries</h2>
           <ol style={styles.list}>
-            {top10.map(([cc,cnt])=>(
+            {top10.map(([cc, cnt]) => (
               <li key={cc} style={styles.listItem}>
                 <span style={styles.countryCode}>{cc}</span>
                 <span style={styles.count}>{cnt}</span>
@@ -150,9 +128,9 @@ export default function ChatGeoChart() {
           </ol>
         </div>
         <div style={styles.total}>
-          Total messages = <strong>{total}</strong>
+          Total visits = <strong>{total}</strong>
         </div>
       </div>
     </div>
-  )
+  );
 }
