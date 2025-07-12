@@ -1,5 +1,5 @@
 // client/firebase.js
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import {
   getFirestore,
@@ -9,12 +9,12 @@ import {
   query,           // <— optional, if you want to do queries
   where,           // <— optional
   orderBy,         // <— optional
-  Timestamp        // <— optional, if you need to construct timestamps
+  Timestamp,       // <— optional, if you need to construct timestamps
+  addDoc,          // <— føy til her
+  serverTimestamp  // <— og her
 } from "firebase/firestore";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCoVOEuVEfxEe46T3wiUAovNxKzn8A5QGA",
   authDomain: "vintrastudio-92cff.firebaseapp.com",
@@ -25,14 +25,12 @@ const firebaseConfig = {
   measurementId: "G-GN2BYPYC15"
 };
 
-// 🔥 Init Firebase
-const app = initializeApp(firebaseConfig);
+const app = !getApps().length
+  ? initializeApp(firebaseConfig)
+  : getApps()[0];
 
-// 🔐 Auth + Google
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
-// 🧠 Firestore DB
 const db = getFirestore(app);
 
 export {
@@ -42,10 +40,11 @@ export {
   db,
   collection,
   getDocs,
-   // Firestore exports
-  onSnapshot,   // <— now exported
-  query,        // <— if you need it
-  where,        // <— if you need it
-  orderBy,      // <— if you need it
-  Timestamp 
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  addDoc,          // <— eksportér
+  serverTimestamp  // <— eksportér
 };

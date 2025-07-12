@@ -14,6 +14,7 @@ import LineChartCard from '../components/LineChart';
 import PieChartCard from '../components/pieChartCard';
 import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart      from "../components/ChatGeoChart";
+import CountryGeoChart      from "../components/CountryGeoChart";
 
 import {
   FiMessageSquare,
@@ -30,13 +31,14 @@ const socket = io("https://chat.vintrastudio.com", { transports: ["websocket"] }
 const Page = styled.div`
   display: flex;
   min-height: 100vh;
-  background: #0b1121;
+  background: #152238;
   color: #E0E0E0;
   font-family: 'Segoe UI', sans-serif;
 `;
 
 const Sidebar = styled.nav`
   width: 240px;
+  margin-top: 100px;
   background: #152238;
   padding: 2rem 1rem;
   box-sizing: border-box;
@@ -114,6 +116,8 @@ const LogoutButton = styled.button`
 
 const Content = styled.main`
   flex: 1;
+  margin-top: 100px;
+  padding-top: 60px;
   position: relative;
   padding: 2rem;
   background: #1f273f;
@@ -224,7 +228,7 @@ export default function AdminPanel() {
   ticketDashboard: <TicketDashboard />,
   tickets:           <Tickets />,
   lineChart:         <LineChartCard />,
-  pieChart:          <PieChartCard />,
+  pieChart:          <CountryGeoChart  />,
   botAdmin: (
     <>
       <ChatActivityChart />
