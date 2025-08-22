@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
-import Header from '../components/header'; // Adjust path if needed
-import Footer from '../components/footer'; // Adjust path if needed
-import backgroundImage from '../bilder/bg.webp'; // Adjust the path as needed
-import placeholderImage1 from '../bilder/1.webp'; // Placeholder image for cards
-import placeholderImage2 from '../bilder/smart_gnome.png'; // Placeholder image for cards
-import placeholderImage3 from '../bilder/3.webp'; // New placeholder image for cards
+import Header from '../components/header';
+import Footer from '../components/footer';
+import backgroundImage from '../bilder/boy_2.mp4';
+import placeholderImage1 from '../bilder/1.webp';
+import placeholderImage2 from '../bilder/smart_gnome.png';
+import placeholderImage3 from '../bilder/3.webp';
 
 const fadeInBounce = keyframes`
-  0% {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(-20px); }
+  100%{ opacity: 1; transform: translateY(0); }
 `;
 
 const AppContainer = styled.div`
@@ -32,15 +26,74 @@ const AppContainer = styled.div`
   animation-fill-mode: forwards;
 `;
 
+/* --- Video + L→R sweep med tåkekant --- */
+/* --- Video + L→R sweep med tåkete, halvtransparent skygge --- */
 const BackgroundContainer = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url(${props => props.image});
-  background-size: cover;
-  background-position: center;
+  inset: 0;
+  overflow: hidden;
+`;
+
+/* Litt overscan for å unngå “sømmer” i ytterkant */
+const BackgroundVideo = styled.video`
+  position: absolute;
+  inset: -1vw;
+  width: calc(100% + 2vw);
+  height: calc(100% + 2vw);
+  object-fit: cover;
+  pointer-events: none;
+`;
+const SweepFog = styled.div`
+  position: absolute;
+  inset: -2vw;                  
+  transform-origin: ${p => p.$origin}; 
+  transform: scaleX(${p => p.$scale}); 
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+
+  --feather: 220px;  
+  --dark: .35;      
+
+  /* hovedbakgrunn – mørk halvtransparent skygge */
+  background: rgba(0, 0, 0, var(--dark));
+  mix-blend-mode: multiply;
+
+  /* fade i kantene */
+  -webkit-mask-image: ${p =>
+    p.$origin === 'right'
+      ? 'linear-gradient(to right, black 0%, black calc(100% - var(--feather)), transparent 100%)'
+      : 'linear-gradient(to right, transparent 0%, black var(--feather), black 100%)'};
+  mask-image: ${p =>
+    p.$origin === 'right'
+      ? 'linear-gradient(to right, black 0%, black calc(100% - var(--feather)), transparent 100%)'
+      : 'linear-gradient(to right, transparent 0%, black var(--feather), black 100%)'};
+
+  /* skygge/”dybde” effekt */
+  box-shadow: ${p =>
+    p.$origin === 'right'
+      ? '-40px 0 60px rgba(0,0,0,0.55)'   /* shadow kastes mot venstre */
+      : '40px 0 60px rgba(0,0,0,0.55)'};  /* shadow kastes mot høyre */
+
+  /* gjør det mer hazy */
+  filter: blur(6px);
+  opacity: 0.95;
+
+  /* ekstra tåke / tekstur */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    -webkit-mask-image: inherit;
+    mask-image: inherit;
+    background: radial-gradient(
+      350px 250px at 20% 50%,
+      rgba(255, 255, 255, 0.07) 0%,
+      transparent 70%
+    );
+    opacity: 0.4;
+    filter: blur(20px);
+    mix-blend-mode: screen;
+  }
 `;
 
 const ContentContainer = styled.div`
@@ -53,7 +106,7 @@ const ContentContainer = styled.div`
   justify-content: center;
   align-items: flex-start;
   padding-left: 5%;
-  padding-top: 60px; /* Adjust this value based on your header height */
+  padding-top: 60px; /* juster etter header-høyde */
 `;
 
 const TitleContainer = styled.div`
@@ -103,9 +156,7 @@ const PlayButton = styled.button`
   transition: all 0.3s ease;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 
-  @media (max-width: 768px) {
-    display: none;
-  }
+  @media (max-width: 768px) { display: none; }
 
   &:hover {
     background-color: black;
@@ -126,9 +177,7 @@ const WatchTrailerButton = styled.button`
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
   margin-left: 20px;
 
-  @media (max-width: 768px) {
-    margin-left: 0;
-  }
+  @media (max-width: 768px) { margin-left: 0; }
 
   &:hover {
     background-color: white;
@@ -143,20 +192,6 @@ const GlobalStyle = createGlobalStyle`
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-  }
-`;
-
-const CustomCursor = styled.div`
-  width: 20px;
-  height: 20px;
-  border: 2px solid white;
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-
-  @media (max-width: 768px) {
-    display: none;
   }
 `;
 
@@ -188,9 +223,7 @@ const CardContainer = styled.div`
   max-width: 1600px;
   margin: 0 auto;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width: 1024px) { grid-template-columns: 1fr; }
 `;
 
 const Card = styled.div`
@@ -214,9 +247,7 @@ const LargeCard = styled(Card)`
   flex-direction: column;
   height: 100%;
 
-  @media (max-width: 1024px) {
-    grid-row: auto;
-  }
+  @media (max-width: 1024px) { grid-row: auto; }
 `;
 
 const SmallCardContainer = styled.div`
@@ -224,9 +255,7 @@ const SmallCardContainer = styled.div`
   grid-template-rows: repeat(2, 1fr);
   gap: 30px;
 
-  @media (max-width: 1024px) {
-    grid-template-rows: auto;
-  }
+  @media (max-width: 1024px) { grid-template-rows: auto; }
 `;
 
 const SmallCard = styled(Card)`
@@ -236,7 +265,7 @@ const SmallCard = styled(Card)`
 
 const CardImage = styled.div`
   width: 100%;
-  padding-top: ${props => props.large ? '70%' : '75%'};
+  padding-top: ${props => (props.large ? '70%' : '75%')};
   background-image: url(${props => props.image});
   background-size: cover;
   background-position: center;
@@ -244,7 +273,7 @@ const CardImage = styled.div`
 `;
 
 const CardContent = styled.div`
-  padding: ${props => props.large ? '40px' : '25px'};
+  padding: ${props => (props.large ? '40px' : '25px')};
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -252,7 +281,7 @@ const CardContent = styled.div`
 `;
 
 const CardTitle = styled.h3`
-  font-size: ${props => props.large ? '2.8rem' : '2rem'};
+  font-size: ${props => (props.large ? '2.8rem' : '2rem')};
   font-weight: 800;
   color: #ffffff;
   margin-bottom: 20px;
@@ -260,7 +289,7 @@ const CardTitle = styled.h3`
 `;
 
 const CardDescription = styled.p`
-  font-size: ${props => props.large ? '1.4rem' : '1rem'};
+  font-size: ${props => (props.large ? '1.4rem' : '1rem')};
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.8;
   margin-bottom: 30px;
@@ -304,15 +333,64 @@ const StyledHeader = styled.header`
 `;
 
 function App() {
+  // (cursor state beholdes om du trenger den)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
   useEffect(() => {
-    const updateMousePosition = (ev) => {
-      setMousePosition({ x: ev.clientX, y: ev.clientY });
-    };
-
+    const updateMousePosition = ev => setMousePosition({ x: ev.clientX, y: ev.clientY });
     window.addEventListener('mousemove', updateMousePosition);
     return () => window.removeEventListener('mousemove', updateMousePosition);
+  }, []);
+
+  // 🎥 Video + sweep-fade state
+  const vidRef = React.useRef(null);
+  const prevTimeRef = React.useRef(0);
+
+  // scale: 1 => helt svart (dekker), 0 => åpen (ingen svart)
+  const [sweepScale, setSweepScale] = useState(1);
+  // origin: 'right' for åpning (avslør fra venstre), 'left' for lukking (dekk fra venstre)
+  const [sweepOrigin, setSweepOrigin] = useState('right');
+  const closingRef = React.useRef(false);
+
+  useEffect(() => {
+    const v = vidRef.current;
+    if (!v) return;
+
+    // Når video kan spille: åpne fra venstre (L→R)
+    const onCanPlay = () => {
+      setSweepOrigin('right');   // høyre side «står stille», svart trekker seg mot høyre
+      setSweepScale(0);          // 1 -> 0 = åpning
+    };
+
+    const onTimeUpdate = () => {
+      const t = v.currentTime || 0;
+      const d = v.duration || 0;
+
+      // Start lukking siste ~1s av loopen (L→R dekke)
+      if (d && t > d - 1.0 && !closingRef.current) {
+        closingRef.current = true;
+        setSweepOrigin('left');  // venstre side står stille, sort vokser mot høyre
+        setSweepScale(1);        // 0 -> 1 = dekke
+      }
+
+      // Loop oppdaget: tidsstempel hoppet tilbake => åpne igjen
+      if (t < (prevTimeRef.current || 0)) {
+        closingRef.current = false;
+        // Sett panel klart til ny åpning: start «helt dekket fra høyre»
+        setSweepOrigin('right');
+        setSweepScale(1);
+        // og på neste frame: trekk det bort mot høyre (avslør fra venstre)
+        requestAnimationFrame(() => setSweepScale(0));
+      }
+
+      prevTimeRef.current = t;
+    };
+
+    v.addEventListener('canplay', onCanPlay);
+    v.addEventListener('timeupdate', onTimeUpdate);
+    return () => {
+      v.removeEventListener('canplay', onCanPlay);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+    };
   }, []);
 
   const handlePlayNowClick = () => {
@@ -322,12 +400,25 @@ function App() {
   return (
     <>
       <GlobalStyle />
-      <CustomCursor style={{ left: mousePosition.x, top: mousePosition.y }} />
       <StyledHeader>
         <Header />
       </StyledHeader>
+
       <AppContainer>
-        <BackgroundContainer image={backgroundImage} />
+        {/* 🎥 Bakgrunnsvideo + fades */}
+       <BackgroundContainer>
+  <BackgroundVideo
+    ref={vidRef}
+    src={backgroundImage}
+    autoPlay
+    muted
+    loop
+    playsInline
+  />
+  <SweepFog $origin={sweepOrigin} $scale={sweepScale} />
+</BackgroundContainer>
+
+
         <ContentContainer>
           <TitleContainer>V.O.T.E</TitleContainer>
           <ButtonContainer>
@@ -336,7 +427,7 @@ function App() {
           </ButtonContainer>
         </ContentContainer>
       </AppContainer>
-      
+
       <NewsSection>
         <NewsSectionTitle>Latest Updates</NewsSectionTitle>
         <CardContainer>
@@ -344,18 +435,19 @@ function App() {
             <CardImage large image={placeholderImage1} />
             <CardContent large>
               <div>
-                <CardDate>January 20, 2025</CardDate>
-                <CardTitle large>V.O.T.E 2.0 Update</CardTitle>
+                <CardDate>August 22, 2025</CardDate>
+                <CardTitle large>V.O.T.E Update</CardTitle>
                 <CardDescription large>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  - The Vintra/Vote website is under construction.
                   <br /><br />
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  - The game Vote is well underway, two of the maps are under construction,
+                  characters are being created, and the story of the game is being created bit by bit.
+                  Check out our Art Gallary where you can see some of the creatures we are planning to add.
                 </CardDescription>
               </div>
-              <CardButton>Learn More</CardButton>
             </CardContent>
           </LargeCard>
-          
+
           <SmallCardContainer>
             <SmallCard>
               <CardImage image={placeholderImage2} />
@@ -367,13 +459,12 @@ function App() {
                     Check out our art gallary of the landscape and creatures you might see in the game.
                   </CardDescription>
                 </div>
-                {/* Explore-knappen er nå en Link som navigerer til /artwork */}
                 <Link to="/artwork" style={{ textDecoration: 'none' }}>
                   <CardButton>Explore</CardButton>
                 </Link>
               </CardContent>
             </SmallCard>
-            
+
             <SmallCard>
               <CardImage image={placeholderImage3} />
               <CardContent>
@@ -381,7 +472,8 @@ function App() {
                   <CardDate>January 15, 2025</CardDate>
                   <CardTitle>Community Event</CardTitle>
                   <CardDescription>
-                    Join our upcoming community event and compete for exclusive rewards. Don't miss this chance to showcase your skills!
+                    Join our upcoming community event and compete for exclusive rewards.
+                    Don't miss this chance to showcase your skills!
                   </CardDescription>
                 </div>
                 <CardButton>Join Now</CardButton>
@@ -390,8 +482,8 @@ function App() {
           </SmallCardContainer>
         </CardContainer>
       </NewsSection>
+
       <Footer />
-      
     </>
   );
 }

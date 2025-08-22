@@ -99,8 +99,8 @@ const Background   = styled.div`
 `;
 const Cursor       = styled.div`
   width: 20px; height: 20px;
-  border: 2px solid white; border-radius: 50%;
-  position: fixed; pointer-events: none; z-index: 9999;
+  border: 2px solid black; border-radius: 50%;
+  position: absolute; pointer-events: none; z-index: 9999;
   @media(max-width:768px){ display:none; }
 `;
 const Main         = styled.div`
