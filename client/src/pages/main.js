@@ -3,7 +3,7 @@ import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Header from '../components/header';
 import Footer from '../components/footer';
-import backgroundImage from '../bilder/boy_2.mp4';
+import backgroundImage from '../bilder/Gen-4 Turbo A hyper-realistic, cinematic black-and-white video of a young boy, identical to the provided reference image at the start and at the end The boy is seen from the front with dramatic side .mp4';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
@@ -45,56 +45,33 @@ const BackgroundVideo = styled.video`
 `;
 const SweepFog = styled.div`
   position: absolute;
-  inset: -2vw;                  
-  transform-origin: ${p => p.$origin}; 
-  transform: scaleX(${p => p.$scale}); 
-  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;              
+  transform-origin: ${p => p.$origin};
+  transform: scaleX(${p => p.$scale});
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1); 
   pointer-events: none;
 
-  --feather: 220px;  
-  --dark: .35;      
+  /* Selve baren (mørk, men ikke helt tett) */
+  background: rgba(0, 0, 0);
 
-  /* hovedbakgrunn – mørk halvtransparent skygge */
-  background: rgba(0, 0, 0, var(--dark));
-  mix-blend-mode: multiply;
+  /* Legg til feathered edges for å unngå hard cutoff */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
 
-  /* fade i kantene */
-  -webkit-mask-image: ${p =>
-    p.$origin === 'right'
-      ? 'linear-gradient(to right, black 0%, black calc(100% - var(--feather)), transparent 100%)'
-      : 'linear-gradient(to right, transparent 0%, black var(--feather), black 100%)'};
-  mask-image: ${p =>
-    p.$origin === 'right'
-      ? 'linear-gradient(to right, black 0%, black calc(100% - var(--feather)), transparent 100%)'
-      : 'linear-gradient(to right, transparent 0%, black var(--feather), black 100%)'};
+  /* Skygge i kantene gir dybde */
+  box-shadow: 
+    -40px 0 60px rgba(0,0,0,0.8), 
+    40px 0 60px rgba(0,0,0,0.8);
 
-  /* skygge/”dybde” effekt */
-  box-shadow: ${p =>
-    p.$origin === 'right'
-      ? '-40px 0 60px rgba(0,0,0,0.55)'   /* shadow kastes mot venstre */
-      : '40px 0 60px rgba(0,0,0,0.55)'};  /* shadow kastes mot høyre */
-
-  /* gjør det mer hazy */
-  filter: blur(6px);
-  opacity: 0.95;
-
-  /* ekstra tåke / tekstur */
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    -webkit-mask-image: inherit;
-    mask-image: inherit;
-    background: radial-gradient(
-      350px 250px at 20% 50%,
-      rgba(255, 255, 255, 0.07) 0%,
-      transparent 70%
-    );
-    opacity: 0.4;
-    filter: blur(20px);
-    mix-blend-mode: screen;
-  }
+  /* Litt blur for smoothness */
+  filter: blur(4px);
+  opacity: 1;
 `;
+
+
 
 const ContentContainer = styled.div`
   position: relative;
