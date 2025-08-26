@@ -3,7 +3,7 @@ import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Header from '../components/header';
 import Footer from '../components/footer';
-import backgroundImage from '../bilder/Gen-4 Turbo A hyper-realistic, cinematic black-and-white video of a young boy, identical to the provided reference image at the start and at the end The boy is seen from the front with dramatic side .mp4';
+import backgroundImage from '../bilder/BoyDramatic.mp4';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
