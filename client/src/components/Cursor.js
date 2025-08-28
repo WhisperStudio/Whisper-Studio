@@ -2,25 +2,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 
-/* Skjul OS-cursoren overalt i appen (trumfer "cursor: pointer" etc.) */
+/* Skjul OS-cursoren overalt i appen */
 const HideNativeCursor = createGlobalStyle`
   html, body, * { cursor: none !important; }
 `;
 
-/* Majestetisk rød (rubin) ved hover, blå ved click */
-const RING_RED = "#b40f3a";         // dyp rubinrød
+const RING_RED = "#b40f3a";
 const RING_RED_GLOW = "rgba(180,15,58,.55)";
 const RING_BLUE = "#3bb4ff";
 const RING_BLUE_GLOW = "rgba(59,180,255,.55)";
 
 const Ring = styled.div`
   position: fixed;
-  z-index: 10000;
-  width: ${p => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
-  height: ${p => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
+  z-index: 8000;
+  width: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
+  height: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
   border-radius: 50%;
   pointer-events: none;
   transform: translate3d(-100px, -100px, 0);
+  opacity: ${(p) => (p.$hidden ? 0 : 1)};
   transition:
     transform 16ms linear,
     width 80ms ease, height 80ms ease,
@@ -30,27 +30,27 @@ const Ring = styled.div`
     filter 120ms ease;
   will-change: transform;
 
-  /* Kjerneringen */
   border: 2px solid
-    ${p => (p.$active ? RING_BLUE : p.$hover ? RING_RED : "#ffffff")};
+    ${(p) => (p.$active ? RING_BLUE : p.$hover ? RING_RED : "#ffffff")};
 
-  /* Lett fyll for dybde */
-  background:
-    ${p => (p.$active
-            ? "radial-gradient(transparent 60%, rgba(59,180,255,.10))"
-            : p.$hover
-            ? "radial-gradient(transparent 60%, rgba(180,15,58,.12))"
-            : "transparent")};
+  background: ${(p) =>
+    p.$active
+      ? "radial-gradient(transparent 60%, rgba(59,180,255,.10))"
+      : p.$hover
+      ? "radial-gradient(transparent 60%, rgba(180,15,58,.12))"
+      : "transparent"};
 
-  /* Glød */
   box-shadow:
     0 0 0 1px rgba(255,255,255,.03) inset,
-    ${p => (p.$active
-            ? `0 0 16px ${RING_BLUE_GLOW}`
-            : p.$hover
-            ? `0 0 14px ${RING_RED_GLOW}`
-            : "0 0 8px rgba(255,255,255,.25)")};
-  filter: ${p => (p.$hover ? "drop-shadow(0 0 6px rgba(180,15,58,.4))" : "none")};
+    ${(p) =>
+      p.$active
+        ? `0 0 16px ${RING_BLUE_GLOW}`
+        : p.$hover
+        ? `0 0 14px ${RING_RED_GLOW}`
+        : "0 0 8px rgba(255,255,255,.25)"};
+
+  filter: ${(p) =>
+    p.$hover ? "drop-shadow(0 0 6px rgba(180,15,58,.4))" : "none"};
 
   @media (max-width: 768px) {
     display: none;
@@ -64,21 +64,31 @@ export default function Cursor() {
   const ref = useRef(null);
   const [hover, setHover] = useState(false);
   const [active, setActive] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
     const onMove = (e) => {
-      // sentrer ringen: bruk halv aktuell størrelse (den kan skalere ved hover/active)
       const size = el.offsetWidth;
-      el.style.transform = `translate3d(${e.clientX - size / 2}px, ${e.clientY - size / 2}px, 0)`;
+      el.style.transform = `translate3d(${e.clientX - size / 2}px, ${
+        e.clientY - size / 2
+      }px, 0)`;
 
-      const t = e.target instanceof Element ? e.target : null;
-      setHover(!!t?.closest(INTERACTIVE_SELECTOR));
+      const target = e.target;
+      setHover(target?.closest?.(INTERACTIVE_SELECTOR) || false);
+
+      // 👇 Skjul cursoren hvis vi er over en <iframe>
+      if (target instanceof HTMLIFrameElement) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
     };
+
     const onDown = () => setActive(true);
-    const onUp   = () => setActive(false);
+    const onUp = () => setActive(false);
 
     window.addEventListener("mousemove", onMove, { passive: true });
     window.addEventListener("mousedown", onDown);
@@ -93,8 +103,8 @@ export default function Cursor() {
 
   return (
     <>
-      <HideNativeCursor />{/* <- sørger for at OS-cursoren aldri vises */}
-      <Ring id="app-cursor" ref={ref} $hover={hover} $active={active} />
+      <HideNativeCursor />
+      <Ring ref={ref} $hover={hover} $active={active} $hidden={hidden} />
     </>
   );
 }

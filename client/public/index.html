@@ -1,1 +1,76 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8" /> <link rel="icon" href="%PUBLIC_URL%/favicon.ico" /> <meta name="viewport" content="width=device-width, initial-scale=1" /> <meta name="theme-color" content="black" /> <meta name="Whisper Studios" content="Games and stuff" /> <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" /> <link rel="manifest" href="%PUBLIC_URL%/manifest.json" /> <title>Whisper Studio</title> </head> <body> <noscript>You need to enable JavaScript to run this app.</noscript> <div id="root"></div> <!-- ✅ Flytende chatbot-widget som iframe --> <iframe src="https://vintra-gangster.vercel.app/chat" style="position: fixed; bottom: 1rem; right: 1rem; width: 400px; height: 600px; border: none; z-index: 9999;" allow="clipboard-write"> </iframe> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Whisper Studio</title>
+  </head>
+  <body>
+    <!-- Hvis du ikke bruker React i parent, fjern hele #root og all bundling som prøver å montere React -->
+    <div id="root"></div>
+
+    <!-- Chat-iframe -->
+    <iframe
+      id="chat-iframe"
+      src="https://vintra-gangster.vercel.app/chat"
+      style="position: fixed; bottom: 1rem; right: 1rem; width: 400px; height: 600px; border: none; z-index: 9999;"
+      allow="clipboard-write"
+    ></iframe>
+
+    <script>
+      // Kjør først når DOM er klar, så #chat-iframe finnes
+      window.addEventListener("DOMContentLoaded", () => {
+        const iframe = document.getElementById("chat-iframe");
+        if (!iframe) return;
+
+        const IFRAME_ORIGIN = new URL(iframe.src).origin;
+        let over = false, pending = false, lastEvent = null;
+
+        function send(type, payload) {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ type, ...payload }, IFRAME_ORIGIN);
+          }
+        }
+
+        function computeInside(e) {
+          const rect = iframe.getBoundingClientRect();
+          return {
+            inside: e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top  && e.clientY <= rect.bottom,
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        }
+
+        function onMove(e) {
+          lastEvent = e;
+          if (!pending) { pending = true; requestAnimationFrame(tick); }
+        }
+        function tick() {
+          pending = false;
+          if (!lastEvent) return;
+          const e = lastEvent;
+          const { inside, x, y } = computeInside(e);
+
+          if (inside && !over) { over = true; send("cursor-enter"); }
+          else if (!inside && over) { over = false; send("cursor-leave"); }
+
+          if (inside) {
+            send("cursor-move", { x: Math.max(0, x), y: Math.max(0, y), down: (e.buttons|0) > 0 });
+          }
+        }
+        function onDown(){ if (over) send("cursor-down"); }
+        function onUp(){ if (over) send("cursor-up"); }
+
+        function attach() {
+          window.addEventListener("mousemove", onMove, { passive: true });
+          window.addEventListener("mousedown", onDown, { passive: true });
+          window.addEventListener("mouseup", onUp, { passive: true });
+        }
+
+        if (iframe.contentWindow) attach();
+        else iframe.addEventListener("load", attach, { once: true });
+      });
+    </script>
+  </body>
+</html>
