@@ -12,6 +12,8 @@ import backgroundMusic from '../bilder/VOTE THEME 1.mp3';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
+import  CharacterScrollytelling  from "../components/CharacterScrollytelling"; // <-- bruk riktig relativ sti hvis du la den nederst i samme fil, dropp import
+
 
 const GlobalStyle = createGlobalStyle`
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -451,6 +453,7 @@ export default function VotePage() {
           <CenterRune src={rune} alt="Rune" />
         </FancyDivider2>
         <AnimationSection2 />
+        <CharacterScrollytelling />
       </PageWrapper>
 
       
