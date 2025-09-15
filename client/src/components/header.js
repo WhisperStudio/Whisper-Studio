@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 const HeaderContainer = styled.header`
@@ -26,16 +26,17 @@ const Logo = styled.a`
   letter-spacing: 2px;
   transition: margin-top 0.1s ease-in-out;
 `;
-
 const NavMenu = styled.nav`
   margin-top: ${({ isScrolled }) => (isScrolled ? '-10px' : '0')};
   display: flex;
   gap: 2.5rem;
   transition: margin-top 0.1s ease-in-out;
-  @media (max-width: 768px) { display: none; }
-`;
 
-/* ——— Effekter for underline ——— */
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+/* Desktop underline: glir inn fra venstre, sklir ut mot høyre med “spiss” hale */
 const wipeRight = keyframes`
   0%   { transform: translateX(0) scaleX(1);   border-radius: 2px; filter: blur(0.3px); opacity: 1; }
   35%  { transform: translateX(30%) scaleX(0.8); border-radius: 1px; filter: blur(0.2px); }
@@ -51,50 +52,29 @@ const NavItem = styled.a`
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 0.75rem 1rem;
-  transition: color .25s ease;
+  padding: 0.75rem 0;
+  transition: color 0.25s ease;
 
   &:hover {
-    color: ${({ textColor }) => (textColor === 'black' ? '#333' : '#f0f0f0')};
+    color: ${({ textColor }) =>
+      textColor === 'black' ? '#333' : '#f0f0f0'};
   }
 
-  /* Underline-linjen */
-  .underline {
+  &::before {
+    content: "";
     position: absolute;
-    left: 0; bottom: 0;
-    height: 2px;
+    left: 0;
+    bottom: 0;
     width: 100%;
+    height: 2px; /* litt tynnere enn originalen */
     background: currentColor;
-    transform-origin: left center;
-    transform: scaleX(0);
-    opacity: 1;
-    will-change: transform, opacity, filter, border-radius, clip-path, box-shadow;
-    transition:
-      transform 760ms cubic-bezier(.19,1,.22,1),
-      filter   420ms ease,
-      border-radius 420ms ease,
-      box-shadow 420ms ease;
-    /* litt glød i ro */
-    box-shadow: 0 0 0.5px currentColor, 0 0 6px rgba(255,255,255,.15);
-
-    /* “spiss” i bevegelse: smal midtseksjon */
-    clip-path: polygon(0% 50%, 96% 0%, 100% 50%, 96% 100%, 0% 50%);
+    transform: scale3d(0,1,1);
+    transform-origin: 0 50%;
+    transition: transform 0.5s ease;
   }
 
-  /* Hover INN – bygges fra venstre, roligere og blir flat i ro */
-  &.is-active .underline {
-    transform: scaleX(1);
-    filter: blur(0);
-    border-radius: 2px;
-    /* flat når den står stille */
-    clip-path: polygon(0% 0%,100% 0%,100% 100%,0% 100%);
-  }
-
-  /* Hover UT – sklir ut mot høyre ~0.95s og dør gradvis */
-  &.is-leaving .underline {
-    animation: ${wipeRight} 950ms cubic-bezier(.22,.61,.36,1) forwards;
-    /* gjør kantene spisse mens den reiser */
-    clip-path: polygon(0% 50%, 96% 0%, 100% 50%, 96% 100%, 0% 50%);
+  &:hover::before {
+    transform: scale3d(1,1,1);
   }
 `;
 
@@ -126,27 +106,51 @@ const HamburgerButton = styled.button`
 const fadeIn = keyframes`from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}`;
 const fadeOut = keyframes`from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}`;
 
+/* Mobilmeny container med plass til en glidende indikator */
 const MobileNavMenu = styled.nav`
   display: ${({ isVisible }) => (isVisible ? 'flex' : 'none')};
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   position: fixed; inset: 0;
   background: white;
-  padding: 2rem;
-  gap: 2rem;
+  padding: 2rem 1.25rem 3.25rem; /* ekstra bunn-padding for indikator */
+  gap: 1.5rem;
   z-index: 1000;
   animation: ${({ isOpen }) => (isOpen ? fadeIn : fadeOut)} 0.3s ease-out;
+
+  /* gjør container relativ for indikatoren */
+  position: fixed;
 `;
 
-const MobileNavItem = styled(NavItem)`
+/* Mobil elementer */
+const MobileNavItem = styled.a`
   font-size: 1.5rem;
-  padding: 1rem;
+  padding: 0.75rem 0.25rem;
   color: black;
-  &::after { background-color: black; }
-  &:hover { color: #333; }
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
 `;
 
+/* Mobil indikator som glir under aktiv kategori */
+const MobileIndicator = styled.div`
+  position: absolute;
+  left: 0;
+  bottom: 1.5rem;        /* litt over bunnen for “under” linjene */
+  height: 4px;
+  background: black;
+  border-radius: 2px;
+  transition:
+    left 480ms cubic-bezier(.22,.61,.36,1),
+    width 480ms cubic-bezier(.22,.61,.36,1);
+  box-shadow: 0 0 0.5px currentColor, 0 0 6px rgba(0,0,0,.15);
+
+  /* en liten “hale” ved bevegelse: rund mer når i transit (valgfritt) */
+`;
+
+/* Scroll-to-top knapp */
 const ScrollTopButton = styled.button`
   position: absolute;
   top: 100%;
@@ -170,10 +174,16 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
 
-  // Hvilken item er aktiv/leaving (index)
+  // Desktop hover state
   const [activeIdx, setActiveIdx] = useState(null);
   const [leavingIdx, setLeavingIdx] = useState(null);
 
+  // Mobil: aktivt punkt + glidende indikatorposisjon
+  const [mobileActive, setMobileActive] = useState(0);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  const mobileContainerRef = useRef(null);
+  const mobileRefs = useRef([]); // element refs for hver MobileNavItem
 
   useEffect(() => {
     const onScroll = () => {
@@ -190,6 +200,10 @@ const Header = () => {
       setTimeout(() => setMenuState({ isOpen: false, isVisible: false }), 300);
     } else {
       setMenuState({ isOpen: true, isVisible: true });
+      // når vi åpner menyen, posisjoner indikatoren på aktivt element
+      requestAnimationFrame(() => {
+        updateIndicator(mobileActive);
+      });
     }
   };
 
@@ -201,63 +215,109 @@ const Header = () => {
     { href: '/contact', label: 'Support' },
   ];
 
+  // Beregn indikatorens left/width relativt til container
+  const updateIndicator = (idx) => {
+    const container = mobileContainerRef.current;
+    const el = mobileRefs.current[idx];
+    if (!container || !el) return;
+
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    const left = eRect.left - cRect.left;
+    const width = eRect.width;
+
+    setIndicator({ left, width });
+  };
+
+  // Oppdater indikator når aktiv mobil-index endres, eller menyen (re)åpnes
+  useEffect(() => {
+    updateIndicator(mobileActive);
+    // reflow ved resize for sikkerhets skyld
+    const onResize = () => updateIndicator(mobileActive);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileActive, menuState.isVisible]);
+
   return (
     <HeaderContainer isScrolled={isScrolled}>
       <Logo href="/" textColor={textColor} isScrolled={isScrolled}>
         Vintra Studios
       </Logo>
 
- <NavMenu isScrolled={isScrolled}>
-  {items.map((it, idx) => {
-    const cls =
-      (activeIdx === idx ? 'is-active ' : '') +
-      (leavingIdx === idx ? 'is-leaving' : '');
+      {/* DESKTOP NAV */}
+      <NavMenu isScrolled={isScrolled}>
+        {items.map((it, idx) => {
+          const cls =
+            (activeIdx === idx ? 'is-active ' : '') +
+            (leavingIdx === idx ? 'is-leaving' : '');
+          return (
+            <NavItem
+              key={it.href}
+              href={it.href}
+              textColor={textColor}
+              className={cls}
+              onMouseEnter={() => {
+                setActiveIdx(idx);
+                setLeavingIdx(null);
+              }}
+              onMouseLeave={() => {
+                setActiveIdx(null);
+                setLeavingIdx(idx);
+                setTimeout(() => setLeavingIdx(null), 960); // la ut-animasjon spille ferdig
+              }}
+            >
+              {it.label}
+              <span className="underline" aria-hidden />
+            </NavItem>
+          );
+        })}
+      </NavMenu>
 
-    return (
-      <NavItem
-        key={it.href}
-        href={it.href}
-        textColor={textColor}
-        className={cls}
-        onMouseEnter={() => {
-          setActiveIdx(idx);
-          setLeavingIdx(null);
-        }}
-        onMouseLeave={() => {
-          setActiveIdx(null);
-          setLeavingIdx(idx);
-          // la ~0.95s ut-animasjon få spille helt ut
-          setTimeout(() => setLeavingIdx(null), 960);
-        }}
+      <ScrollTopButton
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        visible={showTop}
+        aria-label="Scroll to top"
       >
-        {it.label}
-        <span className="underline" aria-hidden />
-      </NavItem>
-    );
-  })}
-</NavMenu>
-
-
-
-      <ScrollTopButton onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        visible={showTop} aria-label="Scroll to top">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 6V18M12 6L7 11M12 6L17 11" stroke="#ffffff" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </ScrollTopButton>
 
+      {/* HAMBURGER (mobil) */}
       <HamburgerButton onClick={toggleMenu} isOpen={menuState.isOpen} textColor={textColor}>
         <span /><span /><span />
       </HamburgerButton>
 
-      <MobileNavMenu isOpen={menuState.isOpen} isVisible={menuState.isVisible}>
-        {items.map(it => (
-          <MobileNavItem key={it.href} href={it.href} onClick={toggleMenu}>
+      {/* MOBIL NAV – med glidende indikator */}
+      <MobileNavMenu
+        isOpen={menuState.isOpen}
+        isVisible={menuState.isVisible}
+        ref={mobileContainerRef}
+      >
+        {items.map((it, idx) => (
+          <MobileNavItem
+            key={it.href}
+            href={it.href}
+            ref={el => (mobileRefs.current[idx] = el)}
+            onClick={(e) => {
+              // la animasjonen synes – ikke lukk menyen umiddelbart
+              e.preventDefault();
+              setMobileActive(idx);
+              updateIndicator(idx);
+              // naviger litt etter slik at bevegelsen synes (valgfritt):
+              setTimeout(() => { window.location.href = it.href; }, 180);
+            }}
+          >
             {it.label}
-            <span className="underline" aria-hidden />
           </MobileNavItem>
         ))}
+
+        {/* Indikatorstrek nederst, glir til valgt punkt */}
+        <MobileIndicator
+          style={{ left: `${indicator.left}px`, width: `${indicator.width}px` }}
+        />
       </MobileNavMenu>
     </HeaderContainer>
   );

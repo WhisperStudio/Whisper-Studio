@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Header from '../components/header';
@@ -8,11 +8,84 @@ import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
 
-const fadeInBounce = keyframes`
-  0% { opacity: 0; transform: translateY(-20px); }
-  100%{ opacity: 1; transform: translateY(0); }
+/* ---------- Utils ---------- */
+const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
+const visibleProgress = (el) => {
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  const start = vh * 0.8;
+  const end = -r.height * 0.2;
+  return clamp((start - r.top) / (start - end), 0, 1);
+};
+
+// Throttle funksjon for bedre ytelse
+const throttle = (func, limit) => {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+};
+
+/* ---------- Global ---------- */
+const GlobalStyle = createGlobalStyle`
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    cursor: none;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: #0e0c0d;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  html {
+    scroll-behavior: auto; /* Disable smooth scrolling to avoid conflicts */
+  }
 `;
 
+/* ---------- Animations ---------- */
+const heroIn = keyframes`
+  0% { 
+    opacity: 0; 
+    transform: translate3d(0, 40px, 0) scale(0.95); 
+    filter: blur(8px); 
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: translate3d(0, 10px, 0) scale(0.98); 
+    filter: blur(2px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0) scale(1.0); 
+    filter: blur(0); 
+  }
+`;
+
+const slideInUp = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 60px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+`;
+
+/* ---------- Layout wrappers ---------- */
 const AppContainer = styled.div`
   min-height: 100vh;
   width: 100vw;
@@ -20,355 +93,420 @@ const AppContainer = styled.div`
   flex-direction: column;
   overflow-x: hidden;
   position: relative;
-  background-color: #0e0c0d;
-  opacity: 0;
-  animation: ${fadeInBounce} ease 1s;
-  animation-fill-mode: forwards;
 `;
 
-/* --- Video + L→R sweep med tåkekant --- */
-/* --- Video + L→R sweep med tåkete, halvtransparent skygge --- */
-const BackgroundContainer = styled.div`
-  position: absolute;
+const StyledHeader = styled.header`
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+`;
+
+/* ---------- Fixed bakgrunnsvideo ---------- */
+const FixedBackground = styled.div`
+  position: fixed;
   inset: 0;
+  z-index: -1;
   overflow: hidden;
+  pointer-events: none;
+  background: #000;
 `;
 
-/* Litt overscan for å unngå “sømmer” i ytterkant */
 const BackgroundVideo = styled.video`
   position: absolute;
-  inset: -1vw;
-  width: calc(100% + 2vw);
-  height: calc(100% + 2vw);
+  left: 50%; 
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(${p => p.$parallax}px) scale(${p => p.$scale});
+  min-width: 100%;
+  min-height: 100%;
+  width: auto; 
+  height: auto;
   object-fit: cover;
-  pointer-events: none;
-`;
-const SweepFog = styled.div`
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 100%;              
-  transform-origin: ${p => p.$origin};
-  transform: scaleX(${p => p.$scale});
-  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1); 
-  pointer-events: none;
-
-  /* Selve baren (mørk, men ikke helt tett) */
-  background: rgba(0, 0, 0);
-
-  /* Legg til feathered edges for å unngå hard cutoff */
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-
-  /* Skygge i kantene gir dybde */
-  box-shadow: 
-    -40px 0 60px rgba(0,0,0,0.8), 
-    40px 0 60px rgba(0,0,0,0.8);
-
-  /* Litt blur for smoothness */
-  filter: blur(4px);
-  opacity: 1;
+  will-change: transform;
+  backface-visibility: hidden;
+  filter: brightness(0.9) contrast(1.1) saturate(1.2);
+  transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 `;
 
-
-
+/* ---------- Hero ---------- */
 const ContentContainer = styled.div`
   position: relative;
   z-index: 1;
-  height: 100vh;
+  height: 100vh; 
   width: 100vw;
-  display: flex;
+  display: flex; 
   flex-direction: column;
-  justify-content: center;
+  justify-content: center; 
   align-items: flex-start;
-  padding-left: 5%;
-  padding-top: 60px; /* juster etter header-høyde */
+  padding-left: 5%; 
+  padding-top: 60px;
 `;
 
 const TitleContainer = styled.div`
-  position: absolute;
-  top: 45%;
-  left: 5%;
-  transform: translateY(-50%);
   color: white;
-  font-size: 6rem;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-
-  @media (max-width: 768px) {
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, +130%);
+  font-size: clamp(3rem, 9vw, 8rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  opacity: ${p => p.$opacity};
+  transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: ${heroIn} 1000ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  
+  @media (max-width: 768px) { 
+    text-align: center; 
+    align-self: center; 
   }
 `;
 
 const ButtonContainer = styled.div`
-  position: absolute;
-  top: 60%;
-  left: 5%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: row;
+  margin-top: 30px;
+  display: flex; 
+  gap: 20px; 
   align-items: center;
-
-  @media (max-width: 768px) {
-    top: 90%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    flex-direction: column;
-    align-items: center;
+  opacity: ${p => p.$opacity};
+  transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: ${heroIn} 1200ms 150ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  
+  @media (max-width: 768px) { 
+    flex-direction: column; 
+    gap: 15px;
   }
 `;
 
 const PlayButton = styled.button`
-  padding: 12px 24px;
-  font-size: 1.2rem;
-  background-color: white;
-  color: black;
-  border: none;
-  border-radius: 30px;
-  border: 2px solid white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-
-  @media (max-width: 768px) { display: none; }
-
-  &:hover {
-    background-color: black;
-    color: white;
-    border: 2px solid white;
+  padding: 16px 32px; 
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff6b6b, #ff8787);
+  color: white;
+  border: none; 
+  border-radius: 50px;
+  cursor: pointer; 
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  
+  &:hover { 
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
+    background: linear-gradient(135deg, #ff5252, #ff6b6b);
+  }
+  
+  &:active {
+    transform: translateY(-1px) scale(1.02);
+  }
+  
+  @media (max-width: 768px) { 
+    display: block;
+    width: 200px;
   }
 `;
 
 const WatchTrailerButton = styled.button`
-  padding: 12px 24px;
-  font-size: 1.2rem;
-  background-color: transparent;
+  padding: 16px 32px; 
+  font-size: 1.3rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 2px solid white;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  margin-left: 20px;
-
-  @media (max-width: 768px) { margin-left: 0; }
-
-  &:hover {
-    background-color: white;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50px;
+  cursor: pointer; 
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(10px);
+  
+  &:hover { 
+    background: white; 
     color: black;
-    border: 2px solid white;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(-1px) scale(1.02);
   }
 `;
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    cursor: none;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-  }
-`;
-
-const NewsSection = styled.div`
-  min-height: 100vh;
+/* ---------- News + Cards ---------- */
+const NewsSection = styled.section`
+  position: relative;
   width: 100%;
-  background-color: #0a0a0a;
-  display: flex;
-  flex-direction: column;
-  padding: 100px 5% 80px;
+  padding: 120px 5% 100px;
   box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(14, 12, 13, 0.9) 0%, rgba(14, 12, 13, 0.95) 100%);
+  backdrop-filter: blur(20px);
 `;
 
 const NewsSectionTitle = styled.h2`
-  font-size: 4rem;
-  margin-bottom: 80px;
+  font-size: clamp(2.5rem, 6vw, 5rem); 
+  margin-bottom: 80px; 
   color: white;
-  text-align: center;
-  font-weight: 800;
-  letter-spacing: 2px;
+  text-align: center; 
+  font-weight: 900; 
+  letter-spacing: 3px;
   text-transform: uppercase;
+  opacity: 0; 
+  transform: translateY(40px);
+  will-change: transform, opacity;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
 `;
 
 const CardContainer = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr;
   grid-template-rows: repeat(2, auto);
-  gap: 30px;
-  max-width: 1600px;
+  gap: 40px; 
+  max-width: 1600px; 
   margin: 0 auto;
-
-  @media (max-width: 1024px) { grid-template-columns: 1fr; }
+  
+  @media (max-width: 1024px) { 
+    grid-template-columns: 1fr; 
+    gap: 30px;
+  }
 `;
 
 const Card = styled.div`
-  background-color: #1a1a1a;
+  background: linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(40, 40, 40, 0.9));
   color: white;
-  border-radius: 20px;
+  border-radius: 25px; 
   overflow: hidden;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  &:hover {
-    transform: translate3d(0, -10px, 0);
-    will-change: transform;
-    transition: transform 0.2s ease-out;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  opacity: 0; 
+  transform: translateY(40px);
+  will-change: transform, opacity;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  &:hover { 
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 `;
 
 const LargeCard = styled(Card)`
-  grid-row: span 2;
-  display: flex;
-  flex-direction: column;
+  grid-row: span 2; 
+  display: flex; 
+  flex-direction: column; 
   height: 100%;
-
-  @media (max-width: 1024px) { grid-row: auto; }
+  
+  @media (max-width: 1024px) { 
+    grid-row: auto; 
+  }
 `;
 
 const SmallCardContainer = styled.div`
-  display: grid;
-  grid-template-rows: repeat(2, 1fr);
-  gap: 30px;
-
-  @media (max-width: 1024px) { grid-template-rows: auto; }
+  display: grid; 
+  grid-template-rows: repeat(2, 1fr); 
+  gap: 40px;
+  
+  @media (max-width: 1024px) { 
+    grid-template-rows: auto; 
+    gap: 30px;
+  }
 `;
 
-const SmallCard = styled(Card)`
-  display: flex;
-  flex-direction: column;
+const SmallCard = styled(Card)` 
+  display: flex; 
+  flex-direction: column; 
 `;
 
 const CardImage = styled.div`
   width: 100%;
-  padding-top: ${props => (props.large ? '70%' : '75%')};
-  background-image: url(${props => props.image});
-  background-size: cover;
+  padding-top: ${p => (p.large ? '60%' : '65%')};
+  background-image: url(${p => p.image});
+  background-size: cover; 
   background-position: center;
   position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
+  }
 `;
 
 const CardContent = styled.div`
-  padding: ${props => (props.large ? '40px' : '25px')};
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: ${p => (p.large ? '50px' : '35px')};
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
   flex-grow: 1;
 `;
 
 const CardTitle = styled.h3`
-  font-size: ${props => (props.large ? '2.8rem' : '2rem')};
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 20px;
-  line-height: 1.2;
+  font-size: ${p => (p.large ? '3.2rem' : '2.4rem')};
+  font-weight: 900; 
+  color: #fff; 
+  margin-bottom: 25px; 
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 `;
 
 const CardDescription = styled.p`
-  font-size: ${props => (props.large ? '1.4rem' : '1rem')};
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.8;
-  margin-bottom: 30px;
+  font-size: ${p => (p.large ? '1.5rem' : '1.2rem')};
+  color: rgba(255,255,255,0.85); 
+  line-height: 1.6; 
+  margin-bottom: 35px;
+  font-weight: 400;
 `;
 
 const CardButton = styled.button`
-  padding: 14px 28px;
-  background-color: #4a86ff;
+  padding: 18px 36px; 
+  background: linear-gradient(135deg, #4a86ff, #6c5ce7);
   color: white;
-  border: none;
-  border-radius: 50px;
-  font-size: 1.1rem;
+  border: none; 
+  border-radius: 50px; 
+  font-size: 1.2rem; 
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
+  cursor: pointer; 
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  text-transform: uppercase; 
   letter-spacing: 1px;
   align-self: flex-start;
-
-  &:hover {
-    background-color: #3a76e8;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(74, 134, 255, 0.4);
+  box-shadow: 0 8px 25px rgba(74, 134, 255, 0.4);
+  
+  &:hover { 
+    background: linear-gradient(135deg, #3a76e8, #5b4cdb);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(74, 134, 255, 0.6);
+  }
+  
+  &:active {
+    transform: translateY(-1px) scale(1.02);
   }
 `;
 
 const CardDate = styled.span`
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 15px;
-  display: block;
+  font-size: 1.1rem; 
+  color: rgba(255,255,255,0.7); 
+  margin-bottom: 20px; 
+  display: block; 
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
-const StyledHeader = styled.header`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-`;
-
+/* ---------- Component ---------- */
 function App() {
-  // (cursor state beholdes om du trenger den)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const updateMousePosition = ev => setMousePosition({ x: ev.clientX, y: ev.clientY });
-    window.addEventListener('mousemove', updateMousePosition);
-    return () => window.removeEventListener('mousemove', updateMousePosition);
-  }, []);
+  const vidRef = useRef(null);
+  const [vidDur, setVidDur] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  
+  // Animation state
+  const [heroOpacity, setHeroOpacity] = useState(1);
+  const [heroShift, setHeroShift] = useState(0);
+  const [heroScale, setHeroScale] = useState(1);
+  const [parallax, setParallax] = useState(0);
+  const [videoScale, setVideoScale] = useState(1.05);
 
-  // 🎥 Video + sweep-fade state
-  const vidRef = React.useRef(null);
-  const prevTimeRef = React.useRef(0);
+  // Element refs
+  const newsRef = useRef(null);
+  const titleRef = useRef(null);
+  const largeRef = useRef(null);
+  const smallRefs = useRef([]);
 
-  // scale: 1 => helt svart (dekker), 0 => åpen (ingen svart)
-  const [sweepScale, setSweepScale] = useState(1);
-  // origin: 'right' for åpning (avslør fra venstre), 'left' for lukking (dekk fra venstre)
-  const [sweepOrigin, setSweepOrigin] = useState('right');
-  const closingRef = React.useRef(false);
+  const getMaxScroll = () =>
+    Math.max(0, (document.documentElement?.scrollHeight || 0) - window.innerHeight);
 
+  /* Video setup */
   useEffect(() => {
     const v = vidRef.current;
     if (!v) return;
-
-    // Når video kan spille: åpne fra venstre (L→R)
-    const onCanPlay = () => {
-      setSweepOrigin('right');   // høyre side «står stille», svart trekker seg mot høyre
-      setSweepScale(0);          // 1 -> 0 = åpning
+    
+    const onLoaded = () => {
+      setVidDur(v.duration || 0);
+      v.pause();
+      v.currentTime = 0;
+      // Preload video for smoother playback
+      v.preload = 'auto';
     };
-
-    const onTimeUpdate = () => {
-      const t = v.currentTime || 0;
-      const d = v.duration || 0;
-
-      // Start lukking siste ~1s av loopen (L→R dekke)
-      if (d && t > d - 1.0 && !closingRef.current) {
-        closingRef.current = true;
-        setSweepOrigin('left');  // venstre side står stille, sort vokser mot høyre
-        setSweepScale(1);        // 0 -> 1 = dekke
-      }
-
-      // Loop oppdaget: tidsstempel hoppet tilbake => åpne igjen
-      if (t < (prevTimeRef.current || 0)) {
-        closingRef.current = false;
-        // Sett panel klart til ny åpning: start «helt dekket fra høyre»
-        setSweepOrigin('right');
-        setSweepScale(1);
-        // og på neste frame: trekk det bort mot høyre (avslør fra venstre)
-        requestAnimationFrame(() => setSweepScale(0));
-      }
-
-      prevTimeRef.current = t;
-    };
-
-    v.addEventListener('canplay', onCanPlay);
-    v.addEventListener('timeupdate', onTimeUpdate);
+    
+    v.addEventListener('loadedmetadata', onLoaded);
+    v.addEventListener('loadeddata', onLoaded);
+    
     return () => {
-      v.removeEventListener('canplay', onCanPlay);
-      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('loadedmetadata', onLoaded);
+      v.removeEventListener('loadeddata', onLoaded);
     };
   }, []);
+
+  /* Scroll handler with throttling */
+  useEffect(() => {
+    const handleScroll = throttle(() => {
+      const maxScroll = getMaxScroll();
+      const scrollY = window.scrollY || 0;
+      const progress = maxScroll > 0 ? clamp(scrollY / maxScroll, 0, 1) : 0;
+      
+      setScrollProgress(progress);
+      
+      // Smooth easing for better visual effect
+      const easedProgress = ease(progress);
+      
+      // Hero animations
+      setHeroOpacity(Math.max(0, 1 - progress * 1.5));
+      setHeroShift(progress * 60);
+      setHeroScale(Math.max(0.9, 1 - progress * 0.1));
+      
+      // Video effects
+      setParallax(easedProgress * 40);
+      setVideoScale(1.05 + easedProgress * 0.08);
+      
+      // Update video time smoothly
+      const v = vidRef.current;
+      if (v && vidDur > 0) {
+        const targetTime = easedProgress * vidDur;
+        const currentTime = v.currentTime || 0;
+        const timeDiff = Math.abs(targetTime - currentTime);
+        
+        // Only update if there's a significant difference to avoid jitter
+        if (timeDiff > 0.1) {
+          try {
+            v.currentTime = targetTime;
+          } catch (e) {
+            // Ignore seek errors
+          }
+        }
+        
+        if (!v.paused) v.pause();
+      }
+    }, 16); // ~60fps throttling
+
+    // Animate scroll-linked elements
+    const animateElements = () => {
+      const elements = [
+        titleRef.current,
+        largeRef.current,
+        ...smallRefs.current.filter(Boolean)
+      ].filter(Boolean);
+
+      elements.forEach(el => {
+        const progress = visibleProgress(el);
+        const easedProgress = ease(progress);
+        
+        el.style.opacity = String(easedProgress);
+        el.style.transform = `translateY(${(1 - easedProgress) * 40}px)`;
+      });
+      
+      requestAnimationFrame(animateElements);
+    };
+
+    handleScroll(); // Initial call
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    
+    animateElements(); // Start element animation loop
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [vidDur]);
 
   const handlePlayNowClick = () => {
     window.location.href = '/vote';
@@ -377,90 +515,101 @@ function App() {
   return (
     <>
       <GlobalStyle />
+
+      <FixedBackground>
+        <BackgroundVideo
+          ref={vidRef}
+          src={backgroundImage}
+          muted
+          playsInline
+          preload="auto"
+          $parallax={parallax}
+          $scale={videoScale}
+        />
+      </FixedBackground>
+
       <StyledHeader>
         <Header />
       </StyledHeader>
 
       <AppContainer>
-        {/* 🎥 Bakgrunnsvideo + fades */}
-       <BackgroundContainer>
-  <BackgroundVideo
-    ref={vidRef}
-    src={backgroundImage}
-    autoPlay
-    muted
-    loop
-    playsInline
-  />
-  <SweepFog $origin={sweepOrigin} $scale={sweepScale} />
-</BackgroundContainer>
-
-
         <ContentContainer>
-          <TitleContainer>V.O.T.E</TitleContainer>
-          <ButtonContainer>
+          <TitleContainer
+            $opacity={heroOpacity}
+            $shift={heroShift}
+            $scale={heroScale}
+          >
+            V.O.T.E
+          </TitleContainer>
+
+          <ButtonContainer
+            $opacity={heroOpacity}
+            $shift={heroShift}
+            $scale={heroScale}
+          >
             <PlayButton onClick={handlePlayNowClick}>Play Now</PlayButton>
             <WatchTrailerButton>Watch Trailer</WatchTrailerButton>
           </ButtonContainer>
         </ContentContainer>
+
+        <NewsSection ref={newsRef}>
+          <NewsSectionTitle ref={titleRef}>Latest Updates</NewsSectionTitle>
+
+          <CardContainer>
+            <LargeCard ref={largeRef}>
+              <CardImage large image={placeholderImage1} />
+              <CardContent large>
+                <div>
+                  <CardDate>August 22, 2025</CardDate>
+                  <CardTitle large>V.O.T.E Update</CardTitle>
+                  <CardDescription large>
+                    The Vintra/Vote website is under construction.
+                    <br /><br />
+                    The game Vote is well underway, two of the maps are under construction,
+                    characters are being created, and the story of the game is being created bit by bit.
+                    Check out our Art Gallery where you can see some of the creatures we are planning to add.
+                  </CardDescription>
+                </div>
+              </CardContent>
+            </LargeCard>
+
+            <SmallCardContainer>
+              <SmallCard ref={el => (smallRefs.current[0] = el)}>
+                <CardImage image={placeholderImage2} />
+                <CardContent>
+                  <div>
+                    <CardDate>V.O.T.E</CardDate>
+                    <CardTitle>Art Gallery</CardTitle>
+                    <CardDescription>
+                      Check out our art gallery of the landscape and creatures you might see in the game.
+                    </CardDescription>
+                  </div>
+                  <Link to="/artwork" style={{ textDecoration: 'none' }}>
+                    <CardButton>Explore</CardButton>
+                  </Link>
+                </CardContent>
+              </SmallCard>
+
+              <SmallCard ref={el => (smallRefs.current[1] = el)}>
+                <CardImage image={placeholderImage3} />
+                <CardContent>
+                  <div>
+                    <CardDate>January 15, 2025</CardDate>
+                    <CardTitle>Community Event</CardTitle>
+                    <CardDescription>
+                      Join our upcoming community event and compete for exclusive rewards.
+                      Don't miss this chance to showcase your skills!
+                    </CardDescription>
+                  </div>
+                  <CardButton>Join Now</CardButton>
+                </CardContent>
+                </SmallCard>
+            </SmallCardContainer>
+          </CardContainer>
+        </NewsSection>
+
+        <Footer />
       </AppContainer>
-
-      <NewsSection>
-        <NewsSectionTitle>Latest Updates</NewsSectionTitle>
-        <CardContainer>
-          <LargeCard>
-            <CardImage large image={placeholderImage1} />
-            <CardContent large>
-              <div>
-                <CardDate>August 22, 2025</CardDate>
-                <CardTitle large>V.O.T.E Update</CardTitle>
-                <CardDescription large>
-                  - The Vintra/Vote website is under construction.
-                  <br /><br />
-                  - The game Vote is well underway, two of the maps are under construction,
-                  characters are being created, and the story of the game is being created bit by bit.
-                  Check out our Art Gallary where you can see some of the creatures we are planning to add.
-                </CardDescription>
-              </div>
-            </CardContent>
-          </LargeCard>
-
-          <SmallCardContainer>
-            <SmallCard>
-              <CardImage image={placeholderImage2} />
-              <CardContent>
-                <div>
-                  <CardDate>V.O.T.E</CardDate>
-                  <CardTitle>Art Gallary</CardTitle>
-                  <CardDescription>
-                    Check out our art gallary of the landscape and creatures you might see in the game.
-                  </CardDescription>
-                </div>
-                <Link to="/artwork" style={{ textDecoration: 'none' }}>
-                  <CardButton>Explore</CardButton>
-                </Link>
-              </CardContent>
-            </SmallCard>
-
-            <SmallCard>
-              <CardImage image={placeholderImage3} />
-              <CardContent>
-                <div>
-                  <CardDate>January 15, 2025</CardDate>
-                  <CardTitle>Community Event</CardTitle>
-                  <CardDescription>
-                    Join our upcoming community event and compete for exclusive rewards.
-                    Don't miss this chance to showcase your skills!
-                  </CardDescription>
-                </div>
-                <CardButton>Join Now</CardButton>
-              </CardContent>
-            </SmallCard>
-          </SmallCardContainer>
-        </CardContainer>
-      </NewsSection>
-
-      <Footer />
     </>
   );
 }
