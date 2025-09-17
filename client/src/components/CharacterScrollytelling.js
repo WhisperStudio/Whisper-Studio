@@ -1,422 +1,374 @@
-import React, { useRef, useEffect } from "react";
-import styled from "styled-components";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import styled, { createGlobalStyle } from "styled-components";
 
-/* ---------- Utils ---------- */
+/* ====================== Utils ====================== */
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 const lerp = (a, b, t) => a + (b - a) * t;
-const ease = (t) => 1 - Math.pow(1 - t, 3);
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const smoothstep = (t) => t * t * (3 - 2 * t);
 
-// smoothstep 0..1
-const smooth = (t) => t * t * (3 - 2 * t);
-
-// 0→1 between [a,b]
-const ramp = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
-
-// plateau: fade in on [a,b], hold, fade out on [c,d]
-const plateau = (x, a, b, c, d) => {
-  const fadeIn = smooth(ramp(x, a, b));                     // 0→1
-  const fadeOut = smooth(ramp(1 - x, 1 - d, 1 - c));        // 0→1 from right
-  return Math.min(fadeIn, fadeOut);                         // 0..1 with flat top
+// Robust asset resolver (handles require(), import meta URLs, and objects)
+const resolveSrc = (img) => {
+  if (!img) return "";
+  if (typeof img === "string") return img; // CRA/webpack require returns string
+  if (typeof img === "object") {
+    // Vite/Next sometimes expose { default: url } or { src: url }
+    return img.default || img.src || "";
+  }
+  return "";
 };
 
-/* ---------- Data (Creatures) ---------- */
-const CREATURES = [
-  { id: 1,  img: require("../bilder/smart_gnome.png"), category: "Creatures", sub: "Friendly",   title: "Nisse",           tags:["gnome","friendly","folk"] },
-  { id: 2,  img: require("../bilder/assets_task_01jqzwt0nqf4ttddc4ykksgj87_img_0.webp"), category: "Creatures", sub: "Unfriendly", title: "Forest Dweller", tags:["forest","dark"] },
-  { id: 3,  img: require("../bilder/assets_task_01jqebmy91fw3r80bh65pceeam_img_1.webp"), category: "Creatures", sub: "Unfriendly", title: "Shadow",          tags:["shadow","mystic"] },
-  { id: 4,  img: require("../bilder/assets_task_01jqzyj308f1s8ph7d3pz8fy24_img_0.webp"), category: "Creatures", sub: "Unfriendly", title: "Huldra",          tags:["folk","myth"] },
-  { id: 12, img: require("../bilder/Nøkken.png"),                                   category: "Creatures", sub: "Unfriendly", title: "Nøkken",          tags:["water","monster"] },
-  { id: 13, img: require("../bilder/Troll.png"),                                    category: "Creatures", sub: "Unfriendly", title: "Troll",           tags:["troll","rock"] },
-  { id: 14, img: require("../bilder/Pesta.png"),                                    category: "Creatures", sub: "Unfriendly", title: "Pesta",           tags:["plague","dark"] },
-].filter(x => x.category === "Creatures");
+/* ====================== Data ====================== */
+const RAW_CREATURES = [
+  { id: 1,  img: require("../bilder/smart_gnome.png"),                                    title: "Nisse",           sub: "Friendly",   tags:["gnome","friendly","folk"] },
+  { id: 2,  img: require("../bilder/assets_task_01jqzwt0nqf4ttddc4ykksgj87_img_0.webp"), title: "Forest Dweller",  sub: "Unfriendly", tags:["forest","dark"] },
+  { id: 3,  img: require("../bilder/assets_task_01jqebmy91fw3r80bh65pceeam_img_1.webp"), title: "Shadow",          sub: "Unfriendly", tags:["shadow","mystic"] },
+  { id: 4,  img: require("../bilder/assets_task_01jqzyj308f1s8ph7d3pz8fy24_img_0.webp"), title: "Huldra",          sub: "Unfriendly", tags:["folk","myth"] },
+  { id: 12, img: require("../bilder/Nøkken.png"),                                         title: "Nøkken",          sub: "Unfriendly", tags:["water","monster"] },
+  { id: 13, img: require("../bilder/Troll.png"),                                          title: "Troll",           sub: "Unfriendly", tags:["troll","rock"] },
+  { id: 14, img: require("../bilder/Pesta.png"),                                          title: "Pesta",           sub: "Unfriendly", tags:["plague","dark"] },
+];
 
-/* ---------- Halo colors by ID ---------- */
 const COLOR_BY_ID = {
-  2:  "#7a0b0b", // Forest Dweller – deep red
-  3:  "#1e3a5f", // Shadow – deep blue
-  1:  "#6d1d1d", // Nisse – deep red
-  4:  "#6b2f57", // Huldra – plum
-  12: "#0a5c6b", // Nøkken – teal blue
-  13: "#6a5428", // Troll – earthy brown
-  14: "#3e4666", // Pesta – muted indigo
+  2:  "#ff3b3b",
+  3:  "#4aa3ff",
+  1:  "#ff6b6b",
+  4:  "#ff5ab1",
+  12: "#29e1ff",
+  13: "#d1a04b",
+  14: "#9aa5ff",
 };
-const colorFor = (id) => COLOR_BY_ID[id] || "#2f3b55";
+const colorFor = (id) => COLOR_BY_ID[id] || "#9aa5ff";
 
-/* ---------- Styles ---------- */
-const MainSection = styled.section`
-  position: relative;
-  background: #000;
-  color: #fff;
-  overflow: visible;
-  background-image:
+/* ====================== Global (rockstyle polish) ====================== */
+const Global = createGlobalStyle`
+  :root{
+    --gutter: min(3.6vw, 28px);
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  }
+  html, body, #root{ height:100%; background:#000; }
+  *{ box-sizing: border-box; }
+`;
+
+/* ====================== Layout ====================== */
+const Page = styled.main`
+  position: relative; color:#fff; min-height:100vh; overflow-x: clip;
+  background:
     radial-gradient(120vmax 80vmax at 110% -10%, rgba(255,255,255,.05), transparent 55%),
-    radial-gradient(110vmax 80vmax at -10% 110%, rgba(255,255,255,.04), transparent 55%);
-`;
-
-const Container = styled.div`
-  width: min(1400px, 94vw);
-  margin: 0 auto;
-  padding: 10vh 0 12vh;
-  position: relative;
-  z-index: 1;
-`;
-
-const Header = styled.header`
-  margin: 0 0 6vh;
-  h2{ font-size: clamp(28px, 3.8vw, 56px); letter-spacing:.02em; margin:0 0 8px; }
-  p { color: rgba(255,255,255,.75); max-width: 70ch; margin: 0; }
-`;
-
-const BallSVG = styled.svg`
-  position: fixed; inset: 0;
-  width: 100vw; height: 100vh;
-  pointer-events: none; z-index: 5;
-`;
-
-const CreaturePanel = styled.section`
-  position: relative;
-  height: 140vh;
-  display: grid;
-  grid-template-columns: ${p => (p.reverse ? "1.1fr 1fr" : "1fr 1.1fr")};
-  align-items: center;
-  gap: 4vw;
-
-  @media (max-width: 980px){
-    grid-template-columns: 1fr;
-    height: 120vh;
-    gap: 3vh;
+    radial-gradient(110vmax 80vmax at -10% 110%, rgba(255,255,255,.04), transparent 55%),
+    #000;
+  &::after{ /* film grain */
+    content:""; position: fixed; inset:-40px; pointer-events:none; z-index:5;
+    background-image: var(--noise);
+    mix-blend-mode: soft-light; opacity:.35; filter: contrast(120%);
   }
 `;
 
-const TextSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;            /* header stays left */
-  gap: 10px;
+const Nav = styled.nav`
+  position: sticky; top:0; z-index:10; height:64px; display:flex; align-items:center;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.25));
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 0 var(--gutter);
+  letter-spacing:.08em; text-transform: uppercase; font-weight:700; font-size:12px;
+  .brand{ font-weight:900; letter-spacing:.12em; margin-right:auto; font-size:13px; }
+  .pill{ padding:10px 14px; border:1px solid rgba(255,255,255,.14); border-radius:999px; }
+`;
 
-  padding-left: ${p => (p.reverse ? 0 : "3vw")};
-  padding-right:${p => (p.reverse ? "3vw" : 0)};
-  order:        ${p => (p.reverse ? 2 : 1)};
-  position: relative;
-  z-index: 3;
-  max-width: 46ch;                    /* body text stays under header */
-  will-change: transform, opacity;
+const Shell = styled.div`
+  width:min(1500px, 94vw); margin:0 auto; padding: 6vh var(--gutter) 10vh;
+`;
 
-  h3{
-    font-size: clamp(28px, 3.2vw, 46px);
-    margin: 0;
-    color: #fff;
-    text-shadow: 0 0 20px rgba(255,255,255,.3);
+const Hero = styled.header`
+  position: relative; min-height: 92vh; display:grid; place-items:center; text-align:center;
+  padding: 10vh var(--gutter) 6vh;
+  .kicker{ color:#a3f1ff; font-weight:800; letter-spacing:.18em; font-size:12px; text-transform:uppercase; }
+  h1{ font-size: clamp(48px, 8vw, 132px); line-height:.9; margin:.15em 0 .2em; letter-spacing:.01em; }
+  p{ max-width: 82ch; margin:0 auto; color:rgba(255,255,255,.85); line-height:1.8; }
+  .cta{ display:inline-flex; gap:12px; margin-top:28px; }
+  .btn{
+    padding:14px 18px; border-radius:14px; border:1px solid rgba(255,255,255,.16);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:12px;
   }
-  .category{
-    color:#7dd3fc;
-    font-weight:700;
-    letter-spacing:.06em;
-    font-size:14px;
-    margin: 0 0 6px;
-  }
-  p{
-    color: rgba(255,255,255,.85);
-    line-height: 1.8;
-    margin: 0;
-    font-size: 16px;
-  }
-
-  &::before{
-    content:"";
-    position:absolute; inset:-8% -6% -8% -15%;
-    background: radial-gradient(70% 70% at 15% 50%, rgba(0,0,0,.75), transparent 60%);
-    z-index:-1; filter: blur(25px);
-  }
-
-  @media (max-width:980px){
-    order:1; padding:0 3vw; max-width: 60ch;
+  /* neon frame */
+  &::before{ content:""; position:absolute; inset:6% 8%; border-radius:28px; z-index:-1;
+    background: radial-gradient(120% 100% at 50% 50%, rgba(255,255,255,.06), transparent 60%);
+    border: 1px solid rgba(255,255,255,.09);
+    box-shadow: 0 0 120px rgba(199,236,255,.15) inset, 0 0 140px rgba(199,236,255,.06);
   }
 `;
 
-const EdgeWrap = styled.div`
-  position: relative;
-  height: 100%;
-  order: ${p => (p.reverse ? 1 : 2)};
-  z-index: 0;
-  overflow: visible;                 /* allow halo to hang outside */
-  @media (max-width: 980px){ order: 2; }
+/* ======= Two-column scrollytelling: left text, right fixed stage ======= */
+const Scroller = styled.section`
+  display:grid; grid-template-columns: 1.05fr 1fr; gap: clamp(24px, 3vw, 40px);
+  align-items:start; position:relative;
+  @media (max-width: 1100px){ grid-template-columns: 1fr; }
 `;
 
-const StickyImageContainer = styled.div`
-  position: sticky; top: 0; height: 100vh;
-  display: grid; place-items: center;
-  overflow: hidden; border-radius: 22px;
-  margin-top: 100px; margin-bottom: 100px;
-  border: none; background: linear-gradient(135deg, #07090b 0%, #0a0c0f 100%);
-  will-change: transform, filter; width: clamp(520px, 62vw, 980px);
-  z-index: 1;
-
-  /* push to viewport edge */
-  margin-right: ${p => (p.reverse ? "0"     : "-250px")};
-  margin-left:  ${p => (p.reverse ? "-250px": "0")};
-
-  /* Remove vignette to avoid extra darkening mid-panel */
-  &::before{ content:""; display:none; }
-
-  /* Gentle blend toward text side (keep this) */
-  &::after{
-    content:""; position:absolute; top:0; bottom:0;
-    ${p => (p.reverse ? "right:0" : "left:0")};
-    width:45%;
-    background: ${p => (p.reverse
-      ? "linear-gradient(270deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.4) 60%, transparent 100%)"
-      : "linear-gradient(90deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.4) 60%, transparent 100%)")};
-    filter: blur(12px); pointer-events:none; z-index:2;
-  }
-
-  img{
-    width:106%; height:106%; object-fit:cover; display:block;
-    transform: scale(1.08); will-change: transform, filter;
-    filter: saturate(1.1) contrast(1.08) brightness(.92);
-    -webkit-mask-image: radial-gradient(130% 120% at 50% 50%, #000 60%, rgba(0,0,0,0.8) 75%, transparent 95%);
-            mask-image: radial-gradient(130% 120% at 50% 50%, #000 60%, rgba(0,0,0,0.8) 75%, transparent 95%);
-  }
+const TextRail = styled.div`
+  display:flex; flex-direction:column; gap: clamp(22vh, 30vh, 34vh);
+  scroll-snap-type: y proximity;
 `;
 
-/* Halo sits on the side facing the text and blends into black */
+const StageWrap = styled.div`
+  position: sticky; top: 6vh; height: 88vh; border-radius: 22px; overflow:hidden;
+  background: radial-gradient(100% 100% at 50% 50%, #0b0e12 0%, #07090c 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 60px 140px rgba(0,0,0,.6), 0 0 120px rgba(163, 241, 255, .08) inset;
+`;
+
+const Stage = styled.div`
+  position:relative; width:100%; height:100%; isolation:isolate;
+`;
+
+const Poster = styled.img`
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+  transform:
+    translate3d(var(--x,0), var(--y,0), 0)
+    scale(var(--scale,1));
+  opacity: var(--alpha, 0);
+  transition: opacity .6s ease; /* transforms are driven by rAF for buttery motion */
+  filter:
+    brightness(var(--br, .98))
+    contrast(var(--ct, 1.06))
+    saturate(var(--sat, 1.02))
+    blur(var(--blur, 0px));
+  will-change: transform, opacity, filter;
+  -webkit-mask-image: radial-gradient(120% 110% at 50% 50%, #000 60%, rgba(0,0,0,.88) 78%, transparent 96%);
+          mask-image: radial-gradient(120% 110% at 50% 50%, #000 60%, rgba(0,0,0,.88) 78%, transparent 96%);
+`;
+
 const Halo = styled.div`
-  position: absolute;
-  top: 50%;
-  /* inner edge: when image is LEFT (reverse=true), halo sits on RIGHT; else on LEFT */
-  ${p => (p.reverse ? "right:-10vw;" : "left:-10vw;")}
-  transform: translateY(-50%) scale(1);
-  width: clamp(420px, 48vmin, 680px);
-  height: clamp(420px, 48vmin, 680px);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 3;
-  /* show only the half that faces inward (toward the text) */
-  clip-path: ${p => (p.reverse ? "inset(0 0 0 50%)" : "inset(0 50% 0 0)")};
-  background: radial-gradient(closest-side, ${p => p.$color} 0%, rgba(0,0,0,0) 66%);
-  filter: blur(26px) saturate(1.08);
-  opacity: .18;               /* baseline so you always see it */
-  mix-blend-mode: screen;
-  box-shadow:
-    0 0 60px ${p => p.$color}40,
-    0 0 140px ${p => p.$color}30;
+  position:absolute; width: 64vmin; height: 64vmin; border-radius: 50%; z-index:0; pointer-events:none;
+  left:-18vmin; top: 50%; transform: translate3d(0, -50%, 0);
+  filter: blur(26px) saturate(1.1);
+  mix-blend-mode: screen; opacity:.75;
+  background: radial-gradient(closest-side, ${({$color}) => $color} 0%, transparent 68%);
 `;
 
-/* ---------- Component ---------- */
-function CharacterScrollytelling(){
-  const sectionRef = useRef(null);
-  const panelRefs  = useRef([]);
-  const textRefs   = useRef([]);
-  const haloRefs   = useRef([]);
-  const imgRefs    = useRef([]);
-  const svgRef     = useRef(null);
-  const dotRef     = useRef(null);
-  const pathRef    = useRef(null);
+const Card = styled.article`
+  position: relative; padding: 3.2vh 2.2vw; border-left: 2px solid rgba(255,255,255,.08);
+  max-width: 60ch; margin-left: .6vw; scroll-snap-align: center;
+  .eyebrow{ color:#a3f1ff; font-weight:800; letter-spacing:.18em; font-size:12px; text-transform:uppercase; }
+  h3{ font-size: clamp(28px, 4vw, 56px); margin:.2em 0 .2em; }
+  p{ color:rgba(255,255,255,.86); line-height:1.85; margin:0; }
+  .tags{ margin-top: 12px; opacity:.8; font-size:13px; letter-spacing:.02em; }
+`;
 
-  const calculateVisibility = (el) => {
-    const r = el.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const center = vh / 2;
-    const pc = r.top + r.height / 2;
-    const dist = Math.abs(pc - center);
-    const maxD = vh * 0.8;
-    return Math.max(0, 1 - dist / maxD); // 0 (far) .. 1 (centered)
-  };
+const Marquee = styled.div`
+  margin-top: 16vh; border-block:1px solid rgba(255,255,255,.08);
+  overflow:hidden; white-space:nowrap; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+  font-size: clamp(20px, 3vw, 34px); padding: 14px 0; opacity:.8;
+  .inner{ display:inline-block; padding-left: 100%; animation: roll 32s linear infinite; }
+  @keyframes roll{ to{ transform: translateX(-100%);} }
+`;
 
-  /* Build path for the scrolling orb */
-  const createBallPath = () => {
-    const total = CREATURES.length; if (!total) return;
-    const section = sectionRef.current; const svg = svgRef.current;
-    if (!section || !svg) return;
+const ProgressRail = styled.div`
+  position: fixed; right: 18px; top: 84px; bottom: 18px; width: 3px; z-index: 20;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  border-radius: 999px; overflow: hidden; pointer-events: none;
+  .bar{ position:absolute; left:0; top:0; width:100%; height: var(--p, 0%);
+    background: linear-gradient(180deg, #a3f1ff, #ff6b6b);
+  }
+`;
 
-    const sectionH = section.scrollHeight;
-    const w = window.innerWidth;
+/* ====================== Component ====================== */
+export default function RockstyleCreatures(){
+  // Normalize images up front so preload + rendering use the same URL string
+  const CREATURES = useMemo(
+    () => RAW_CREATURES.map(c => ({ ...c, src: resolveSrc(c.img) })),
+    []
+  );
 
-    svg.setAttribute("viewBox", `0 0 ${w} ${sectionH}`);
-    svg.setAttribute("preserveAspectRatio", "none");
+  const [active, setActive] = useState(0);
+  const [loaded, setLoaded] = useState(() => CREATURES.map(() => false));
 
-    const startY = sectionH * 0.1;
-    const endY   = sectionH * 0.9;
-    const stepY  = (endY - startY) / (total - 1);
+  const textRefs = useRef([]);
+  const posterRefs = useRef([]);
+  const stageRef = useRef(null);
+  const haloRef = useRef(null);
+  const rafRef = useRef(0);
 
-    const points = [];
-    for (let i = 0; i < total; i++){
-      const y = startY + i * stepY;
-      const isLeft = i % 2 === 1;
-      const x = isLeft ? 50 : w - 50;
-      points.push({ x, y });
-    }
-
-    let d = `M ${points[0].x},${points[0].y}`;
-    for (let i = 1; i < points.length; i++){
-      const p = points[i - 1], c = points[i];
-      const midX = (p.x + c.x) / 2;
-      const midY1 = p.y + (c.y - p.y) * 0.3;
-      const midY2 = p.y + (c.y - p.y) * 0.7;
-      d += ` C ${midX},${midY1} ${midX},${midY2} ${c.x},${c.y}`;
-    }
-    if (pathRef.current) pathRef.current.setAttribute("d", d);
-  };
-
-  /* Build path on mount/resize and when images load */
+  // Preload images once to avoid flash/flicker — works for png/webp
   useEffect(() => {
-    const rebuild = () => createBallPath();
-
-    imgRefs.current.forEach(img => {
-      if (!img || img.complete) return;
-      img.addEventListener("load", rebuild, { once: true });
+    const nextLoaded = [...loaded];
+    CREATURES.forEach((c, i) => {
+      const im = new Image();
+      im.src = c.src;
+      if (im.complete) nextLoaded[i] = true;
+      else im.onload = () => {
+        setLoaded(prev => { const copy = [...prev]; copy[i] = true; return copy; });
+      };
     });
-
-    createBallPath();
-    const ro = new ResizeObserver(rebuild);
-    ro.observe(document.documentElement);
-    return () => ro.disconnect();
+    setLoaded(nextLoaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Scroll-linked animations */
+  // Ultra-smooth scroll-driven engine: center locking, parallax, depth, halo sway
   useEffect(() => {
-    let raf = 0;
+    let vx = 0, vy = 0; // velocity tracker for halo sway
+    let lastY = window.scrollY;
 
-    const update = () => {
-      // Panels: text, image, halo
-      panelRefs.current.forEach((panel, i) => {
-        if (!panel) return;
+    const onFrame = () => {
+      const centerY = window.scrollY + window.innerHeight / 2;
+      let bestIdx = 0; let bestDist = Infinity;
 
-        const v = calculateVisibility(panel);   // 0..1
-        const e = ease(v);
+      // Velocity
+      const dy = window.scrollY - lastY; lastY = window.scrollY;
+      vy = lerp(vy, dy, 0.18);
 
-        // Image has a nice long "on-stage" plateau
-        const imgOpacity  = plateau(v, 0.06, 0.22, 0.78, 0.94);
-        // Text appears a bit later and leaves earlier
-        const textOpacity = plateau(v, 0.20, 0.35, 0.65, 0.85);
+      for (let i = 0; i < textRefs.current.length; i++){
+        const el = textRefs.current[i]; if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const mid = rect.top + window.scrollY + rect.height / 2;
+        const d = Math.abs(mid - centerY);
+        if (d < bestDist){ bestDist = d; bestIdx = i; }
 
-        // TEXT
-        const t = textRefs.current[i];
-        if (t){
-          t.style.opacity   = String(textOpacity);
-          t.style.transform = `translateY(${(1 - textOpacity) * 40}px)`;
-        }
+        // Per-card influence 0..1 relative to center (0 at far, 1 at center)
+        const radius = Math.max(window.innerHeight * 0.85, 520);
+        const t = clamp(1 - Math.abs(mid - centerY) / radius, 0, 1);
 
-        // IMAGE
-        const img = imgRefs.current[i];
-        if (img){
-          const scale   = lerp(1.10, 1.0, e);     // gentle settle
-          const yOffset = lerp(30, 0, e);
-          const blur    = (1 - imgOpacity) * 3;
-          img.style.opacity   = String(imgOpacity);
-          img.style.transform = `translateY(${yOffset}px) scale(${scale})`;
-          img.style.filter    = `brightness(${lerp(0.82, 1.0, e)}) saturate(${lerp(0.85, 1.0, e)}) contrast(1.06) blur(${blur}px)`;
-        }
+        // Map to tasty transforms
+        const scale = lerp(1.02, 1.0, smoothstep(t));
+        const y = lerp(40, 0, easeOut(t));
+        const alpha = lerp(0.0, 1.0, smoothstep(t));
+        const blur = lerp(8, 0.25, smoothstep(t));
+        const sat = lerp(0.96, 1.06, smoothstep(t));
+        const br = lerp(0.92, 1.0, smoothstep(t));
+        const ct = lerp(1.02, 1.08, smoothstep(t));
 
-        // Poster container fade (track image)
-        const sc = panel.querySelector('[class*="StickyImageContainer"]');
-        if (sc){
-          sc.style.opacity = String(0.08 + 0.92 * imgOpacity);
-        }
-
-        // HALO (breathes with the image plateau)
-        const halo = haloRefs.current[i];
-        if (halo){
-          const s = lerp(0.98, 1.10, e);
-          const drift = (i % 2 ? -1 : 1) * lerp(0, 14, e);
-          const base = .18;
-          halo.style.opacity   = String(base + (1 - base) * imgOpacity);
-          halo.style.transform = `translateY(-50%) translateX(${drift}px) scale(${s})`;
-        }
-      });
-
-      // Moving orb position
-      const section = sectionRef.current;
-      const path = pathRef.current;
-      const dot  = dotRef.current;
-
-      if (section && path && dot){
-        const rect = section.getBoundingClientRect();
-        const wh = window.innerHeight;
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const sectionTop = rect.top + scrollTop;
-        const sectionBottom = sectionTop + section.scrollHeight;
-        const viewportCenter = scrollTop + wh / 2;
-
-        const progress = clamp((viewportCenter - sectionTop) / (sectionBottom - sectionTop), 0, 1);
-        const pathLength = path.getTotalLength();
-        if (pathLength > 0){
-          const pt = path.getPointAtLength(pathLength * progress);
-          dot.setAttribute("cx", pt.x);
-          dot.setAttribute("cy", pt.y);
-          dot.style.opacity = progress > 0.05 && progress < 0.95 ? 1 : 0;
+        const poster = posterRefs.current[i];
+        if (poster && loaded[i]){
+          poster.style.setProperty("--scale", scale.toFixed(4));
+          poster.style.setProperty("--y", `${y.toFixed(2)}px`);
+          poster.style.setProperty("--alpha", alpha.toFixed(3));
+          poster.style.setProperty("--blur", `${blur.toFixed(2)}px`);
+          poster.style.setProperty("--sat", sat.toFixed(3));
+          poster.style.setProperty("--br", br.toFixed(3));
+          poster.style.setProperty("--ct", ct.toFixed(3));
         }
       }
 
-      raf = requestAnimationFrame(update);
-    };
+      // Soft-lock to nearest card
+      setActive((prev) => (prev === bestIdx ? prev : bestIdx));
 
-    raf = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(raf);
+      // Halo sway based on velocity + active color glow drift
+      const halo = haloRef.current;
+      if (halo){
+        const swayX = clamp(vy * 1.1, -36, 36);
+        const swayY = clamp(-vy * 0.6, -20, 20);
+        halo.style.transform = `translate3d(${swayX}px, calc(-50% + ${swayY}px), 0)`;
+        halo.style.opacity = String(0.65 + Math.min(Math.abs(vy) * 0.02, 0.25));
+      }
+
+      // Global progress bar
+      const total = document.body.scrollHeight - window.innerHeight;
+      const p = total > 0 ? (window.scrollY / total) * 100 : 0;
+      document.documentElement.style.setProperty("--progress", `${p}%`);
+
+      rafRef.current = requestAnimationFrame(onFrame);
+    };
+    rafRef.current = requestAnimationFrame(onFrame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [loaded]);
+
+  // Reduced motion: lock to first
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!mq.matches) return;
+    setActive(0);
   }, []);
 
+  // Keyboard nav for vibes (↑/↓ to snap to previous/next)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      const dir = e.key === 'ArrowDown' ? 1 : -1;
+      const idx = clamp(active + dir, 0, CREATURES.length - 1);
+      const el = textRefs.current[idx];
+      if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active, CREATURES.length]);
+
+  // Progress rail percentage
+  const progress = typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--progress') : '0%';
+
   return (
-    <MainSection ref={sectionRef}>
-      {/* Orb path + dot */}
-      <BallSVG ref={svgRef}>
-        <path ref={pathRef} d="" fill="none" stroke="none" strokeWidth="0" />
-        <circle
-          ref={dotRef}
-          r="15"
-          fill="#ffffff"
-          style={{ filter: "drop-shadow(0 0 10px rgba(255,255,255,0.5))", opacity: 0 }}
-        />
-      </BallSVG>
+    <>
+      <Global />
+      <Page>
+        <Nav>
+          <div className="brand">V.O.T.E. // Creatures</div>
+          <div className="pill">Scroll to Explore</div>
+        </Nav>
 
-      <Container>
-        <Header>
-          <h2>Meet the Creatures</h2>
-          <p>
-            Scroll to explore beings from the world of V.O.T.E. Each frame sticks like a poster;
-            images melt into the darkness as a glowing orb guides you through their stories.
-          </p>
-        </Header>
+        <Shell>
+          <Hero>
+            <div className="kicker">Folklore Universe</div>
+            <h1>Meet the Creatures</h1>
+            <p>
+              The adventure is out there and waiting for you.
+            </p>
+            <div className="cta">
+              <button className="btn">Watch Trailer</button>
+              <button className="btn">Enter World</button>
+            </div>
+          </Hero>
 
-        {CREATURES.map((c, index) => {
-          const reverse = index % 2 === 1;
-          return (
-            <CreaturePanel
-              key={c.id}
-              reverse={reverse}
-              ref={el => (panelRefs.current[index] = el)}
-            >
-              <TextSection reverse={reverse} ref={el => (textRefs.current[index] = el)}>
-                <h3>{c.title}</h3>
-                <div className="category">{c.sub?.toUpperCase() || "UNKNOWN"}</div>
-                <p>
-                  {c.title} roams our folklore-inspired world. Expect mood, mystery and danger —
-                  sometimes all at once. {c.tags?.map(tag => `#${tag}`).join(" ")}
-                </p>
-              </TextSection>
+          <Scroller>
+            <TextRail>
+              {CREATURES.map((c, i) => (
+                <Card key={c.id} ref={(el) => (textRefs.current[i] = el)}>
+                  <div className="eyebrow">{(c.sub || 'Unknown').toUpperCase()}</div>
+                  <h3>{c.title}</h3>
+                  <p>
+                    {c.title} roams our folklore-inspired world. Expect mood, mystery and danger—sometimes all at once.
+                  </p>
+                  <div className="tags">{c.tags?.map(t => `#${t}`).join(' ')}</div>
+                </Card>
+              ))}
+            </TextRail>
 
-              <EdgeWrap reverse={reverse}>
-                {/* Halo on the inward edge (toward the text) */}
-                <Halo
-                  reverse={reverse}
-                  $color={colorFor(c.id)}
-                  ref={el => (haloRefs.current[index] = el)}
-                />
-                <StickyImageContainer reverse={reverse}>
-                  <img
-                    ref={el => (imgRefs.current[index] = el)}
-                    src={c.img}
-                    alt={c.title}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </StickyImageContainer>
-              </EdgeWrap>
-            </CreaturePanel>
-          );
-        })}
-      </Container>
-    </MainSection>
+            <StageWrap>
+              <Stage ref={stageRef}>
+                {/* Halo that shifts tone with the active card + velocity sway */}
+                <Halo ref={haloRef} key={`halo-${CREATURES[active]?.id || 0}`} $color={colorFor(CREATURES[active]?.id)} />
+
+                {/* Always render all posters to avoid layout thrash; parallax & crossfade handled in rAF */}
+                {CREATURES.map((c, i) => {
+                  const ready = loaded[i];
+                  return (
+                    <Poster
+                      key={c.id}
+                      ref={(el) => (posterRefs.current[i] = el)}
+                      src={c.src}
+                      alt={c.title}
+                      style={{ '--alpha': ready ? undefined : 0 }}
+                      aria-hidden={active !== i}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  );
+                })}
+              </Stage>
+            </StageWrap>
+          </Scroller>
+
+          <Marquee>
+            <div className="inner">
+              V.O.T.E. CREATURES • FOLKLORE • NORDIC MYTH • SECURITY • CINEMATIC • NEON • GRAIN • ROCKSTYLE • V.O.T.E. CREATURES • FOLKLORE • NORDIC MYTH • SECURITY • CINEMATIC • NEON • GRAIN • ROCKSTYLE •
+            </div>
+          </Marquee>
+        </Shell>
+
+        <ProgressRail aria-hidden>
+          <div className="bar" style={{ '--p': progress }} />
+        </ProgressRail>
+      </Page>
+    </>
   );
 }
-
-export default CharacterScrollytelling;
