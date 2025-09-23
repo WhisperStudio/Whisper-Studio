@@ -16,11 +16,15 @@ import Login       from './pages/login';
 import Artwork     from './pages/artwork';
 import PostLogin   from './pages/PostLogin';
 
+// NEW: Web development promo + estimator page
+// Make sure this file exists, e.g. src/pages/WebDevPromoPage.jsx
+import WebDevPromoPage from './pages/WebDevPromoPage';
+
 // Components
 import Header from './components/header';
 import Cursor from './components/Cursor';
 
-// Wrapper med Header
+// Wrapper with Header
 const MainLayout = ({ children }) => (
   <>
     <Header />
@@ -29,7 +33,7 @@ const MainLayout = ({ children }) => (
 );
 
 function App() {
-  // Logg besøk én gang per tab
+  // Log visit once per tab
   useEffect(() => {
     if (!sessionStorage.getItem('visitLogged')) {
       sessionStorage.setItem('visitLogged', 'true');
@@ -48,21 +52,28 @@ function App() {
 
   return (
     <>
-      {/* 👇 Global custom cursor – vises på alle sider */}
+      {/* 👇 Global custom cursor – visible on all pages */}
       <Cursor />
 
       <BrowserRouter>
         <Routes>
-          <Route path="/"           element={<MainLayout><Home /></MainLayout>} />
-          <Route path="/vote"       element={<MainLayout><VotePage /></MainLayout>} />
-          <Route path="/contact"    element={<MainLayout><ContactPage /></MainLayout>} />
-          <Route path="/admin"      element={<MainLayout><Admin /></MainLayout>} />
-          <Route path="/about-us"   element={<MainLayout><AboutUs /></MainLayout>} />
-          <Route path="/careers"    element={<MainLayout><Careers /></MainLayout>} />
-          <Route path="/artwork"    element={<MainLayout><Artwork /></MainLayout>} />
-          <Route path="/post-login" element={<MainLayout><PostLogin /></MainLayout>} />
-          {/* Login uten Header */}
-          <Route path="/login"      element={<Login />} />
+          <Route path="/"               element={<MainLayout><Home /></MainLayout>} />
+          <Route path="/vote"           element={<MainLayout><VotePage /></MainLayout>} />
+          <Route path="/contact"        element={<MainLayout><ContactPage /></MainLayout>} />
+          <Route path="/admin"          element={<MainLayout><Admin /></MainLayout>} />
+          <Route path="/about-us"       element={<MainLayout><AboutUs /></MainLayout>} />
+          <Route path="/careers"        element={<MainLayout><Careers /></MainLayout>} />
+          <Route path="/artwork"        element={<MainLayout><Artwork /></MainLayout>} />
+          <Route path="/post-login"     element={<MainLayout><PostLogin /></MainLayout>} />
+          
+          {/* NEW route: Websites promo + estimator */}
+          <Route
+            path="/services/websites"
+            element={<MainLayout><WebDevPromoPage /></MainLayout>}
+          />
+
+          {/* Login without Header */}
+          <Route path="/login"          element={<Login />} />
         </Routes>
       </BrowserRouter>
     </>
