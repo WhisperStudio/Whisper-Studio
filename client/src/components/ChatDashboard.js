@@ -1,7 +1,9 @@
-// src/pages/ChatDashboard.js
+// src/components/ChatDashboard.js
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { FiLock, FiTrash2 } from "react-icons/fi";
+import { FiLock, FiTrash2, FiMessageCircle, FiUser, FiX } from 'react-icons/fi';
+import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from '../firebase';
+import { auth } from '../firebase';
 
 
 const ChatDashboardContainer = styled.div`
@@ -46,13 +48,29 @@ const ChatDetails = styled.div`
 `;
 
 const MessagesContainer = styled.div`
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
-  border: 1px solid #ccc;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  background: #faf9fa;
+  border: 1px solid #003366;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: #152238;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const MessageBubble = styled.div`
+  padding: 12px 16px;
+  margin: 4px 0;
+  border-radius: 12px;
+  background: ${({ isUser }) => (isUser ? "#1a2332" : "#00ddff")};
+  color: ${({ isUser }) => (isUser ? "#cfefff" : "#000")};
+  align-self: ${({ isUser }) => (isUser ? "flex-end" : "flex-start")};
+  max-width: 75%;
+  border: 1px solid ${({ isUser }) => (isUser ? "#003366" : "#00ddff")};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  word-wrap: break-word;
 `;
 
 const MessageItem = styled.div`
@@ -126,123 +144,332 @@ const setAdminTyping = async (typing) => {
 
 // ChatDashboard-komponenten
 const ChatDashboard = () => {
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [adminReply, setAdminReply] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [conversations, setConversations] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
-  // Hent samtaler fra API-et
-  const fetchConversations = async () => {
-    try {
-      const res = await fetch("https://api.vintrastudio.com/api/conversations");
-      const data = await res.json();
-      setConversations(data);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-    }
-  };
-
-  // Poll for oppdateringer hvert 10. sekund
+  // Load conversations from Firebase
   useEffect(() => {
-    fetchConversations();
-    const intervalId = setInterval(fetchConversations, 10000);
-    return () => clearInterval(intervalId);
+    const loadConversations = async () => {
+      try {
+        setLoading(true);
+        console.log('ChatDashboard: Loading conversations from Firebase...');
+        
+        // First try to get chats collection directly
+        console.log('ChatDashboard: Trying direct chats collection approach...');
+        const chatsSnapshot = await getDocs(collection(db, 'chats'));
+        console.log('ChatDashboard: Found chat documents:', chatsSnapshot.size);
+        
+        if (chatsSnapshot.size > 0) {
+          console.log('ChatDashboard: Chat document IDs:');
+          chatsSnapshot.forEach(doc => {
+            console.log('- Chat ID:', doc.id, 'Data:', doc.data());
+          });
+        }
+        
+        // Also try collectionGroup approach
+        console.log('ChatDashboard: Trying collectionGroup messages approach...');
+        const messagesSnapshot = await getDocs(collectionGroup(db, 'messages'));
+        console.log('ChatDashboard: Found total messages across all chats:', messagesSnapshot.size);
+        
+        // Group messages by userId
+        const userChats = {};
+        messagesSnapshot.forEach(doc => {
+          const data = doc.data();
+          console.log('ChatDashboard: Processing message:', doc.id, data);
+          
+          // Try multiple ways to get userId
+          let userId = data.userId || data.uid || data.user_id;
+          
+          // If no userId in message, try to extract from document path
+          if (!userId) {
+            const docPath = doc.ref.path; // e.g., "chats/userId/messages/messageId"
+            const pathParts = docPath.split('/');
+            if (pathParts.length >= 2 && pathParts[0] === 'chats') {
+              userId = pathParts[1];
+              console.log('ChatDashboard: Extracted userId from path:', userId);
+            }
+          }
+          
+          if (userId) {
+            if (!userChats[userId]) {
+              userChats[userId] = [];
+            }
+            userChats[userId].push({
+              id: doc.id,
+              from: data.sender === 'user' ? 'user' : (data.sender === 'admin' ? 'admin' : 'bot'),
+              text: data.text,
+              timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+              userId: userId,
+              senderEmail: data.senderEmail
+            });
+            console.log(`ChatDashboard: Added message to user ${userId}:`, data.text?.substring(0, 50));
+          } else {
+            console.warn('ChatDashboard: No userId found for message:', doc.id, data);
+          }
+        });
+        
+        console.log('ChatDashboard: Grouped messages by user:', Object.keys(userChats).length, 'users found');
+        
+        // If no messages found via collectionGroup, try direct approach
+        if (Object.keys(userChats).length === 0 && chatsSnapshot.size > 0) {
+          console.log('ChatDashboard: No messages via collectionGroup, trying direct chat approach...');
+          
+          for (const chatDoc of chatsSnapshot.docs) {
+            const userId = chatDoc.id;
+            console.log('ChatDashboard: Checking messages for user:', userId);
+            
+            try {
+              const messagesRef = collection(db, 'chats', userId, 'messages');
+              const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+              const userMessagesSnapshot = await getDocs(messagesQuery);
+              
+              console.log(`ChatDashboard: Found ${userMessagesSnapshot.size} messages for user ${userId}`);
+              
+              if (!userMessagesSnapshot.empty) {
+                const userMessages = [];
+                userMessagesSnapshot.forEach(doc => {
+                  const data = doc.data();
+                  userMessages.push({
+                    id: doc.id,
+                    from: data.sender === 'user' ? 'user' : (data.sender === 'admin' ? 'admin' : 'bot'),
+                    text: data.text,
+                    timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+                    userId: userId,
+                    senderEmail: data.senderEmail
+                  });
+                });
+                
+                if (userMessages.length > 0) {
+                  userChats[userId] = userMessages;
+                }
+              }
+            } catch (error) {
+              console.error(`ChatDashboard: Error loading messages for user ${userId}:`, error);
+            }
+          }
+          
+          console.log('ChatDashboard: After direct approach, found users:', Object.keys(userChats).length);
+        }
+        
+        const convs = {};
+        
+        // Process each user's messages
+        Object.keys(userChats).forEach(userId => {
+          const userMessages = userChats[userId];
+          
+          // Sort messages by timestamp (oldest first for conversation flow)
+          userMessages.sort((a, b) => a.timestamp - b.timestamp);
+          
+          convs[userId] = userMessages;
+          
+          console.log(`ChatDashboard: Processed user ${userId} with ${userMessages.length} messages`);
+        });
+        
+        console.log('ChatDashboard: Loaded conversations:', Object.keys(convs).length, convs);
+        
+        // Only update if there are actual changes to prevent unnecessary re-renders
+        const currentKeys = Object.keys(conversations).sort();
+        const newKeys = Object.keys(convs).sort();
+        const hasChanges = JSON.stringify(currentKeys) !== JSON.stringify(newKeys) ||
+          Object.keys(convs).some(userId => {
+            const currentMsgs = conversations[userId] || [];
+            const newMsgs = convs[userId] || [];
+            return currentMsgs.length !== newMsgs.length;
+          });
+        
+        if (hasChanges || Object.keys(conversations).length === 0) {
+          console.log('ChatDashboard: Changes detected, updating conversations');
+          setConversations(convs);
+        } else {
+          console.log('ChatDashboard: No changes detected, skipping update');
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('ChatDashboard: Error loading conversations:', error);
+        // Fallback to mock data
+        const mockConversations = {
+          'demo-user-1': [
+            { from: 'user', text: 'Hello, I need help', userId: 'demo-user-1', timestamp: new Date() },
+            { from: 'admin', text: 'How can I help you?', userId: 'demo-user-1', timestamp: new Date() }
+          ]
+        };
+        setConversations(mockConversations);
+        setLoading(false);
+      }
+    };
+    
+    loadConversations();
+    
+    // Refresh every 10 seconds to reduce blinking
+    const interval = setInterval(() => {
+      // Only reload if not currently loading to prevent blinking
+      if (!loading) {
+        loadConversations();
+      }
+    }, 10000);
+    return () => {
+      clearInterval(interval);
+      if (window.selectedConversationInterval) {
+        clearInterval(window.selectedConversationInterval);
+      }
+    };
   }, []);
 
-  const handleSelectConversation = (conv) => {
-    setSelectedConversation(conv);
-    setAdminReply("");
-  };
-
-  // Oppdater adminReply og signaliser til serveren om at admin skriver
-  const handleAdminTextChange = (e) => {
-    setAdminReply(e.target.value);
-    setAdminTyping(e.target.value.trim().length > 0);
-  };
-
-  // Send admin-reply til backend og oppdater samtalen
-  const handleAdminReply = async (conversationId) => {
-    if (!adminReply.trim()) return;
-    try {
-      const res = await fetch(
-        `https://api.vintrastudio.com/api/conversations/${conversationId}/reply`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ replyText: adminReply })
+  const onSelect = (userId) => {
+    setSelected(userId);
+    
+    // Auto-refresh messages for selected conversation
+    if (userId) {
+      const refreshSelectedConversation = async () => {
+        try {
+          const messagesRef = collection(db, 'chats', userId, 'messages');
+          const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+          const messagesSnapshot = await getDocs(messagesQuery);
+          
+          const messages = [];
+          messagesSnapshot.forEach((doc) => {
+            const data = doc.data();
+            messages.push({
+              id: doc.id,
+              from: data.sender === 'user' ? 'user' : 'admin',
+              text: data.text,
+              timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+              userId: userId,
+              senderEmail: data.senderEmail
+            });
+          });
+          
+          setConversations(prev => ({
+            ...prev,
+            [userId]: messages
+          }));
+        } catch (error) {
+          console.error('Error refreshing conversation:', error);
         }
-      );
-      if (!res.ok) throw new Error("Failed to send admin reply");
-
-      // Etter sending stopper vi admin typing
-      await setAdminTyping(false);
-
-      setAdminReply("");
-      await fetchConversations();
-      // Hent oppdatert samtale
-      const updatedRes = await fetch(
-        `https://api.vintrastudio.com/api/conversations/${conversationId}`
-      );
-      const updatedConv = await updatedRes.json();
-      setSelectedConversation(updatedConv);
-    } catch (error) {
-      console.error("Error sending admin reply:", error);
+      };
+      
+      // Refresh immediately and then every 5 seconds
+      refreshSelectedConversation();
+      const messageInterval = setInterval(refreshSelectedConversation, 5000);
+      
+      // Store interval to clear it later
+      if (window.selectedConversationInterval) {
+        clearInterval(window.selectedConversationInterval);
+      }
+      window.selectedConversationInterval = messageInterval;
     }
   };
 
-  // Slett en samtale
-  const handleDeleteConversation = async (conversationId) => {
+  const onSend = async () => {
+    if (!input.trim() || !selected || sending) return;
+    
+    setSending(true);
+    const messageText = input.trim();
+    setInput('');
+    
     try {
-      const res = await fetch(
-        `https://api.vintrastudio.com/api/conversations/${conversationId}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error("Failed to delete conversation");
-      await fetchConversations();
-      setSelectedConversation(null);
+      // Save to Firebase
+      const messageData = {
+        text: messageText,
+        sender: 'admin',
+        senderEmail: auth.currentUser?.email,
+        timestamp: serverTimestamp(),
+        userId: selected
+      };
+      
+      const messagesRef = collection(db, 'chats', selected, 'messages');
+      await addDoc(messagesRef, messageData);
+      
+      // Update local state
+      const newMessage = {
+        id: Date.now().toString(),
+        from: 'admin',
+        text: messageText,
+        timestamp: new Date(),
+        userId: selected,
+        senderEmail: auth.currentUser?.email
+      };
+      
+      setConversations(prev => ({
+        ...prev,
+        [selected]: [...(prev[selected] || []), newMessage]
+      }));
+      
     } catch (error) {
-      console.error("Error deleting conversation:", error);
+      console.error('Error sending message:', error);
+    } finally {
+      setSending(false);
     }
   };
 
-  // Lukk en samtale
-  const handleCloseConversation = async (conversationId) => {
+  const onDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this conversation? This cannot be undone.')) {
+      return;
+    }
+
     try {
-      const res = await fetch(
-        `https://api.vintrastudio.com/api/conversations/${conversationId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "closed" })
-        }
-      );
-      if (!res.ok) throw new Error("Failed to close conversation");
-      await fetchConversations();
-      const updatedRes = await fetch(
-        `https://api.vintrastudio.com/api/conversations/${conversationId}`
-      );
-      const updatedConv = await updatedRes.json();
-      setSelectedConversation(updatedConv);
+      console.log('ChatDashboard: Deleting chat for user:', userId);
+      
+      // Delete all messages first
+      const messagesRef = collection(db, 'chats', userId, 'messages');
+      const messagesSnapshot = await getDocs(messagesRef);
+      
+      const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // Delete the chat document
+      await deleteDoc(doc(db, 'chats', userId));
+      
+      console.log('ChatDashboard: Chat deleted successfully');
+      
+      // Update local state
+      setConversations(prev => {
+        const newConvs = { ...prev };
+        delete newConvs[userId];
+        return newConvs;
+      });
+      
+      if (selected === userId) {
+        setSelected(null);
+      }
+      
     } catch (error) {
-      console.error("Error closing conversation:", error);
+      console.error('ChatDashboard: Error deleting chat:', error);
+      alert('Error deleting chat. Please try again.');
     }
   };
 
-  // Filtrer samtaler etter valgt kategori
-  const filteredConversations =
-    categoryFilter === "All"
-      ? conversations
-      : conversations.filter((conv) => conv.category === categoryFilter);
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
+  };
+
+  if (loading) {
+    return (
+      <ChatDashboardContainer>
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#99e6ff' }}>
+          <FiMessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <div>Loading conversations...</div>
+        </div>
+      </ChatDashboardContainer>
+    );
+  }
 
   return (
     <ChatDashboardContainer>
-      <CardTitle style={{ color: "white" }}>Live Chat</CardTitle>
-      <p style={{ marginBottom: "1rem", marginLeft: "1rem", color: "white", fontSize: "0.9rem" }}>
-        • See all ongoing chats. • Reply as admin (blue text). • Bot is purple text.
-      </p>
+      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem 0' }}>
+        <FiMessageCircle />
+        Live Chat Dashboard ({Object.keys(conversations).length} conversations)
+      </h3>
       <CategoryFilter
-        value={categoryFilter}
-        onChange={(e) => setCategoryFilter(e.target.value)}
+        value="All"
+        onChange={(e) => console.log(e.target.value)}
       >
         <option value="All">All categories</option>
         <option value="Games">Games</option>
@@ -255,118 +482,170 @@ const ChatDashboard = () => {
       </CategoryFilter>
       <ChatListWrapper>
         <ChatList>
-          <h3 style={{ marginTop: 0 }}>Conversations</h3>
-          {filteredConversations.length === 0 ? (
-            <p>No conversations found.</p>
+          {Object.keys(conversations).length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#99e6ff', opacity: 0.7 }}>
+              <FiUser size={32} style={{ marginBottom: '1rem' }} />
+              <div>No conversations yet</div>
+              <small>Conversations will appear when users start chatting</small>
+            </div>
           ) : (
-            filteredConversations.map((conv) => {
-              const lastSender =
-                conv.messages && conv.messages.length > 0
-                  ? conv.messages[conv.messages.length - 1].sender.toLowerCase()
-                  : "none";
-              const senderColor =
-                lastSender === "bot"
-                  ? "#7824BC"
-                  : lastSender === "admin"
-                  ? "#3B82F6"
-                  : lastSender === "user"
-                  ? "#484F5D"
-                  : "#aaa";
+            Object.keys(conversations).map((userId) => {
+              const messages = conversations[userId] || [];
+              const lastMessage = messages[messages.length - 1];
+              const unreadCount = messages.filter(m => m.from === 'user' && !m.read).length;
+              
               return (
                 <ChatListItem
-                  key={conv.conversationId}
-                  active={
-                    selectedConversation &&
-                    selectedConversation.conversationId === conv.conversationId
-                  }
-                  onClick={() => handleSelectConversation(conv)}
+                  key={userId}
+                  active={selected === userId}
+                  onClick={() => onSelect(userId)}
                 >
-                  <div>
-                    <strong style={{ color: "#fff", fontSize: "1.1rem" }}>
-                      {conv.name || "Unknown user"}
-                    </strong>
-                    <strong style={{ color: "#fff", marginLeft: "10px" }}>:</strong>
-                    <strong
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#fff",
-                        marginLeft: "10px"
-                      }}
-                    >
-                      {new Date(conv.createdAt).toLocaleString()}
-                    </strong>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FiUser size={14} />
+                        User {userId.substring(0, 8)}
+                      </strong>
+                      <small style={{ color: '#99e6ff', display: 'block', marginTop: '0.25rem' }}>
+                        {messages.length} messages
+                      </small>
+                      {lastMessage && (
+                        <div style={{ 
+                          fontSize: '0.8rem', 
+                          color: '#ccc', 
+                          marginTop: '0.25rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '200px'
+                        }}>
+                          {lastMessage.from === 'admin' ? '👨‍💼 ' : '👤 '}{lastMessage.text}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                      {unreadCount > 0 && (
+                        <span style={{
+                          background: '#00ddff',
+                          color: '#000',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold'
+                        }}>
+                          {unreadCount}
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(userId);
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ff6b6b",
+                          cursor: "pointer",
+                          padding: '0.25rem',
+                          borderRadius: '4px',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 107, 107, 0.1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'none'}
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <p style={{ fontSize: "0.85rem", color: "white", margin: 0 }}>
-                    {conv.messages && conv.messages.length > 0
-                      ? conv.messages[conv.messages.length - 1].text.slice(0, 50) + "..."
-                      : "No messages"}
-                  </p>
-                  <p style={{ fontSize: "0.75rem", color: "#aaa", margin: "4px 0 0 0" }}>
-                    Sist Redigert{" "}
-                    <strong style={{ color: senderColor }}>
-                      {lastSender.toUpperCase()}
-                    </strong>{" "}
-                    : {new Date(conv.updatedAt).toLocaleString()}
-                  </p>
                 </ChatListItem>
               );
             })
           )}
         </ChatList>
         <ChatDetails>
-          {selectedConversation ? (
+          {selected ? (
             <div>
-              <h3 style={{ marginTop: 0 }}>
-                Chat with {selectedConversation.name || "Unknown user"}
-              </h3>
-              <p style={{ marginBottom: 10, fontSize: "0.9rem", color: "white" }}>
-                Email: {selectedConversation.email || "Unknown"}
-              </p>
-              <p style={{ marginBottom: 10, fontSize: "0.9rem", color: "white" }}>
-                Category: {selectedConversation.category || "None"}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0 }}>
+                  Chat with User {selected.substring(0, 8)}
+                </h3>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => setSelected(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#99e6ff',
+                      cursor: 'pointer',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Close Chat"
+                  >
+                    <FiX size={18} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(selected)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ff6b6b',
+                      cursor: 'pointer',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Delete Chat"
+                  >
+                    <FiTrash2 size={18} />
+                  </button>
+                </div>
+              </div>
               <MessagesContainer>
-                {selectedConversation.messages.map((msg, index) => (
-                  <MessageItem key={index} sender={msg.sender}>
-                    <strong>{msg.sender.toUpperCase()}:</strong> {msg.text}
-                  </MessageItem>
+                {conversations[selected].map((msg, index) => (
+                  <MessageBubble key={index} isUser={msg.from === 'user'}>
+                    {msg.text}
+                  </MessageBubble>
                 ))}
               </MessagesContainer>
               <AdminTextArea
                 rows="3"
                 placeholder="Write a reply..."
-                value={adminReply}
-                onChange={handleAdminTextChange}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
               />
               <ActionButtons>
                 <ActionButton
                   bgColor="#2563eb"
-                  onClick={() =>
-                    handleAdminReply(selectedConversation.conversationId)
-                  }
+                  onClick={onSend}
+                  disabled={sending || !input.trim()}
                 >
-                  Send Reply
+                  {sending ? 'Sending...' : 'Send Reply'}
                 </ActionButton>
                 <ActionButton
-                  bgColor="#f59e0b"
-                  onClick={() =>
-                    handleCloseConversation(selectedConversation.conversationId)
-                  }
-                >
-                  Close <FiLock style={{ marginLeft: "4px" }} />
-                </ActionButton>
-                <ActionButton
-                  bgColor="#dc2626"
-                  onClick={() =>
-                    handleDeleteConversation(selectedConversation.conversationId)
-                  }
+                  bgColor="#dc3545"
+                  onClick={() => onDelete(selected)}
                 >
                   Delete <FiTrash2 style={{ marginLeft: "4px" }} />
                 </ActionButton>
               </ActionButtons>
             </div>
           ) : (
-            <p>Select a conversation.</p>
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#99e6ff' }}>
+              <FiMessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+              <h4>Select a conversation</h4>
+              <p>Choose a user from the list to view and reply to their messages</p>
+            </div>
           )}
         </ChatDetails>
       </ChatListWrapper>

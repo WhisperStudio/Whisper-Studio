@@ -1,16 +1,15 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import {
   auth,
   provider,
   signInWithPopup,
-  db,
-  collection,
-  getDocs
+  onAuthStateChanged
 } from '../firebase';
 import { signOut } from "firebase/auth";
+import { checkAdminStatus, getOrCreateUser } from '../utils/firebaseAdmin';
 
 const Container = styled.div`
   display: flex;
@@ -57,79 +56,80 @@ const Button = styled.button`
 
 export default function Login() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // More secure: Check session with the server instead of localStorage
-    const checkUserSession = async () => {
-      try {
-        const response = await fetch('/api/me', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        if (response.ok) {
-          const { user } = await response.json();
-          if (user.role === 'admin') {
+    // Check if user is already logged in
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const isAdmin = await checkAdminStatus(user);
+          if (isAdmin) {
             navigate('/admin');
           } else {
             navigate('/');
           }
+        } catch (error) {
+          console.error('Error checking user status:', error);
+          setLoading(false);
         }
-        // If not response.ok, do nothing, let the user log in.
-      } catch (error) {
-        // It's okay if this fails, it just means the user is not logged in.
-        console.log('No active session found.');
+      } else {
+        setLoading(false);
       }
-    };
+    });
 
-    checkUserSession();
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleGoogleLogin = async () => {
     try {
+      setLoading(true);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const email = user?.email;
 
-      if (!email) {
+      if (!user?.email) {
         alert("E-postadresse ikke funnet.");
+        setLoading(false);
         return;
       }
 
-      const idToken = await user.getIdToken();
-
-      // Send the ID token to your backend
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Google authentication with backend failed.');
+      // Create or get user document
+      const userData = await getOrCreateUser(user);
+      
+      if (!userData) {
+        throw new Error('Failed to create user profile');
       }
 
-      const { user: loggedInUser } = await response.json();
-
-      // Navigate based on the role confirmed by the server
-      if (loggedInUser.role === 'admin') {
+      // Check admin status and navigate
+      const isAdmin = await checkAdminStatus(user);
+      
+      if (isAdmin) {
         navigate('/admin');
       } else {
         navigate('/');
       }
     } catch (error) {
       console.error("Login feilet:", error);
-      localStorage.removeItem("user");
       alert("Innlogging feilet: " + error.message);
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Container>
+        <Logo>VINTRA</Logo>
+        <div style={{ color: '#fff', fontSize: '18px' }}>Laster...</div>
+      </Container>
+    );
+  }
 
   return (
     <Container>
       <Logo>VINTRA</Logo>
-      <Button onClick={handleGoogleLogin}>Logg inn med Google</Button>
+      <Button onClick={handleGoogleLogin} disabled={loading}>
+        {loading ? 'Logger inn...' : 'Logg inn med Google'}
+      </Button>
     </Container>
   );
 }

@@ -23,12 +23,15 @@ import WebDevPromoPage from './pages/WebDevPromoPage';
 // Components
 import Header from './components/header';
 import Cursor from './components/Cursor';
+import ProtectedRoute from './components/ProtectedRoute';
+import ChatBot from './components/ChatBot';
 
 // Wrapper with Header
 const MainLayout = ({ children }) => (
   <>
     <Header />
     {children}
+    <ChatBot />
   </>
 );
 
@@ -60,7 +63,11 @@ function App() {
           <Route path="/"               element={<MainLayout><Home /></MainLayout>} />
           <Route path="/vote"           element={<MainLayout><VotePage /></MainLayout>} />
           <Route path="/contact"        element={<MainLayout><ContactPage /></MainLayout>} />
-          <Route path="/admin"          element={<MainLayout><Admin /></MainLayout>} />
+          <Route path="/admin"          element={
+            <ProtectedRoute requireAdmin={true}>
+              <MainLayout><Admin /></MainLayout>
+            </ProtectedRoute>
+          } />
           <Route path="/about-us"       element={<MainLayout><AboutUs /></MainLayout>} />
           <Route path="/careers"        element={<MainLayout><Careers /></MainLayout>} />
           <Route path="/artwork"        element={<MainLayout><Artwork /></MainLayout>} />

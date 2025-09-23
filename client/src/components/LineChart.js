@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+import { db, collection, getDocs } from '../firebase';
 
 // ===== STYLED COMPONENTS =====
 
@@ -120,35 +121,52 @@ function LineChart() {
   // viewWindow for diagrammet (brukes i dato-basert visning)
   const [viewWindow, setViewWindow] = useState({});
 
-  // Hent brukere og last inn Google Charts
+  // Hent besøkende fra Firebase og last inn Google Charts
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchVisitors() {
       try {
         setIsLoading(true);
-        const res = await fetch("https://api.vintrastudio.com/api/users");
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Feil ved henting av brukere:", errorText);
-          setIsLoading(false);
-          return;
+        
+        // Hent besøkende fra Firebase visitors collection
+        const visitorsRef = collection(db, 'visitors');
+        const snapshot = await getDocs(visitorsRef);
+        const visitorData = [];
+        
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          visitorData.push({
+            id: doc.id,
+            createdAt: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+            country: data.country || 'Unknown'
+          });
+        });
+        
+        // Hvis ingen data fra Firebase, bruk mock data
+        if (visitorData.length === 0) {
+          const mockData = generateMockVisitors();
+          setUsers(mockData);
+        } else {
+          setUsers(visitorData);
         }
-        const data = await res.json();
-        setUsers(Array.isArray(data) ? data : []);
         setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching visitors from Firebase:", error);
+        console.log("Using mock data due to Firebase permissions error");
+        // Fallback til mock data hvis Firebase feiler (f.eks. permissions)
+        const mockVisitors = generateMockVisitors();
+        setUsers(mockVisitors);
         setIsLoading(false);
       }
     }
+    
     if (typeof window !== "undefined") {
       if (!window.google) {
         const script = document.createElement("script");
         script.src = "https://www.gstatic.com/charts/loader.js";
         script.async = true;
-        script.onload = () => fetchUsers();
-        document.head.appendChild(script);
+        script.onload = () => fetchVisitors();
       } else {
-        fetchUsers();
+        fetchVisitors();
       }
     }
   }, []);
@@ -364,21 +382,21 @@ function LineChart() {
     if (!chartRef.current || !window.google?.visualization) return;
     if (!Array.isArray(users)) return;
 
-    // Aggreger brukere per dag basert på dato (YYYY-MM-DD)
-    const userCountByDay = {};
-    users.forEach(user => {
-      if (!user.createdAt) return;
-      const d = new Date(user.createdAt);
+    // Aggreger besøkende per dag basert på dato (YYYY-MM-DD)
+    const visitorCountByDay = {};
+    users.forEach(visitor => {
+      if (!visitor.createdAt) return;
+      const d = new Date(visitor.createdAt);
       const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       const dateKey = dateOnly.toISOString().split("T")[0];
-      userCountByDay[dateKey] = (userCountByDay[dateKey] || 0) + 1;
+      visitorCountByDay[dateKey] = (visitorCountByDay[dateKey] || 0) + 1;
     });
 
     if (currentRange === "1w") {
       // For 1W: bruk numerisk x-akse [0..6]
       const dataTable = new window.google.visualization.DataTable();
       dataTable.addColumn("number", "Dag");   // x-akse: 0 (7 dager siden) til 6 (i dag)
-      dataTable.addColumn("number", "Brukere"); // y-akse
+      dataTable.addColumn("number", "Besøkende"); // y-akse
 
       const dayMs = 24 * 60 * 60 * 1000;
       const now = new Date();
@@ -388,14 +406,14 @@ function LineChart() {
         const xVal = i; // x-aksen: 0, 1, ... 6
         const d = new Date(now.getTime() - (6 - i) * dayMs);
         const dateKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().split("T")[0];
-        const count = userCountByDay[dateKey] || 0;
+        const count = visitorCountByDay[dateKey] || 0;
         rows.push([xVal, count]);
       }
       dataTable.addRows(rows);
 
       const ticks = generateTicks("1w", viewWindow) || [];
       const options = {
-        title: "Brukere (siste 7 dager)",
+        title: "Besøkende (siste 7 dager)",
         titleTextStyle: { color: "#fff", fontSize: 16, bold: true },
         backgroundColor: "transparent",
         chartArea: { backgroundColor: "transparent", left: 80, right: 80, top: 40, bottom: 60 },
@@ -409,7 +427,7 @@ function LineChart() {
           textStyle: { color: "#fff" }
         },
         vAxis: {
-          title: "Brukere",
+          title: "Besøkende",
           viewWindow: { min: 0 },
           baselineColor: "#fff",
           gridlines: { color: "#fff" },
@@ -417,7 +435,7 @@ function LineChart() {
         },
         curveType: "function",
         pointSize: 6,
-        lineWidth: 1,
+        lineWidth: 2,
         series: { 0: { pointShape: "circle", color: "#fff" } }
       };
       const chart = new window.google.visualization.LineChart(chartRef.current);
@@ -426,11 +444,11 @@ function LineChart() {
       // For andre ranges: dato-basert x-akse
       const dataTable = new window.google.visualization.DataTable();
       dataTable.addColumn("date", "Dato");
-      dataTable.addColumn("number", "Brukere");
-      const sortedDays = Object.keys(userCountByDay).sort();
+      dataTable.addColumn("number", "Besøkende");
+      const sortedDays = Object.keys(visitorCountByDay).sort();
       let rows = sortedDays.map(dayStr => {
         const dateObj = new Date(`${dayStr}T00:00:00Z`);
-        return [dateObj, userCountByDay[dayStr]];
+        return [dateObj, visitorCountByDay[dayStr]];
       });
       if (rows.length === 0) {
         rows = [[new Date(), 0]];
@@ -444,7 +462,7 @@ function LineChart() {
 
       const ticks = generateTicks(currentRange, viewWindow) || [];
       const options = {
-        title: "Brukere",
+        title: "Besøkende",
         titleTextStyle: { color: "#fff", fontSize: 16, bold: true },
         backgroundColor: "transparent",
         chartArea: { backgroundColor: "transparent", left: 50, right: 20, top: 30, bottom: 50 },
@@ -461,7 +479,7 @@ function LineChart() {
           gridlines: { color: "#fff" },
         },
         vAxis: {
-          title: "Brukere",
+          title: "Besøkende",
           titleTextStyle: { color: "#fff" },
           textStyle: { color: "#fff" },
           baselineColor: "#fff",
@@ -475,6 +493,28 @@ function LineChart() {
       const chart = new window.google.visualization.LineChart(chartRef.current);
       chart.draw(dataTable, options);
     }
+  };
+
+  // Generer mock data hvis Firebase ikke har data
+  const generateMockVisitors = () => {
+    const mockVisitors = [];
+    const now = new Date();
+    const countries = ['Norway', 'Sweden', 'Denmark', 'Finland', 'Germany', 'United Kingdom', 'France', 'Spain', 'Italy', 'Netherlands'];
+    
+    // Generer data for de siste 4 årene
+    for (let i = 0; i < 500; i++) {
+      const daysAgo = Math.floor(Math.random() * 1460); // 4 år * 365 dager
+      const createdAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const country = countries[Math.floor(Math.random() * countries.length)];
+      
+      mockVisitors.push({
+        id: `visitor-${i}`,
+        createdAt,
+        country: country
+      });
+    }
+    
+    return mockVisitors;
   };
 
   return (

@@ -1,17 +1,23 @@
 // client/firebase.js
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import {
   getFirestore,
   collection,
+  collectionGroup,
   getDocs,
-  onSnapshot,      // <— add this
-  query,           // <— optional, if you want to do queries
-  where,           // <— optional
-  orderBy,         // <— optional
-  Timestamp,       // <— optional, if you need to construct timestamps
-  addDoc,          // <— føy til her
-  serverTimestamp  // <— og her
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  addDoc,
+  serverTimestamp,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc
 } from "firebase/firestore";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -37,14 +43,20 @@ export {
   auth,
   provider,
   signInWithPopup,
+  onAuthStateChanged,
   db,
   collection,
+  collectionGroup,
   getDocs,
   onSnapshot,
   query,
   where,
   orderBy,
   Timestamp,
-  addDoc,          // <— eksportér
-  serverTimestamp  // <— eksportér
+  addDoc,
+  serverTimestamp,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc
 };
