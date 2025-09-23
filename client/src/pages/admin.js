@@ -244,7 +244,7 @@ export default function AdminPanel() {
           color: '#fff',
           fontSize: '18px'
         }}>
-          Laster admin panel...
+          Loading Admin Panel...
         </div>
       </Page>
     );
