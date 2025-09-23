@@ -1,20 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import styled, { createGlobalStyle } from "styled-components";
+import styled from "styled-components";
 
 /* ====================== Utils ====================== */
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
-const lerp = (a, b, t) => a + (b - a) * t;
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const smoothstep = (t) => t * t * (3 - 2 * t);
 
-// Robust asset resolver (handles require(), import meta URLs, and objects)
 const resolveSrc = (img) => {
   if (!img) return "";
-  if (typeof img === "string") return img; // CRA/webpack require returns string
-  if (typeof img === "object") {
-    // Vite/Next sometimes expose { default: url } or { src: url }
-    return img.default || img.src || "";
-  }
+  if (typeof img === "string") return img;
+  if (typeof img === "object") return img.default || img.src || "";
   return "";
 };
 
@@ -30,345 +25,442 @@ const RAW_CREATURES = [
 ];
 
 const COLOR_BY_ID = {
-  2:  "#ff3b3b",
-  3:  "#4aa3ff",
-  1:  "#ff6b6b",
-  4:  "#ff5ab1",
+  2: "#ff3b3b",
+  3: "#4aa3ff",
+  1: "#ff6b6b",
+  4: "#ff5ab1",
   12: "#29e1ff",
   13: "#d1a04b",
   14: "#9aa5ff",
 };
 const colorFor = (id) => COLOR_BY_ID[id] || "#9aa5ff";
 
-/* ====================== Global (rockstyle polish) ====================== */
-const Global = createGlobalStyle`
-  :root{
-    --gutter: min(3.6vw, 28px);
-    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
-  }
-  html, body, #root{ height:100%; background:#000; }
-  *{ box-sizing: border-box; }
-`;
-
 /* ====================== Layout ====================== */
-const Page = styled.main`
-  position: relative; color:#fff; min-height:100vh; overflow-x: clip;
+/* Bakgrunn ala referansebildet: mørk base + myk diagonal wash av aksentfarge (bak alt) */
+const ComponentWrapper = styled.div`
+  --accent: #29e1ff;
+
+  position: relative;
+  width: 100%;
+  color: #fff;
   background:
-    radial-gradient(120vmax 80vmax at 110% -10%, rgba(255,255,255,.05), transparent 55%),
-    radial-gradient(110vmax 80vmax at -10% 110%, rgba(255,255,255,.04), transparent 55%),
-    #000;
-  &::after{ /* film grain */
-    content:""; position: fixed; inset:-40px; pointer-events:none; z-index:5;
-    background-image: var(--noise);
-    mix-blend-mode: soft-light; opacity:.35; filter: contrast(120%);
+    radial-gradient(120vmax 90vmax at 50% 110%, rgba(0,0,0,.55), transparent 65%),
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--accent) 18%, transparent) 0%,
+      color-mix(in oklab, var(--accent) 8%, transparent) 28%,
+      rgba(0,0,0,0) 60%),
+    #0b0c13;
+  transition: background .35s ease;
+
+  &::after{
+    content:""; position:absolute; inset:-40px; pointer-events:none; z-index:1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light; opacity:.30; filter: contrast(120%);
   }
 `;
 
-const Nav = styled.nav`
-  position: sticky; top:0; z-index:10; height:64px; display:flex; align-items:center;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  background: linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.25));
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  padding: 0 var(--gutter);
-  letter-spacing:.08em; text-transform: uppercase; font-weight:700; font-size:12px;
-  .brand{ font-weight:900; letter-spacing:.12em; margin-right:auto; font-size:13px; }
-  .pill{ padding:10px 14px; border:1px solid rgba(255,255,255,.14); border-radius:999px; }
-`;
+const Hero = styled.section`
+  position: sticky; top: 0; width: 100%; height: 100vh; 
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; z-index: 10;
+  opacity: var(--hero-opacity, 1);
+  transform: scale(var(--hero-scale, 1)) translateZ(0);
+  transition: none;
+  visibility: visible;
 
-const Shell = styled.div`
-  width:min(1500px, 94vw); margin:0 auto; padding: 6vh var(--gutter) 10vh;
-`;
+  .kicker{
+    color:#a3f1ff; font-weight:800; letter-spacing:.18em; font-size:12px; text-transform:uppercase;
+    position: relative; animation: glitchShift 2.2s infinite steps(2,end);
+  }
+  .kicker::after{
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1px);
+    color:#fff; opacity:.8; mix-blend-mode:screen; clip-path: var(--glitch-clip, inset(0 0 50% 0));
+    animation: glitchClip 1.8s infinite;
+  }
 
-const Hero = styled.header`
-  position: relative; min-height: 92vh; display:grid; place-items:center; text-align:center;
-  padding: 10vh var(--gutter) 6vh;
-  .kicker{ color:#a3f1ff; font-weight:800; letter-spacing:.18em; font-size:12px; text-transform:uppercase; }
-  h1{ font-size: clamp(48px, 8vw, 132px); line-height:.9; margin:.15em 0 .2em; letter-spacing:.01em; }
+  h1{
+    --glitch-color: #a3f1ff;
+    font-size: clamp(48px, 8vw, 132px); line-height:.9; margin:.15em 0 .2em; letter-spacing:.01em;
+    position: relative; animation: glitchShift 2.5s infinite steps(2,end);
+  }
+  h1::after{
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1.5px);
+    color: var(--glitch-color); opacity:.9; mix-blend-mode:screen;
+    clip-path: var(--glitch-clip, inset(0 0 50% 0)); animation: glitchClip 1.6s infinite;
+  }
+
   p{ max-width: 82ch; margin:0 auto; color:rgba(255,255,255,.85); line-height:1.8; }
-  .cta{ display:inline-flex; gap:12px; margin-top:28px; }
-  .btn{
-    padding:14px 18px; border-radius:14px; border:1px solid rgba(255,255,255,.16);
-    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:12px;
+`;
+
+/* Glitch keyframes */
+const GlobalKeyframes = styled.div`
+  @keyframes glitchClip {
+    0%{clip-path: inset(0 0 52% 0)} 20%{clip-path: inset(0 0 10% 0)}
+    40%{clip-path: inset(0 0 64% 0)} 60%{clip-path: inset(0 0 28% 0)}
+    80%{clip-path: inset(0 0 80% 0)} 100%{clip-path: inset(0 0 50% 0)}
   }
-  /* neon frame */
-  &::before{ content:""; position:absolute; inset:6% 8%; border-radius:28px; z-index:-1;
-    background: radial-gradient(120% 100% at 50% 50%, rgba(255,255,255,.06), transparent 60%);
-    border: 1px solid rgba(255,255,255,.09);
-    box-shadow: 0 0 120px rgba(199,236,255,.15) inset, 0 0 140px rgba(199,236,255,.06);
+  @keyframes glitchShift {
+    0%,100%{transform:none} 25%{transform:translateX(.2px)}
+    50%{transform:translateX(.6px)} 75%{transform:translateX(.1px)}
   }
 `;
 
-/* ======= Two-column scrollytelling: left text, right fixed stage ======= */
-const Scroller = styled.section`
-  display:grid; grid-template-columns: 1.05fr 1fr; gap: clamp(24px, 3vw, 40px);
-  align-items:start; position:relative;
-  @media (max-width: 1100px){ grid-template-columns: 1fr; }
+const ScrollContainer = styled.div`
+  position: relative;
+  height: var(--total-height, 800vh);
 `;
 
-const TextRail = styled.div`
-  display:flex; flex-direction:column; gap: clamp(22vh, 30vh, 34vh);
-  scroll-snap-type: y proximity;
+const ZoomStage = styled.div`
+  position: sticky; top: 0; width: 100%; height: 100vh;
+  overflow: hidden; z-index: 15;
+  opacity: var(--stage-opacity, 0);
+  pointer-events: none;
 `;
 
-const StageWrap = styled.div`
-  position: sticky; top: 6vh; height: 88vh; border-radius: 22px; overflow:hidden;
-  background: radial-gradient(100% 100% at 50% 50%, #0b0e12 0%, #07090c 100%);
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 60px 140px rgba(0,0,0,.6), 0 0 120px rgba(163, 241, 255, .08) inset;
+/* Viktig: bilde over halo (halo legges bak) */
+const CreatureImage = styled.img`
+  position: absolute; top: 50%; left: 50%;
+  z-index: 2;
+  width: 80vmin; height: 80vmin;
+  max-width: 100vw; max-height: 100vh;
+  object-fit: cover;
+  transform: translate(-50%, -50%) scale(var(--zoom, 0.1)) translateZ(0);
+  opacity: var(--opacity, 0);
+  border-radius: 20px;
+  will-change: transform, opacity;
+  filter: brightness(0.9) contrast(1.1) saturate(1.1);
+  pointer-events: none;
 `;
 
-const Stage = styled.div`
-  position:relative; width:100%; height:100%; isolation:isolate;
+/* Tekst: header er “frozen”, kun body scroller i mask */
+const TextOverlay = styled.div`
+  position: absolute; right: 5vw; top: 50%;
+  transform: translateY(-50%);
+  z-index: 30; /* over bildet */
+  max-width: 460px;
+  opacity: var(--text-opacity, 0);
+
+  .header { margin: 0 0 12px; }
+
+  .eyebrow{
+    position: relative; color:#a3f1ff; font-weight:800; letter-spacing:.18em;
+    font-size:12px; text-transform:uppercase; margin-bottom: 8px;
+    animation: glitchShift 2.2s infinite steps(2,end);
+  }
+  .eyebrow::after{
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1px);
+    color:#fff; opacity:.9; mix-blend-mode:screen; clip-path: var(--glitch-clip, inset(0 0 50% 0));
+    animation: glitchClip 1.4s infinite;
+  }
+
+  h3{
+    font-size: clamp(28px, 4vw, 56px); margin:.1em 0 .2em; line-height:1.1;
+    position: relative; animation: glitchShift 2.8s infinite steps(2,end);
+  }
+  h3::after{
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1.5px);
+    color:#a3f1ff; opacity:.9; mix-blend-mode:screen; clip-path: var(--glitch-clip, inset(0 0 50% 0));
+    animation: glitchClip 1.7s infinite;
+  }
+
+  /* selve scroll-vinduet (under headeren)  */
+  .scrollWrap{
+    position: relative;
+    height: clamp(260px, 40vh, 520px); /* litt lavere for å tvinge scroll */
+    overflow: hidden;
+    /* fade inn rett under header + fade ut nederst */
+    mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 10%,
+      black 90%,
+      transparent 100%);
+  }
+
+  /* bare brødteksten flyttes */
+  .body{
+    transform: translateY(var(--content-offset, 0px));
+    will-change: transform;
+  }
+
+  p{ color:rgba(255,255,255,.86); line-height:1.85; margin:0 0 16px; font-size:16px; }
+  .tags{ opacity:.8; font-size:13px; letter-spacing:.02em; color: rgba(255,255,255, 0.7); }
+  .details{ margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1);
+    font-size: 14px; line-height: 1.6; color: rgba(255,255,255,.8); }
 `;
 
-const Poster = styled.img`
-  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
-  transform:
-    translate3d(var(--x,0), var(--y,0), 0)
-    scale(var(--scale,1));
-  opacity: var(--alpha, 0);
-  transition: opacity .6s ease; /* transforms are driven by rAF for buttery motion */
-  filter:
-    brightness(var(--br, .98))
-    contrast(var(--ct, 1.06))
-    saturate(var(--sat, 1.02))
-    blur(var(--blur, 0px));
-  will-change: transform, opacity, filter;
-  -webkit-mask-image: radial-gradient(120% 110% at 50% 50%, #000 60%, rgba(0,0,0,.88) 78%, transparent 96%);
-          mask-image: radial-gradient(120% 110% at 50% 50%, #000 60%, rgba(0,0,0,.88) 78%, transparent 96%);
-`;
 
+/* Halo BAK bildet (z-index:1) – ikke lenger foran */
 const Halo = styled.div`
-  position:absolute; width: 64vmin; height: 64vmin; border-radius: 50%; z-index:0; pointer-events:none;
-  left:-18vmin; top: 50%; transform: translate3d(0, -50%, 0);
-  filter: blur(26px) saturate(1.1);
-  mix-blend-mode: screen; opacity:.75;
-  background: radial-gradient(closest-side, ${({$color}) => $color} 0%, transparent 68%);
-`;
-
-const Card = styled.article`
-  position: relative; padding: 3.2vh 2.2vw; border-left: 2px solid rgba(255,255,255,.08);
-  max-width: 60ch; margin-left: .6vw; scroll-snap-align: center;
-  .eyebrow{ color:#a3f1ff; font-weight:800; letter-spacing:.18em; font-size:12px; text-transform:uppercase; }
-  h3{ font-size: clamp(28px, 4vw, 56px); margin:.2em 0 .2em; }
-  p{ color:rgba(255,255,255,.86); line-height:1.85; margin:0; }
-  .tags{ margin-top: 12px; opacity:.8; font-size:13px; letter-spacing:.02em; }
-`;
-
-const Marquee = styled.div`
-  margin-top: 16vh; border-block:1px solid rgba(255,255,255,.08);
-  overflow:hidden; white-space:nowrap; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
-  font-size: clamp(20px, 3vw, 34px); padding: 14px 0; opacity:.8;
-  .inner{ display:inline-block; padding-left: 100%; animation: roll 32s linear infinite; }
-  @keyframes roll{ to{ transform: translateX(-100%);} }
-`;
-
-const ProgressRail = styled.div`
-  position: fixed; right: 18px; top: 84px; bottom: 18px; width: 3px; z-index: 20;
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-  border-radius: 999px; overflow: hidden; pointer-events: none;
-  .bar{ position:absolute; left:0; top:0; width:100%; height: var(--p, 0%);
-    background: linear-gradient(180deg, #a3f1ff, #ff6b6b);
-  }
+  position: absolute; width: 80vmin; height: 80vmin; border-radius: 50%;
+  z-index: 1; pointer-events: none; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(var(--halo-scale, 0));
+  filter: blur(40px) saturate(1.2);
+  mix-blend-mode: screen;
+  opacity: var(--halo-opacity, 0);
+  background: radial-gradient(closest-side, ${({$color}) => $color} 0%, transparent 70%);
+  will-change: transform, opacity;
 `;
 
 /* ====================== Component ====================== */
-export default function RockstyleCreatures(){
-  // Normalize images up front so preload + rendering use the same URL string
+export default function ZoomScrollCreatures() {
   const CREATURES = useMemo(
     () => RAW_CREATURES.map(c => ({ ...c, src: resolveSrc(c.img) })),
     []
   );
 
-  const [active, setActive] = useState(0);
-  const [loaded, setLoaded] = useState(() => CREATURES.map(() => false));
-
-  const textRefs = useRef([]);
-  const posterRefs = useRef([]);
-  const stageRef = useRef(null);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const wrapperRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const heroRef = useRef(null);
+  const imageRefs = useRef([]);
+  const textRef = useRef(null);
+  const bodyRef = useRef(null);   // <- kun brødtekst
   const haloRef = useRef(null);
-  const rafRef = useRef(0);
+  const stageRef = useRef(null);
 
-  // Preload images once to avoid flash/flicker — works for png/webp
+  // Faser
+  const HERO_PHASE = 60;
+  const ZOOM_PHASE = 90;
+  const TEXT_PHASE = 150;
+  const FADE_PHASE = 40;
+  const PHASE_LENGTH = ZOOM_PHASE + TEXT_PHASE + FADE_PHASE;
+  const TOTAL_HEIGHT = HERO_PHASE + (CREATURES.length * PHASE_LENGTH) + 60;
+
   useEffect(() => {
-    const nextLoaded = [...loaded];
-    CREATURES.forEach((c, i) => {
-      const im = new Image();
-      im.src = c.src;
-      if (im.complete) nextLoaded[i] = true;
-      else im.onload = () => {
-        setLoaded(prev => { const copy = [...prev]; copy[i] = true; return copy; });
-      };
-    });
-    setLoaded(nextLoaded);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.style.setProperty('--total-height', `${TOTAL_HEIGHT}vh`);
+    }
+  }, [TOTAL_HEIGHT]);
 
-  // Ultra-smooth scroll-driven engine: center locking, parallax, depth, halo sway
   useEffect(() => {
-    let vx = 0, vy = 0; // velocity tracker for halo sway
-    let lastY = window.scrollY;
+    if (!wrapperRef.current || !scrollContainerRef.current) return;
 
-    const onFrame = () => {
-      const centerY = window.scrollY + window.innerHeight / 2;
-      let bestIdx = 0; let bestDist = Infinity;
+    const getBounds = () => {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const top = window.scrollY + rect.top;
+      const height = rect.height;
+      const viewH = window.innerHeight;
+      const start = Math.max(0, top - viewH * 0.0);
+      const end   = top + height - viewH * 1.0;
+      const length = Math.max(1, end - start);
+      return { start, end, length };
+    };
 
-      // Velocity
-      const dy = window.scrollY - lastY; lastY = window.scrollY;
-      vy = lerp(vy, dy, 0.18);
+    let bounds = getBounds();
 
-      for (let i = 0; i < textRefs.current.length; i++){
-        const el = textRefs.current[i]; if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        const mid = rect.top + window.scrollY + rect.height / 2;
-        const d = Math.abs(mid - centerY);
-        if (d < bestDist){ bestDist = d; bestIdx = i; }
+    const handleScroll = () => {
+      const y = window.scrollY;
+      const raw = (y - bounds.start) / bounds.length;
+      const progress = clamp(raw, 0, 1);
 
-        // Per-card influence 0..1 relative to center (0 at far, 1 at center)
-        const radius = Math.max(window.innerHeight * 0.85, 520);
-        const t = clamp(1 - Math.abs(mid - centerY) / radius, 0, 1);
+      if (stageRef.current) {
+        stageRef.current.style.setProperty('--stage-opacity', progress > 0 ? '1' : '0');
+      }
 
-        // Map to tasty transforms
-        const scale = lerp(1.02, 1.0, smoothstep(t));
-        const y = lerp(40, 0, easeOut(t));
-        const alpha = lerp(0.0, 1.0, smoothstep(t));
-        const blur = lerp(8, 0.25, smoothstep(t));
-        const sat = lerp(0.96, 1.06, smoothstep(t));
-        const br = lerp(0.92, 1.0, smoothstep(t));
-        const ct = lerp(1.02, 1.08, smoothstep(t));
+      // Raskere inn i første bilde
+      const HERO_RATIO = 0.12;
 
-        const poster = posterRefs.current[i];
-        if (poster && loaded[i]){
-          poster.style.setProperty("--scale", scale.toFixed(4));
-          poster.style.setProperty("--y", `${y.toFixed(2)}px`);
-          poster.style.setProperty("--alpha", alpha.toFixed(3));
-          poster.style.setProperty("--blur", `${blur.toFixed(2)}px`);
-          poster.style.setProperty("--sat", sat.toFixed(3));
-          poster.style.setProperty("--br", br.toFixed(3));
-          poster.style.setProperty("--ct", ct.toFixed(3));
+      if (progress < HERO_RATIO) {
+        const heroProgress = progress / HERO_RATIO;
+        const heroOpacity = 1 - heroProgress;
+        const heroScale = 1 + heroProgress * 0.1;
+
+        if (heroRef.current) {
+          heroRef.current.style.setProperty('--hero-opacity', String(heroOpacity));
+          heroRef.current.style.setProperty('--hero-scale', String(heroScale));
+          heroRef.current.style.visibility = 'visible';
+          heroRef.current.style.pointerEvents = 'auto';
         }
+        setCurrentIndex(-1);
+        return;
       }
 
-      // Soft-lock to nearest card
-      setActive((prev) => (prev === bestIdx ? prev : bestIdx));
-
-      // Halo sway based on velocity + active color glow drift
-      const halo = haloRef.current;
-      if (halo){
-        const swayX = clamp(vy * 1.1, -36, 36);
-        const swayY = clamp(-vy * 0.6, -20, 20);
-        halo.style.transform = `translate3d(${swayX}px, calc(-50% + ${swayY}px), 0)`;
-        halo.style.opacity = String(0.65 + Math.min(Math.abs(vy) * 0.02, 0.25));
+      // Skjul hero helt
+      if (heroRef.current) {
+        heroRef.current.style.setProperty('--hero-opacity', '0');
+        heroRef.current.style.visibility = 'hidden';
+        heroRef.current.style.pointerEvents = 'none';
       }
 
-      // Global progress bar
-      const total = document.body.scrollHeight - window.innerHeight;
-      const p = total > 0 ? (window.scrollY / total) * 100 : 0;
-      document.documentElement.style.setProperty("--progress", `${p}%`);
+      // Creatures
+      const creatureProgress = (progress - HERO_RATIO) / (1 - HERO_RATIO);
+      const totalCreaturePhase = creatureProgress * CREATURES.length;
+      const activeCreatureIndex = Math.min(
+        Math.floor(totalCreaturePhase),
+        CREATURES.length - 1
+      );
+      let phaseProgress = totalCreaturePhase - activeCreatureIndex;
 
-      rafRef.current = requestAnimationFrame(onFrame);
+      setCurrentIndex(activeCreatureIndex);
+
+      // Oppdater aksentfarge for bakgrunn
+      const accent = colorFor(CREATURES[activeCreatureIndex].id);
+      if (wrapperRef.current) wrapperRef.current.style.setProperty('--accent', accent);
+
+      // Bildets anim/tekst
+      let zoom = 0.1, opacity = 0, textOpacity = 0, haloScale = 0, haloOpacity = 0;
+
+      // ---- Tekstscroll KUN for .body (p/tags/details) ----
+let tProg = 0;
+if (textRef.current && bodyRef.current) {
+  const wrap = textRef.current.querySelector('.scrollWrap');
+  const content = bodyRef.current;
+
+  const wrapH = wrap?.getBoundingClientRect().height || 0;
+  const contentH = content?.getBoundingClientRect().height || 0;
+
+  // Hvor langt vi faktisk kan scrolle basert på innhold,
+  // men gi alltid MINST litt bevegelse for “scroll-følelse”.
+  const naturalScroll = Math.max(0, contentH - wrapH);
+  const minScroll = clamp(window.innerHeight * 0.18, 140, 220); // 140–220px
+  const travel = Math.max(naturalScroll, minScroll);
+
+  const textPhaseStart = 0.3;
+  const textPhaseEnd = 0.8;
+
+  // map 0.3..0.8 -> 0..1
+  tProg = clamp((phaseProgress - textPhaseStart) / (textPhaseEnd - textPhaseStart), 0, 1);
+
+  // flytt brødtekst opp (negativ y)
+  const offset = -travel * tProg;
+  content.style.setProperty('--content-offset', `${offset}px`);
+
+  // Ikke gå til fade/next før teksten er ferdig scrollet
+  if (tProg < 1 && phaseProgress > textPhaseEnd) {
+    phaseProgress = textPhaseEnd;
+  }
+}
+
+
+      // --------- faser ----------
+      if (phaseProgress < 0.3) {
+        const zp = phaseProgress / 0.3;
+        zoom = 0.1 + easeOut(zp) * 0.9;
+        opacity = smoothstep(zp);
+        haloScale = easeOut(zp) * 1.5;
+        haloOpacity = smoothstep(zp) * 0.6;
+        textOpacity = smoothstep(Math.max(0, (phaseProgress - 0.2) / 0.1));
+      } else if (phaseProgress < 0.8) {
+        zoom = 1.0;
+        opacity = 1;
+        haloScale = 1.5;
+        haloOpacity = 0.6;
+        textOpacity = 1;
+      } else {
+        const fp = (phaseProgress - 0.8) / 0.2;
+        zoom = 1.0 + fp * 0.15;
+        opacity = Math.max(0, 1 - fp * 2);
+        textOpacity = Math.max(0, 1 - fp * 3);
+        haloScale = 1.5 + fp * 0.5;
+        haloOpacity = Math.max(0, 0.6 - fp);
+      }
+
+      // Oppdater bilde
+      const img = imageRefs.current[activeCreatureIndex];
+      if (img) {
+        img.style.setProperty('--zoom', String(zoom));
+        img.style.setProperty('--opacity', String(opacity));
+      }
+
+      // Tekst
+      if (textRef.current) {
+        textRef.current.style.setProperty('--text-opacity', String(textOpacity));
+      }
+
+      // Halo (bak bilde)
+      if (haloRef.current) {
+        haloRef.current.style.setProperty('--halo-scale', String(haloScale));
+        haloRef.current.style.setProperty('--halo-opacity', String(haloOpacity));
+      }
+
+      // Skjul andre bilder
+      imageRefs.current.forEach((other, idx) => {
+        if (other && idx !== activeCreatureIndex) {
+          other.style.setProperty('--opacity', '0');
+        }
+      });
     };
-    rafRef.current = requestAnimationFrame(onFrame);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [loaded]);
 
-  // Reduced motion: lock to first
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!mq.matches) return;
-    setActive(0);
-  }, []);
-
-  // Keyboard nav for vibes (↑/↓ to snap to previous/next)
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      e.preventDefault();
-      const dir = e.key === 'ArrowDown' ? 1 : -1;
-      const idx = clamp(active + dir, 0, CREATURES.length - 1);
-      const el = textRefs.current[idx];
-      if (el){ el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    const handleResize = () => {
+      bounds = getBounds();
+      handleScroll();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [active, CREATURES.length]);
 
-  // Progress rail percentage
-  const progress = typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--progress') : '0%';
+    handleResize();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [CREATURES, TOTAL_HEIGHT]);
+
+  const currentCreature = currentIndex >= 0 ? CREATURES[currentIndex] : null;
 
   return (
-    <>
-      <Global />
-      <Page>
-        <Nav>
-          <div className="brand">V.O.T.E. // Creatures</div>
-          <div className="pill">Scroll to Explore</div>
-        </Nav>
+    <ComponentWrapper ref={wrapperRef}>
+      <GlobalKeyframes />
+      <ScrollContainer ref={scrollContainerRef}>
+        {/* Hero */}
+        <Hero ref={heroRef}>
+          <div className="kicker" data-text="FOLKLORE UNIVERSE">FOLKLORE UNIVERSE</div>
+          <h1 data-text="MEET THE CREATURES">MEET THE CREATURES</h1>
+          <p>The adventure is out there and waiting for you.</p>
+        </Hero>
 
-        <Shell>
-          <Hero>
-            <div className="kicker">Folklore Universe</div>
-            <h1>Meet the Creatures</h1>
-            <p>
-              The adventure is out there and waiting for you.
-            </p>
-            <div className="cta">
-              <button className="btn">Watch Trailer</button>
-              <button className="btn">Enter World</button>
-            </div>
-          </Hero>
+        {/* Stage */}
+        <ZoomStage ref={stageRef}>
+          {currentCreature && (
+            <Halo ref={haloRef} $color={colorFor(currentCreature.id)} />
+          )}
 
-          <Scroller>
-            <TextRail>
-              {CREATURES.map((c, i) => (
-                <Card key={c.id} ref={(el) => (textRefs.current[i] = el)}>
-                  <div className="eyebrow">{(c.sub || 'Unknown').toUpperCase()}</div>
-                  <h3>{c.title}</h3>
+          {CREATURES.map((creature, index) => (
+            <CreatureImage
+              key={creature.id}
+              ref={(el) => (imageRefs.current[index] = el)}
+              src={creature.src}
+              alt={creature.title}
+              loading={index === 0 ? "eager" : "lazy"}
+            />
+          ))}
+
+          {currentCreature && (
+            <TextOverlay ref={textRef}>
+              {/* HEADER (frosset) */}
+              <div className="header">
+                <div className="eyebrow" data-text={currentCreature.sub.toUpperCase()}>
+                  {currentCreature.sub.toUpperCase()}
+                </div>
+                <h3 data-text={currentCreature.title}>{currentCreature.title}</h3>
+              </div>
+
+              {/* BODY (scroller, fader i topp/bunn) */}
+              <div className="scrollWrap">
+                <div className="body" ref={bodyRef}>
                   <p>
-                    {c.title} roams our folklore-inspired world. Expect mood, mystery and danger—sometimes all at once.
+                    {currentCreature.title} roams our folklore-inspired world. 
+                    Expect mood, mystery and danger—sometimes all at once.
                   </p>
-                  <div className="tags">{c.tags?.map(t => `#${t}`).join(' ')}</div>
-                </Card>
-              ))}
-            </TextRail>
-
-            <StageWrap>
-              <Stage ref={stageRef}>
-                {/* Halo that shifts tone with the active card + velocity sway */}
-                <Halo ref={haloRef} key={`halo-${CREATURES[active]?.id || 0}`} $color={colorFor(CREATURES[active]?.id)} />
-
-                {/* Always render all posters to avoid layout thrash; parallax & crossfade handled in rAF */}
-                {CREATURES.map((c, i) => {
-                  const ready = loaded[i];
-                  return (
-                    <Poster
-                      key={c.id}
-                      ref={(el) => (posterRefs.current[i] = el)}
-                      src={c.src}
-                      alt={c.title}
-                      style={{ '--alpha': ready ? undefined : 0 }}
-                      aria-hidden={active !== i}
-                      loading={i === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
-                    />
-                  );
-                })}
-              </Stage>
-            </StageWrap>
-          </Scroller>
-
-          <Marquee>
-            <div className="inner">
-              V.O.T.E. CREATURES • FOLKLORE • NORDIC MYTH • SECURITY • CINEMATIC • NEON • GRAIN • ROCKSTYLE • V.O.T.E. CREATURES • FOLKLORE • NORDIC MYTH • SECURITY • CINEMATIC • NEON • GRAIN • ROCKSTYLE •
-            </div>
-          </Marquee>
-        </Shell>
-
-        <ProgressRail aria-hidden>
-          <div className="bar" style={{ '--p': progress }} />
-        </ProgressRail>
-      </Page>
-    </>
+                  <div className="tags">
+                    {currentCreature.tags?.map(t => `#${t}`).join(' ')}
+                  </div>
+                  <div className="details">
+                    In the depths of Nordic mythology, creatures like {currentCreature.title} 
+                    represent the untamed forces of nature and the unknown. Each encounter 
+                    tells a story of ancient wisdom, primal fear, and the delicate balance 
+                    between the human world and the realm of spirits.
+                    <br /><br />
+                    These beings have shaped the folklore of generations, passing down 
+                    warnings and wisdom through whispered tales around flickering fires. 
+                    Their presence in our world serves as a reminder that magic still 
+                    exists for those brave enough to seek it.
+                  </div>
+                </div>
+              </div>
+            </TextOverlay>
+          )}
+        </ZoomStage>
+      </ScrollContainer>
+    </ComponentWrapper>
   );
 }
