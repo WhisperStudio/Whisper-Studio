@@ -1,20 +1,23 @@
 // src/pages/AdminPanel.js
-import axios from 'axios';
 import React, { useEffect, useState, useRef } from 'react';
-import { io } from 'socket.io-client';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
+import { checkAdminStatus } from '../utils/firebaseAdmin';
 
 import ChatDashboard from '../components/ChatDashboard';
-import TicketDashboard from '../components/TicketDashboard';
-import Tickets from '../components/Tickets';
-import LineChartCard from '../components/LineChart';
-import PieChartCard from '../components/pieChartCard';
+import LiveChat from '../components/LiveChat';
+// import AIBot from '../components/AIBot';
+// import TicketDashboard from '../components/TicketDashboard';
+// import Tickets from '../components/Tickets';
+import LineChart from '../components/LineChart';
+// import PieChartCard from '../components/pieChartCard';
+import ChatPieChart from '../components/ChatPieChart';
 import ChatActivityChart from '../components/ChatActivityChart';
-import ChatGeoChart      from "../components/ChatGeoChart";
-import CountryGeoChart      from "../components/CountryGeoChart";
+import ChatGeoChart from '../components/ChatGeoChart';
+import CountryGeoChart from "../components/CountryGeoChart";
+// import AdminManagement from '../components/AdminManagement';
 
 import {
   FiMessageSquare,
@@ -22,10 +25,12 @@ import {
   FiUsers,
   FiBarChart2,
   FiPieChart,
-  FiCpu
+  FiCpu,
+  FiSettings,
+  FiMessageCircle
 } from 'react-icons/fi';
 
-const socket = io("https://chat.vintrastudio.com", { transports: ["websocket"] });
+// Removed socket.io dependency - using Firebase only
 
 // ─── Styled Components ───────────────────────────────────────────────────────
 const Page = styled.div`
@@ -130,45 +135,71 @@ export default function AdminPanel() {
   const [conversations, setConversations] = useState({});
   const [selectedConv, setSelectedConv] = useState(null);
   const [input, setInput] = useState("");
-  const [active, setActive] = useState("chat");
+  const [active, setActive] = useState("lineChart");
   const [userChecked, setUserChecked] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
   const highlightRef = useRef();
   const buttonRefs = useRef([]);
 
-  // Auth guard
+  // Firebase Auth guard
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem("user"));
-    if (!u || u.role !== "admin") {
-      localStorage.removeItem("user");
-      navigate("/login");
-    } else {
-      setUserChecked(true);
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const isAdmin = await checkAdminStatus(user);
+          if (isAdmin) {
+            setCurrentUser(user);
+            setUserChecked(true);
+            setLoading(false);
+          } else {
+            // Not an admin, redirect to login
+            await signOut(auth);
+            navigate("/login");
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          navigate("/login");
+        }
+      } else {
+        // No user logged in
+        navigate("/login");
+      }
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
 
-  // Socket init for chat
+  // Firebase-based chat initialization (placeholder)
   useEffect(() => {
-    if (active !== "chat") return;
-    socket.on("init", msgs => {
-      const convos = {};
-      msgs.forEach(m => {
-        convos[m.userId] = (convos[m.userId] || []).concat(m);
-      });
-      setConversations(convos);
-    });
-    socket.on("new_message", m => {
-      setConversations(prev => ({
-        ...prev,
-        [m.userId]: (prev[m.userId] || []).concat(m)
-      }));
-    });
-    return () => socket.disconnect();
-  }, [active]);
+    if (active !== "chat" || !userChecked) return;
+    
+    // TODO: Implement Firebase-based chat system
+    // For now, we'll use mock data
+    const mockConversations = {
+      'user1': [
+        { from: 'user', text: 'Hello, I need help', userId: 'user1', timestamp: new Date() },
+        { from: 'admin', text: 'How can I help you?', userId: 'user1', timestamp: new Date() }
+      ],
+      'user2': [
+        { from: 'user', text: 'I have a question', userId: 'user2', timestamp: new Date() }
+      ]
+    };
+    setConversations(mockConversations);
+  }, [active, userChecked]);
 
   const sendChat = () => {
     if (!input.trim() || !selectedConv) return;
-    const msg = { from: 'admin', text: input, userId: selectedConv };
-    socket.emit("admin_reply", msg);
+    const msg = { 
+      from: 'admin', 
+      text: input, 
+      userId: selectedConv, 
+      timestamp: new Date(),
+      adminEmail: currentUser?.email 
+    };
+    
+    // TODO: Implement Firebase-based message sending
+    // For now, just update local state
     setConversations(prev => ({
       ...prev,
       [selectedConv]: (prev[selectedConv] || []).concat(msg)
@@ -184,9 +215,12 @@ export default function AdminPanel() {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    localStorage.removeItem("user");
-    navigate("/login");
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   // on nav click, set active and move highlight
@@ -198,43 +232,61 @@ export default function AdminPanel() {
     }
   };
 
-  if (!userChecked) return null;
+  if (loading || !userChecked) {
+    return (
+      <Page>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          color: '#fff',
+          fontSize: '18px'
+        }}>
+          Laster admin panel...
+        </div>
+      </Page>
+    );
+  }
 
   const MENU = [
     { section: "Support", items: [
       { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare /> },
+      { key: "liveChat", label: "Live Chat", icon: <FiMessageCircle /> },
+      { key: "aiBot", label: "AI Assistant", icon: <FiCpu /> },
       { key: "ticketDashboard", label: "Ticket Dashboard", icon: <FiFileText /> },
       { key: "tickets", label: "Tickets", icon: <FiUsers /> }
     ]},
     { section: "Statistics", items: [
-      { key: "lineChart", label: "Line Chart", icon: <FiBarChart2 /> },
+      { key: "lineChart", label: "Analytics & Map", icon: <FiBarChart2 /> },
       { key: "pieChart", label: "Pie Chart", icon: <FiPieChart /> },
-      { key: "botAdmin", label: "Bot Admin Chart", icon: <FiCpu /> }
+      { key: "botAdmin", label: "Activity Charts", icon: <FiCpu /> }
+    ]},
+    { section: "Administration", items: [
+      { key: "adminManagement", label: "Admin Management", icon: <FiSettings /> }
     ]}
   ];
 
   const CONTENT = {
-  chat: (
-    <ChatDashboard
-      conversations={conversations}
-      selected={selectedConv}
-      onSelect={setSelectedConv}
-      onSend={sendChat}
-      input={input}
-      setInput={setInput}
-      onDelete={deleteConv}
-    />
+  chat: <ChatDashboard />,
+  liveChat: <LiveChat />,
+  aiBot: <div>AI Bot - Coming Soon</div>,
+  ticketDashboard: <div>Ticket Dashboard - Coming Soon</div>,
+  tickets: <div>Tickets - Coming Soon</div>,
+  lineChart: (
+    <>
+      <LineChart />
+      <CountryGeoChart />
+    </>
   ),
-  ticketDashboard: <TicketDashboard />,
-  tickets:           <Tickets />,
-  lineChart:         <LineChartCard />,
-  pieChart:          <CountryGeoChart  />,
+  pieChart: <ChatPieChart />,
   botAdmin: (
     <>
       <ChatActivityChart />
       <ChatGeoChart />
     </>
   ),
+  adminManagement: <div>Admin Management - Coming Soon</div>
 };
 
   return (

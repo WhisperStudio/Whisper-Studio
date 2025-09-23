@@ -1,7 +1,7 @@
 // src/components/ChatGeoChart.js
 import React, { useEffect, useState } from 'react'
 import { Chart } from 'react-google-charts'
-import { collectionGroup, onSnapshot } from 'firebase/firestore'
+import { collectionGroup, getDocs } from 'firebase/firestore'
 import { db } from '../firebase'
 
 // Intl helper to turn ISO ↔ full country name
@@ -16,34 +16,55 @@ export default function ChatGeoChart() {
   const [total,  setTotal ] = useState(0)
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collectionGroup(db, 'messages'),
-      snap => {
-        const agg = {}
+    const loadData = async () => {
+      try {
+        const snap = await getDocs(collectionGroup(db, 'messages'));
+        const agg = {};
+        
         snap.docs.forEach(doc => {
-          const c = doc.data().country
-          if (!c || c === 'unknown') return
-          agg[c] = (agg[c] || 0) + 1
-        })
-        setCounts(agg)
-        const sum = Object.values(agg).reduce((a,b)=>a+b,0)
-        setTotal(sum)
+          const c = doc.data().country;
+          if (!c || c === 'unknown') return;
+          agg[c] = (agg[c] || 0) + 1;
+        });
+        
+        setCounts(agg);
+        const sum = Object.values(agg).reduce((a,b)=>a+b,0);
+        setTotal(sum);
+        
         // build google-charts rows
         const rows = Object.entries(agg).map(([iso, cnt]) => {
-          const full = regionNames.of(iso) || iso
-          const tip  = `
+          let full = iso;
+          try {
+            // Only try to get display name if iso looks like a valid country code
+            if (iso && iso.length === 2 && /^[A-Z]{2}$/.test(iso.toUpperCase())) {
+              full = regionNames.of(iso.toUpperCase()) || iso;
+            }
+          } catch (error) {
+            console.warn(`Invalid country code: ${iso}`, error);
+            full = iso; // fallback to original value
+          }
+          
+          const tip = `
                           ${full}
                           Messages: ${cnt}
-                        `
-          return [iso, cnt, tip]
-        })
+                        `;
+          return [iso, cnt, tip];
+        });
+        
         setChartData([
           ['Country','Messages',{ role:'tooltip', type:'string' }],
           ...rows
-        ])
+        ]);
+      } catch (error) {
+        console.error('Error loading chat geo data:', error);
       }
-    )
-    return ()=>unsub()
+    };
+    
+    loadData();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, [])
 
   // get top 10
