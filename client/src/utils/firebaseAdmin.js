@@ -22,7 +22,7 @@ const ADMIN_EMAILS = [
   // Add more admin emails as needed
 ];
 
-// Admin collection name in Firestore
+// Admin collection name in Firestore.
 const ADMIN_COLLECTION = 'admins';
 
 /**

@@ -1,24 +1,26 @@
 // client/firebase.js
 import { initializeApp, getApps } from "firebase/app";
-
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
-import {
-  getFirestore,
-  collection,
-  collectionGroup,
-  getDocs,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-  Timestamp,
-  addDoc,
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  addDoc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  onSnapshot, 
   serverTimestamp,
-  doc,
-  getDoc,
-  setDoc,
-  deleteDoc
-} from "firebase/firestore";
+  collectionGroup
+} from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 const firebaseConfig = {
@@ -38,6 +40,7 @@ const app = !getApps().length
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 export {
   auth,
@@ -45,6 +48,10 @@ export {
   signInWithPopup,
   onAuthStateChanged,
   db,
+  storage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
   collection,
   collectionGroup,
   getDocs,
@@ -52,11 +59,11 @@ export {
   query,
   where,
   orderBy,
-  Timestamp,
   addDoc,
   serverTimestamp,
   doc,
   getDoc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 };
