@@ -15,6 +15,7 @@ import Admin       from './pages/admin';
 import Login       from './pages/login';
 import Artwork     from './pages/artwork';
 import PostLogin   from './pages/PostLogin';
+import BugReportPage from './pages/BugReportPage';
 
 // NEW: Web development promo + estimator page
 // Make sure this file exists, e.g. src/pages/WebDevPromoPage.jsx
@@ -25,6 +26,7 @@ import Header from './components/header';
 import Cursor from './components/Cursor';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBot from './components/ChatBot';
+import BugReportButton from './components/BugReportButton';
 
 // Wrapper with Header
 const MainLayout = ({ children }) => (
@@ -32,6 +34,7 @@ const MainLayout = ({ children }) => (
     <Header />
     {children}
     <ChatBot />
+    <BugReportButton />
   </>
 );
 
@@ -63,6 +66,7 @@ function App() {
           <Route path="/"               element={<MainLayout><Home /></MainLayout>} />
           <Route path="/vote"           element={<MainLayout><VotePage /></MainLayout>} />
           <Route path="/contact"        element={<MainLayout><ContactPage /></MainLayout>} />
+          <Route path="/bug-report"     element={<MainLayout><BugReportPage /></MainLayout>} />
           <Route path="/admin"          element={
             <ProtectedRoute requireAdmin={true}>
               <MainLayout><Admin /></MainLayout>

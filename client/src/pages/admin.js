@@ -17,6 +17,7 @@ import ChatPieChart from '../components/ChatPieChart';
 import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart from '../components/ChatGeoChart';
 import CountryGeoChart from "../components/CountryGeoChart";
+import BugDashboard from '../components/BugDashboard';
 // import AdminManagement from '../components/AdminManagement';
 
 import {
@@ -27,7 +28,8 @@ import {
   FiPieChart,
   FiCpu,
   FiSettings,
-  FiMessageCircle
+  FiMessageCircle,
+  FiAlertTriangle
 } from 'react-icons/fi';
 
 // Removed socket.io dependency - using Firebase only
@@ -262,6 +264,9 @@ export default function AdminPanel() {
       { key: "pieChart", label: "Pie Chart", icon: <FiPieChart /> },
       { key: "botAdmin", label: "Activity Charts", icon: <FiCpu /> }
     ]},
+    { section: "Development", items: [
+      { key: "bugDashboard", label: "Bug Reports", icon: <FiAlertTriangle /> }
+    ]},
     { section: "Administration", items: [
       { key: "adminManagement", label: "Admin Management", icon: <FiSettings /> }
     ]}
@@ -286,6 +291,7 @@ export default function AdminPanel() {
       <ChatGeoChart />
     </>
   ),
+  bugDashboard: <BugDashboard />,
   adminManagement: <div>Admin Management - Coming Soon</div>
 };
 
