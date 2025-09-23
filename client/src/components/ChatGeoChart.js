@@ -83,11 +83,11 @@ export default function ChatGeoChart() {
       boxShadow: '0 0 16px rgba(0,85,170,0.5)',
     },
     mapWrapper: {
-      flex: 2,
+      flex: 6,
       border: '1px solid #003366',
       borderRadius: 4,
       overflow: 'hidden',
-      minHeight: 400,
+      height: 600,
     },
     sidebar: {
       flex: 1,
@@ -97,6 +97,8 @@ export default function ChatGeoChart() {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
+      minWidth: 200,
+      maxWidth: 250,
     },
     title: {
       fontSize: 20,
@@ -138,13 +140,10 @@ export default function ChatGeoChart() {
     resolution: 'countries',
     backgroundColor: '#0a0f1a',
     datalessRegionColor: '#1a2130',
-    defaultColor: '#003366',
+    defaultColor: '#8D7FB3',
     colorAxis: { colors: ['#ebeaec','#63548C','#934397'] },
     legend: 'none',
-    tooltip: {
-      isHtml: true,
-      trigger: 'hover',
-    },
+    tooltip: { textStyle: { color: '#000' }, backgroundColor: '#e0ffff' },
   }
 
   return (

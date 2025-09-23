@@ -38,6 +38,7 @@ export default function ChatActivityChart() {
   const [now, setNow] = useState(new Date());
   const [windowStart, setWindowStart] = useState(subHours(new Date(), 1));
   const [points, setPoints] = useState([]);
+  const [chartKey, setChartKey] = useState(0); // For å force re-render av chart
 
   // Oppdater "now" hvert minutt så grafen sklir fremover
   useEffect(() => {
@@ -55,24 +56,31 @@ export default function ChatActivityChart() {
     else ws = startOfMonth(subYears(now, 1)); // 1y
     setWindowStart(ws);
 
-    // 2) Lag buckets
+    // 2) Lag buckets - fikser tidsintervall problemet
     const buckets = [];
     if (range === "1h") {
-      const mins = differenceInMinutes(now, ws);
-      for (let m = 0; m <= mins; m += 10) {
-        buckets.push(new Date(ws.getTime() + m * 60_000));
+      // For 1h: lag kun 6 buckets for siste time
+      const startTime = new Date(now.getTime() - 60 * 60 * 1000);
+      for (let m = 0; m <= 6; m++) {
+        buckets.push(new Date(startTime.getTime() + m * 10 * 60_000));
       }
     } else if (range === "24h") {
-      const mins = differenceInMinutes(now, ws);
-      for (let m = 0; m <= mins; m += 60) {
-        buckets.push(new Date(ws.getTime() + m * 60_000));
+      // For 24h: lag buckets for hver time i de siste 24 timene
+      for (let h = 0; h <= 24; h += 1) {
+        buckets.push(new Date(ws.getTime() + h * 60 * 60_000));
       }
-    } else if (range === "7d" || range === "30d") {
-      const days = differenceInDays(now, ws);
-      for (let d = 0; d <= days; d++) {
+    } else if (range === "7d") {
+      // For 7d: lag buckets for hver dag i de siste 7 dagene
+      for (let d = 0; d <= 7; d++) {
+        buckets.push(startOfDay(new Date(ws.getTime() + d * 86_400_000)));
+      }
+    } else if (range === "30d") {
+      // For 30d: lag buckets for hver dag i de siste 30 dagene
+      for (let d = 0; d <= 30; d++) {
         buckets.push(startOfDay(new Date(ws.getTime() + d * 86_400_000)));
       }
     } else {
+      // For 1y: lag månedlige buckets
       buckets.push(...eachMonthOfInterval({ start: ws, end: startOfMonth(now) }));
     }
 
@@ -117,6 +125,9 @@ export default function ChatActivityChart() {
     };
 
     fetchData();
+    
+    // Force re-render av chart når range endres
+    setChartKey(prev => prev + 1);
   }, [range, now]);
 
   // 5) Akseoppsett
@@ -128,7 +139,7 @@ export default function ChatActivityChart() {
   const unit = isHour ? "minute" : isDay ? "hour" : isWeek ? "day" : "month";
 
   // Viktig: for unit "hour" skal stepSize være antall timer per tick (1)
-  const stepSize = isHour ? 10 : isDay ? 1 : 1;
+  const stepSize = isHour ? 1 : isDay ? 2 : 1;
 
   const displayFormats = {
     minute: "HH:mm",
@@ -153,58 +164,68 @@ export default function ChatActivityChart() {
     },
   ];
 
-  const options = {
-    plugins: {
-      legend: { display: false },
-      title: {
-        display: true,
-        text: RANGES.find((r) => r.value === range).label,
-        color: "#cfefff",
-      },
-      tooltip: {
-        titleColor: "#000",
-        bodyColor: "#000",
-        backgroundColor: "#cfefff",
-        callbacks: {
-          title: ([pt]) => {
-            if (isYear) return format(pt.parsed.x, "MMM yyyy");
-            if (isWeek) return format(pt.parsed.x, "MMM d, HH:mm");
-            return format(pt.parsed.x, "PPpp");
-          },
-          label: (ctx) => `Count: ${ctx.parsed.y}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        type: "time",
-        time: { unit, stepSize, displayFormats },
-        // Lås vinduet til "tilbake i tid"
-        min: windowStart,
-        max: now,
-        bounds: "ticks",
-        ticks: { color: "#99e6ff" },
-        grid: { color: "rgba(0,85,170,0.1)" },
+  // Lag nye options for hver render for å unngå cache-problemer
+  const getChartOptions = () => {
+    const currentTime = new Date();
+    const minTime = isHour ? new Date(currentTime.getTime() - 60 * 60 * 1000) : windowStart;
+    
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
         title: {
           display: true,
-          text: isYear ? "Month" : isWeek ? "Date" : isDay ? "Hour" : "Time",
+          text: RANGES.find((r) => r.value === range).label,
           color: "#cfefff",
         },
+        tooltip: {
+          titleColor: "#000",
+          bodyColor: "#000",
+          backgroundColor: "#cfefff",
+          callbacks: {
+            title: ([pt]) => {
+              if (isYear) return format(pt.parsed.x, "MMM yyyy");
+              if (isWeek) return format(pt.parsed.x, "MMM d, HH:mm");
+              return format(pt.parsed.x, "PPpp");
+            },
+            label: (ctx) => `Count: ${ctx.parsed.y}`,
+          },
+        },
       },
-      y: {
-        beginAtZero: true,
-        ticks: { color: "#99e6ff" },
-        grid: { color: "rgba(0,85,170,0.1)" },
-        title: { display: true, text: "Count", color: "#cfefff" },
+      scales: {
+        x: {
+          type: "time",
+          time: { unit, stepSize, displayFormats },
+          min: minTime,
+          max: currentTime,
+          bounds: "data",
+          ticks: { 
+            color: "#99e6ff",
+            maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12
+          },
+          grid: { color: "rgba(0,85,170,0.1)" },
+          title: {
+            display: true,
+            text: isYear ? "Month" : isWeek ? "Date" : isDay ? "Hour" : "Time",
+            color: "#cfefff",
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#99e6ff" },
+          grid: { color: "rgba(0,85,170,0.1)" },
+          title: { display: true, text: "Count", color: "#cfefff" },
+        },
       },
-    },
+    };
   };
 
   // 7) Enkel UI
   const styles = {
     card: {
-      maxWidth: 900,
-      margin: "4rem auto",
+      maxWidth: 1600,
+      margin: "16px auto 0 auto",
       padding: 16,
       background: "#0a0f1a",
       border: "1px solid #003366",
@@ -238,7 +259,7 @@ export default function ChatActivityChart() {
         ))}
       </div>
 
-      <LineChart datasets={datasets} options={options} height={450} />
+      <LineChart key={chartKey} datasets={datasets} options={getChartOptions()} height={450} />
     </div>
   );
 }
