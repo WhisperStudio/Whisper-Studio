@@ -65,7 +65,7 @@ const NavItem = styled.a`
     content:"";
     position:absolute;
     left:0; bottom:0;
-    width:100%; height:2px;      /* <- you said a bit thinner */
+    width:100%; height:2px;
     background: white;
     transform: scaleX(0);
     transform-origin:left center;
@@ -162,7 +162,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
 
-  // Desktop hover state (single index or null)
+  // Desktop hover state
   const [activeIdx, setActiveIdx] = useState(null);
   const [leavingIdx, setLeavingIdx] = useState(null);
 
@@ -194,10 +194,11 @@ const Header = () => {
 
   const textColor = 'white';
   const items = [
-    { href: '/vote',     label: 'Vote' },
-    { href: '/about-us', label: 'About Us' },
-    { href: '/careers',  label: 'Careers' },
-    { href: '/contact',  label: 'Support' },
+    { href: '/vote',                label: 'Vote' },
+    { href: '/services/websites',   label: 'Websites' }, // <-- NEW menu item
+    { href: '/about-us',            label: 'About Us' },
+    { href: '/careers',             label: 'Careers' },
+    { href: '/contact',             label: 'Support' },
   ];
 
   const updateIndicator = (idx) => {
@@ -224,7 +225,6 @@ const Header = () => {
   const handleMouseLeave = (idx) => {
     setActiveIdx(null);
     setLeavingIdx(idx);
-    // clear after the out-animation completes
     setTimeout(() => setLeavingIdx(null), 600);
   };
 
@@ -240,18 +240,18 @@ const Header = () => {
           const className =
             (activeIdx === idx ? 'is-active ' : '') +
             (leavingIdx === idx ? 'is-leaving' : '');
-        return (
-          <NavItem
-            key={item.href}
-            href={item.href}
-            textColor={textColor}
-            className={className.trim()}
-            onMouseEnter={() => handleMouseEnter(idx)}
-            onMouseLeave={() => handleMouseLeave(idx)}
-          >
-            {item.label}
-          </NavItem>
-        );
+          return (
+            <NavItem
+              key={item.href}
+              href={item.href}
+              textColor={textColor}
+              className={className.trim()}
+              onMouseEnter={() => handleMouseEnter(idx)}
+              onMouseLeave={() => handleMouseLeave(idx)}
+            >
+              {item.label}
+            </NavItem>
+          );
         })}
       </NavMenu>
 
@@ -266,12 +266,12 @@ const Header = () => {
         </svg>
       </ScrollTopButton>
 
-      {/* HAMBURGER (mobil) */}
+      {/* HAMBURGER (mobile) */}
       <HamburgerButton onClick={toggleMenu} isOpen={menuState.isOpen} textColor={textColor}>
         <span /><span /><span />
       </HamburgerButton>
 
-      {/* MOBIL NAV */}
+      {/* MOBILE NAV */}
       <MobileNavMenu
         isOpen={menuState.isOpen}
         isVisible={menuState.isVisible}
