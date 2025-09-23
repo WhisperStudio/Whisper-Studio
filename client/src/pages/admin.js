@@ -11,14 +11,13 @@ import LiveChat from '../components/LiveChat';
 // import AIBot from '../components/AIBot';
 // import TicketDashboard from '../components/TicketDashboard';
 // import Tickets from '../components/Tickets';
-import LineChart from '../components/LineChart';
+import VisitorAnalytics from '../components/VisitorAnalytics';
 // import PieChartCard from '../components/pieChartCard';
 import ChatPieChart from '../components/ChatPieChart';
 import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart from '../components/ChatGeoChart';
-import CountryGeoChart from "../components/CountryGeoChart";
 import BugDashboard from '../components/BugDashboard';
-// import AdminManagement from '../components/AdminManagement';
+import AdminManagement from '../components/AdminManagement';
 
 import {
   FiMessageSquare,
@@ -278,21 +277,16 @@ export default function AdminPanel() {
   aiBot: <div>AI Bot - Coming Soon</div>,
   ticketDashboard: <div>Ticket Dashboard - Coming Soon</div>,
   tickets: <div>Tickets - Coming Soon</div>,
-  lineChart: (
-    <>
-      <LineChart />
-      <CountryGeoChart />
-    </>
-  ),
+  lineChart: <VisitorAnalytics />,
   pieChart: <ChatPieChart />,
   botAdmin: (
     <>
-      <ChatActivityChart />
       <ChatGeoChart />
+      <ChatActivityChart />
     </>
   ),
   bugDashboard: <BugDashboard />,
-  adminManagement: <div>Admin Management - Coming Soon</div>
+  adminManagement: <AdminManagement />
 };
 
   return (
