@@ -25,7 +25,8 @@ import WebDevPromoPage from './pages/WebDevPromoPage';
 import Header from './components/header';
 import Cursor from './components/Cursor';
 import ProtectedRoute from './components/ProtectedRoute';
-import ChatBot from './components/ChatBot';
+// import ChatBot from './components/ChatBot'; // Old chatbot
+import EnhancedChatBot from './components/EnhancedChatBot'; // New enhanced chatbot
 import BugReportButton from './components/BugReportButton';
 
 // Wrapper with Header
@@ -33,7 +34,7 @@ const MainLayout = ({ children }) => (
   <>
     <Header />
     {children}
-    <ChatBot />
+    <EnhancedChatBot />
     <BugReportButton />
   </>
 );
