@@ -16,9 +16,9 @@ import BugDashboard from '../components/BugDashboard';
 import AdminManagement from '../components/AdminManagement';
 import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard';
 import { 
-  ServerStatus, DatabaseManager, SecurityCenter, SystemLogs,
-  UserManagement, SystemSettings, AdvancedAnalytics, PerformanceMetrics,
-  AIBotConfig, TicketDashboard, TicketsView 
+  ServerStatus, DatabaseManager, SecurityCenter,
+  UserManagement, SystemSettings, AdvancedAnalytics,
+  AIBotConfig, TicketsView 
 } from '../components/AdminComponents';
 
 import {
@@ -129,8 +129,8 @@ const float = keyframes`
 const Page = styled.div`
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-  color: #E0E0E0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  color: #f8fafc;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   overflow: hidden;
@@ -143,25 +143,28 @@ const Page = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.03" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,133.3C960,128,1056,96,1152,96C1248,96,1344,128,1392,144L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
-    background-size: cover;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.05) 0%, transparent 50%);
     pointer-events: none;
   }
 `;
 
 const Sidebar = styled.nav`
-  width: 280px;
+  width: 300px;
   margin-top: 80px;
-  background: rgba(15, 12, 41, 0.95);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2rem 0;
   box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
   z-index: 10;
-  animation: ${slideIn} 0.5s ease;
+  animation: ${slideIn} 0.6s ease;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
   
   @media (max-width: 1024px) {
     width: 80px;
@@ -173,11 +176,24 @@ const Sections = styled.div`
 `;
 
 const SectionTitle = styled.h4`
-  margin: 1rem 0 0.5rem;
-  font-size: 0.9rem;
-  color: #bbb;
+  margin: 2rem 1.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(148, 163, 184, 0.8);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 24px;
+    height: 2px;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    border-radius: 1px;
+  }
 `;
 
 const NavList = styled.ul`
@@ -191,59 +207,71 @@ const NavItem = styled.li`
 `;
 
 const NavButton = styled.button`
-  width: 100%;
+  width: calc(100% - 1rem);
+  margin: 0 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  background: ${({ active }) => (active ? 'rgba(99, 102, 241, 0.1)' : 'transparent')};
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  background: ${({ active }) => (active ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)' : 'transparent')};
   color: ${({ active }) => (active ? '#fff' : 'rgba(255, 255, 255, 0.7)')};
-  border: none;
-  border-left: 3px solid ${({ active }) => (active ? '#6366f1' : 'transparent')};
+  border: 1px solid ${({ active }) => (active ? 'rgba(99, 102, 241, 0.3)' : 'transparent')};
+  border-radius: 12px;
   cursor: pointer !important;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.925rem;
+  font-weight: ${({ active }) => (active ? '600' : '500')};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+  }
 
   &:hover {
-    background: rgba(99, 102, 241, 0.05);
+    background: ${({ active }) => (active ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)' : 'rgba(99, 102, 241, 0.08)')};
     color: #fff;
-    transform: translateX(8px);
-    padding-left: 2rem;
+    transform: translateX(4px);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+    
+    &::before {
+      left: 100%;
+    }
   }
   
   svg {
-    font-size: 20px;
-    color: ${({ active }) => (active ? '#6366f1' : 'inherit')};
-    animation: ${({ active }) => (active ? pulse : 'none')} 2s infinite;
+    font-size: 18px;
+    color: ${({ active }) => (active ? '#60a5fa' : 'inherit')};
+    transition: all 0.3s;
   }
   
   ${({ active }) => active && css`
-    &::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 60%;
-      background: #6366f1;
-      border-radius: 2px;
-      animation: ${glow} 2s infinite;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+    
+    svg {
+      animation: ${pulse} 2s infinite;
     }
   `}
   
   @media (max-width: 1024px) {
     padding: 1rem;
     justify-content: center;
+    width: calc(100% - 1rem);
     
     span {
       display: none;
     }
     
     &:hover {
-      padding-left: 1rem;
+      transform: translateX(0);
     }
   }
 `;
@@ -259,44 +287,79 @@ const Highlight = styled.div`
 `;
 
 const LogoutButton = styled.button`
-  margin-top: auto;
-  margin: 2rem 1rem;
-  background: linear-gradient(135deg, #ff4d4d 0%, #d93636 100%);
+  margin: 2rem 1rem 1rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 1.5rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   cursor: pointer !important;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: all 0.3s;
+  font-size: 0.925rem;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
 
   &:hover { 
-    background: linear-gradient(135deg, #d93636 0%, #ff4d4d 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 77, 77, 0.4);
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
+    
+    &::before {
+      left: 100%;
+    }
   }
   
   &:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
   }
 `;
 
 const Content = styled.main`
   flex: 1;
   margin-top: 80px;
-  padding: 2rem;
+  padding: 2.5rem;
   position: relative;
   overflow: auto;
-  animation: ${fadeIn} 0.5s ease;
+  animation: ${fadeIn} 0.6s ease;
+  background: rgba(255, 255, 255, 0.01);
   
   @media (max-width: 768px) {
-    padding: 1rem;
+    padding: 1.5rem;
+  }
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   }
 `;
 
@@ -428,22 +491,18 @@ export default function AdminPanel() {
     ]},
     { section: "💬 Communication", items: [
       { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare /> },
-      { key: "liveChat", label: "Live Chat", icon: <BsChatDots /> },
       { key: "aiBot", label: "AI Assistant", icon: <BsRobot /> },
-      { key: "ticketDashboard", label: "Ticket Dashboard", icon: <FiFileText /> },
-      { key: "tickets", label: "Support Tickets", icon: <FiUsers /> }
+      { key: "tickets", label: "Support Tickets", icon: <FiFileText /> }
     ]},
     { section: "📊 Statistics", items: [
       { key: "lineChart", label: "Analytics & Map", icon: <FiBarChart2 /> },
       { key: "pieChart", label: "Pie Chart", icon: <FiPieChart /> },
-      { key: "botAdmin", label: "Activity Charts", icon: <BsGraphUp /> },
-      { key: "performance", label: "Performance", icon: <BsLightning /> }
+      { key: "botAdmin", label: "Activity Charts", icon: <BsGraphUp /> }
     ]},
     { section: "🛠️ System", items: [
       { key: "server", label: "Server Status", icon: <FiServer /> },
       { key: "database", label: "Database", icon: <FiDatabase /> },
-      { key: "security", label: "Security", icon: <BsShieldCheck /> },
-      { key: "logs", label: "System Logs", icon: <FiActivity /> }
+      { key: "security", label: "Security", icon: <BsShieldCheck /> }
     ]},
     { section: "⚙️ Management", items: [
       { key: "bugDashboard", label: "Bug Reports", icon: <FiAlertTriangle /> },
@@ -458,9 +517,7 @@ export default function AdminPanel() {
     realtime: <RealtimeMonitor />,
     analytics: <AdvancedAnalytics />,
     chat: <ChatDashboard />,
-    liveChat: <LiveChat />,
     aiBot: <AIBotConfig />,
-    ticketDashboard: <TicketDashboard />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,
     pieChart: <ChatPieChart />,
@@ -470,11 +527,9 @@ export default function AdminPanel() {
         <ChatActivityChart />
       </>
     ),
-    performance: <PerformanceMetrics />,
     server: <ServerStatus />,
     database: <DatabaseManager />,
     security: <SecurityCenter />,
-    logs: <SystemLogs />,
     bugDashboard: <BugDashboard />,
     adminManagement: <AdminManagement />,
     userManagement: <UserManagement />,
@@ -503,7 +558,7 @@ export default function AdminPanel() {
                         active={active === it.key}
                         onClick={() => handleNavClick(it.key, globalIdx)}
                       >
-                        {it.icon}{it.label}
+                        {it.icon}<span>{it.label}</span>
                       </NavButton>
                     </NavItem>
                   );

@@ -200,11 +200,16 @@ export default function VisitorAnalytics() {
     {
       label: "Visitors",
       data: points,
-      borderColor: "#00ddff",
-      backgroundColor: "rgba(0,221,255,0.2)",
+      borderColor: "rgba(168, 85, 247, 1)",
+      backgroundColor: "rgba(168, 85, 247, 0.1)",
       fill: true,
-      tension: 0.3,
-      pointRadius: 4,
+      tension: 0.4,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      pointBackgroundColor: "rgba(168, 85, 247, 1)",
+      pointBorderColor: "rgba(255, 255, 255, 0.8)",
+      pointBorderWidth: 2,
+      borderWidth: 3,
       parsing: false,
       spanGaps: true,
       normalized: true,
@@ -224,13 +229,20 @@ export default function VisitorAnalytics() {
         title: {
           display: true,
           text: `Website Visitors • ${RANGES.find((r) => r.value === range).label}`,
-          color: "#cfefff",
-          font: { size: 16, weight: 'bold' }
+          color: "#fff",
+          font: { size: 20, weight: '700', family: 'Inter' },
+          padding: { bottom: 20 }
         },
         tooltip: {
-          titleColor: "#000",
-          bodyColor: "#000",
-          backgroundColor: "#cfefff",
+          backgroundColor: "rgba(15, 23, 42, 0.95)",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "rgba(168, 85, 247, 0.3)",
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 12,
+          titleFont: { size: 14, weight: '600' },
+          bodyFont: { size: 13 },
           callbacks: {
             title: ([pt]) => {
               if (isYear) return format(pt.parsed.x, "MMM yyyy");
@@ -254,174 +266,195 @@ export default function VisitorAnalytics() {
           max: currentTime,
           bounds: "data",
           ticks: { 
-            color: "#99e6ff",
-            maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12
+            color: "rgba(255, 255, 255, 0.7)",
+            maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12,
+            font: { size: 12, weight: '500' }
           },
-          grid: { color: "rgba(0,85,170,0.1)" },
+          grid: { 
+            color: "rgba(255, 255, 255, 0.05)",
+            borderColor: "rgba(255, 255, 255, 0.1)"
+          },
           title: {
             display: true,
             text: isYear ? "Month" : isWeek ? "Date" : isDay ? "Hour" : "Time",
-            color: "#cfefff",
+            color: "rgba(255, 255, 255, 0.8)",
+            font: { size: 14, weight: '600' }
           },
         },
         y: {
           beginAtZero: true,
-          ticks: { color: "#99e6ff" },
-          grid: { color: "rgba(0,85,170,0.1)" },
-          title: { display: true, text: "Visitors", color: "#cfefff" },
+          ticks: { 
+            color: "rgba(255, 255, 255, 0.7)",
+            font: { size: 12, weight: '500' }
+          },
+          grid: { 
+            color: "rgba(255, 255, 255, 0.05)",
+            borderColor: "rgba(255, 255, 255, 0.1)"
+          },
+          title: { 
+            display: true, 
+            text: "Visitors", 
+            color: "rgba(255, 255, 255, 0.8)",
+            font: { size: 14, weight: '600' }
+          },
         },
       },
     };
   };
 
-  // GeoChart options
+  // GeoChart options (hex colors only to avoid invalid color errors)
   const geoOptions = {
     displayMode: 'regions',
     resolution: 'countries',
-    backgroundColor: '#0a0f1a',
-    datalessRegionColor: '#1a2130',
-    defaultColor: '#8D7FB3',
-    colorAxis: { colors: ['#ebeaec','#63548C','#934397'] },
+    backgroundColor: 'transparent',
+    datalessRegionColor: '#1f2937',
+    defaultColor: '#374151',
+    colorAxis: { 
+      colors: ['#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'],
+      minValue: 0
+    },
     legend: 'none',
-    tooltip: { textStyle: { color: '#000' }, backgroundColor: '#e0ffff' },
+    tooltip: { 
+      textStyle: { color: '#ffffff', fontSize: 12 }, 
+      backgroundColor: '#0f172a'
+    }
   };
 
   const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 16,
-    },
-    topSection: {
-      display: 'flex',
-      gap: 16,
-      background: '#0a0f1a',
-      borderRadius: 8,
-      padding: 16,
-      color: '#cfefff',
-      boxShadow: '0 0 16px rgba(0,85,170,0.5)',
-    },
-    mapWrapper: {
-      flex: 6,
-      border: '1px solid #003366',
-      borderRadius: 4,
+    card: {
+      background: 'rgba(255, 255, 255, 0.03)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 24,
+      padding: 32,
+      margin: '24px',
+      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+      color: '#fff',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative',
       overflow: 'hidden',
-      height: 600,
+      animation: 'fadeIn 0.6s ease'
     },
-    chartCard: {
-      maxWidth: 1600,
-      margin: "0 auto",
-      padding: 16,
-      background: "#0a0f1a",
-      border: "1px solid #003366",
-      borderRadius: 8,
-      boxShadow: "0 0 16px rgba(0,85,170,0.5)",
-      color: "#cfefff",
-    },
-    toolbar: { 
-      textAlign: "center", 
-      marginBottom: 24,
+    toolbar: {
       display: 'flex',
       justifyContent: 'center',
-      gap: 8,
+      gap: 12,
+      marginBottom: 32,
       flexWrap: 'wrap'
     },
     button: (selected) => ({
-      padding: "8px 16px",
-      background: selected ? "#00ddff" : "#2d3a6a",
-      color: selected ? "#000" : "#fff",
-      border: selected ? "1px solid #00ddff" : "1px solid #003366",
-      borderRadius: 6,
-      cursor: "pointer",
-      fontSize: 12,
-      fontWeight: selected ? 'bold' : 'normal',
-      transition: 'all 0.3s ease',
-      minWidth: 80,
+      padding: '12px 24px',
+      background: selected ? 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)' : 'rgba(255, 255, 255, 0.05)',
+      color: selected ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+      border: selected ? '1px solid transparent' : '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: 16,
+      cursor: 'pointer',
+      fontSize: 14,
+      fontWeight: selected ? '600' : '500',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: selected ? '0 8px 24px rgba(168, 85, 247, 0.3)' : 'none'
     }),
-    sidebar: {
-      flex: 1,
-      background: '#0f1b2a',
-      borderRadius: 8,
-      padding: 16,
+    mapGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) 320px',
+      gap: 24,
+      alignItems: 'stretch'
+    },
+    mapLeft: {
+      height: 520,
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 16,
+      overflow: 'hidden',
+      background: 'rgba(255, 255, 255, 0.02)'
+    },
+    overlay: undefined,
+    mapRight: {
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between',
-      minWidth: 200,
-      maxWidth: 250,
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRadius: 16,
+      padding: 16,
+      gap: 12,
+      maxHeight: 520,
+      overflowY: 'auto'
     },
-    title: { 
-      fontSize: 18, 
-      color: '#00ddff', 
-      marginBottom: 16, 
-      textShadow: '1px 1px 2px #000',
+    title: {
+      fontSize: 20,
+      fontWeight: 700,
+      background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      margin: 0,
       textAlign: 'center'
     },
-    list: { 
-      listStyle: 'none', 
-      padding: 0, 
-      margin: 0, 
-      flex: 1 
+    list: {
+      listStyle: 'none',
+      padding: 0,
+      margin: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8
     },
-    listItem: { 
-      display: 'flex', 
-      justifyContent: 'space-between', 
-      padding: '8px 0', 
-      borderBottom: '1px solid #002244' 
+    listItem: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 14px',
+      background: 'rgba(255, 255, 255, 0.03)',
+      borderRadius: 12,
+      border: '1px solid rgba(255, 255, 255, 0.05)'
     },
-    countryCode: { 
-      fontWeight: 'bold', 
-      color: '#00aaff' 
+    countryCode: { fontWeight: 600, color: '#fff', fontSize: 14 },
+    count: {
+      color: 'rgba(255, 255, 255, 0.85)',
+      fontSize: 13,
+      fontWeight: 600,
+      background: 'rgba(168, 85, 247, 0.15)',
+      padding: '4px 10px',
+      borderRadius: 10,
+      border: '1px solid rgba(168, 85, 247, 0.35)'
     },
-    count: { 
-      color: '#99e6ff' 
-    },
-    total: { 
-      marginTop: 16, 
-      paddingTop: 16, 
-      borderTop: '2px solid #003366', 
-      textAlign: 'center', 
-      fontSize: 20, 
-      color: '#00ddff',
-      fontWeight: 'bold'
-    },
+    total: {
+      marginTop: 8,
+      textAlign: 'center',
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.8)'
+    }
   };
 
   return (
-    <div style={styles.container}>
-      {/* Top section with map and sidebar like CountryGeoChart */}
-      <div style={styles.topSection}>
-        <div style={styles.mapWrapper}>
-          <Chart
-            chartType="GeoChart"
-            width="100%"
-            height="100%"
-            data={mapData}
-            options={geoOptions}
-          />
-        </div>
-
-        <div style={styles.sidebar}>
-          <div>
-            <h2 style={styles.title}>Top 10 Countries</h2>
+    <>
+      {/* Map card */}
+      <div style={styles.card}>
+        <div style={styles.mapGrid}>
+          <div style={styles.mapLeft}>
+            <Chart
+              chartType="GeoChart"
+              width="100%"
+              height="100%"
+              data={mapData}
+              options={geoOptions}
+            />
+          </div>
+          <div style={styles.mapRight}>
+            <h3 style={styles.title}>Top 10 Countries</h3>
             <ol style={styles.list}>
               {countryStats.map(([country, count], index) => (
                 <li key={country} style={styles.listItem}>
-                  <span style={styles.countryCode}>
-                    {index + 1}. {country}
-                  </span>
+                  <span style={styles.countryCode}>{index + 1}. {country}</span>
                   <span style={styles.count}>{count}</span>
                 </li>
               ))}
             </ol>
-          </div>
-          <div style={styles.total}>
-            Total Visitors: {totalVisitors.toLocaleString()}
+            <div style={styles.total}>Total Visitors: {totalVisitors.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
-      {/* Bottom section with chart like ChatActivityChart */}
-      <div style={styles.chartCard}>
+      {/* Time range line chart card (matches ChatActivityChart styling) */}
+      <div style={styles.card}>
         <div style={styles.toolbar}>
           {RANGES.map((r) => (
             <button
@@ -430,12 +463,16 @@ export default function VisitorAnalytics() {
               style={styles.button(r.value === range)}
               onMouseEnter={(e) => {
                 if (r.value !== range) {
-                  e.target.style.background = '#4a5a8a';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(96, 165, 250, 0.2)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (r.value !== range) {
-                  e.target.style.background = '#2d3a6a';
+                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
                 }
               }}
             >
@@ -446,6 +483,6 @@ export default function VisitorAnalytics() {
 
         <LineChart key={chartKey} datasets={datasets} options={getChartOptions()} height={450} />
       </div>
-    </div>
+    </>
   );
 }

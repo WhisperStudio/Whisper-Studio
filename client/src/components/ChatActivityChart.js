@@ -153,11 +153,16 @@ export default function ChatActivityChart() {
     {
       label: "Messages",
       data: points, // [{x: Date, y: number}]
-      borderColor: "#00ddff",
-      backgroundColor: "rgba(0,221,255,0.2)",
+      borderColor: "rgba(168, 85, 247, 1)",
+      backgroundColor: "rgba(168, 85, 247, 0.1)",
       fill: true,
-      tension: 0.3,
-      pointRadius: 4,
+      tension: 0.4,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      pointBackgroundColor: "rgba(168, 85, 247, 1)",
+      pointBorderColor: "rgba(255, 255, 255, 0.8)",
+      pointBorderWidth: 2,
+      borderWidth: 3,
       parsing: false,     // vi gir {x,y}
       spanGaps: true,
       normalized: true,
@@ -176,20 +181,28 @@ export default function ChatActivityChart() {
         legend: { display: false },
         title: {
           display: true,
-          text: RANGES.find((r) => r.value === range).label,
-          color: "#cfefff",
+          text: `Chat Activity • ${RANGES.find((r) => r.value === range).label}`,
+          color: "#fff",
+          font: { size: 20, weight: '700', family: 'Inter' },
+          padding: { bottom: 20 }
         },
         tooltip: {
-          titleColor: "#000",
-          bodyColor: "#000",
-          backgroundColor: "#cfefff",
+          backgroundColor: "rgba(15, 23, 42, 0.95)",
+          titleColor: "#fff",
+          bodyColor: "#fff",
+          borderColor: "rgba(168, 85, 247, 0.3)",
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 12,
+          titleFont: { size: 14, weight: '600' },
+          bodyFont: { size: 13 },
           callbacks: {
             title: ([pt]) => {
               if (isYear) return format(pt.parsed.x, "MMM yyyy");
               if (isWeek) return format(pt.parsed.x, "MMM d, HH:mm");
               return format(pt.parsed.x, "PPpp");
             },
-            label: (ctx) => `Count: ${ctx.parsed.y}`,
+            label: (ctx) => `Messages: ${ctx.parsed.y}`,
           },
         },
       },
@@ -201,47 +214,77 @@ export default function ChatActivityChart() {
           max: currentTime,
           bounds: "data",
           ticks: { 
-            color: "#99e6ff",
-            maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12
+            color: "rgba(255, 255, 255, 0.7)",
+            maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12,
+            font: { size: 12, weight: '500' }
           },
-          grid: { color: "rgba(0,85,170,0.1)" },
+          grid: { 
+            color: "rgba(255, 255, 255, 0.05)",
+            borderColor: "rgba(255, 255, 255, 0.1)"
+          },
           title: {
             display: true,
             text: isYear ? "Month" : isWeek ? "Date" : isDay ? "Hour" : "Time",
-            color: "#cfefff",
+            color: "rgba(255, 255, 255, 0.8)",
+            font: { size: 14, weight: '600' }
           },
         },
         y: {
           beginAtZero: true,
-          ticks: { color: "#99e6ff" },
-          grid: { color: "rgba(0,85,170,0.1)" },
-          title: { display: true, text: "Count", color: "#cfefff" },
+          ticks: { 
+            color: "rgba(255, 255, 255, 0.7)",
+            font: { size: 12, weight: '500' }
+          },
+          grid: { 
+            color: "rgba(255, 255, 255, 0.05)",
+            borderColor: "rgba(255, 255, 255, 0.1)"
+          },
+          title: { 
+            display: true, 
+            text: "Messages", 
+            color: "rgba(255, 255, 255, 0.8)",
+            font: { size: 14, weight: '600' }
+          },
         },
       },
     };
   };
 
-  // 7) Enkel UI
+  // 7) Moderne UI
   const styles = {
     card: {
-      maxWidth: 1600,
-      margin: "16px auto 0 auto",
-      padding: 16,
-      background: "#0a0f1a",
-      border: "1px solid #003366",
-      borderRadius: 8,
-      boxShadow: "0 0 16px rgba(0,85,170,0.5)",
-      color: "#cfefff",
+      background: "rgba(255, 255, 255, 0.03)",
+      backdropFilter: 'blur(20px)',
+      border: "1px solid rgba(255, 255, 255, 0.08)",
+      borderRadius: 24,
+      padding: 32,
+      margin: "24px",
+      boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+      color: "#fff",
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative',
+      overflow: 'hidden',
+      animation: 'fadeIn 0.6s ease',
     },
-    toolbar: { textAlign: "center", marginBottom: 24 },
+    toolbar: { 
+      display: 'flex',
+      justifyContent: 'center',
+      gap: 12,
+      marginBottom: 32,
+      flexWrap: 'wrap'
+    },
     button: (selected) => ({
-      margin: "0 8px",
-      padding: "8px 16px",
-      background: selected ? "white" : "#2d3a6a",
-      color: selected ? "#000" : "#fff",
-      border: "none",
-      borderRadius: 4,
+      padding: "12px 24px",
+      background: selected ? 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)' : 'rgba(255, 255, 255, 0.05)',
+      color: selected ? "#fff" : "rgba(255, 255, 255, 0.7)",
+      border: selected ? "1px solid transparent" : "1px solid rgba(255, 255, 255, 0.1)",
+      borderRadius: 16,
       cursor: "pointer",
+      fontSize: 14,
+      fontWeight: selected ? '600' : '500',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: selected ? '0 8px 24px rgba(168, 85, 247, 0.3)' : 'none',
     }),
   };
 
@@ -253,6 +296,20 @@ export default function ChatActivityChart() {
             key={r.value}
             onClick={() => setRange(r.value)}
             style={styles.button(r.value === range)}
+            onMouseEnter={(e) => {
+              if (r.value !== range) {
+                e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 4px 12px rgba(168, 85, 247, 0.2)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (r.value !== range) {
+                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }
+            }}
           >
             {r.label}
           </button>

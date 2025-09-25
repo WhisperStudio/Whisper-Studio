@@ -1,8 +1,8 @@
 // src/components/ChatDashboard.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
-import { FiLock, FiTrash2, FiMessageCircle, FiUser, FiX } from 'react-icons/fi';
-import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc } from '../firebase';
+import { FiLock, FiUnlock, FiTrash2, FiMessageCircle, FiUser, FiX } from 'react-icons/fi';
+import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
 import { auth } from '../firebase';
 
 
@@ -64,13 +64,26 @@ const MessageBubble = styled.div`
   padding: 12px 16px;
   margin: 4px 0;
   border-radius: 12px;
-  background: ${({ isUser }) => (isUser ? "#1a2332" : "#00ddff")};
-  color: ${({ isUser }) => (isUser ? "#cfefff" : "#000")};
-  align-self: ${({ isUser }) => (isUser ? "flex-end" : "flex-start")};
   max-width: 75%;
-  border: 1px solid ${({ isUser }) => (isUser ? "#003366" : "#00ddff")};
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   word-wrap: break-word;
+  align-self: ${({ variant }) => (variant === 'user' ? 'flex-end' : 'flex-start')};
+  background: ${({ variant }) => (
+    variant === 'user' ? '#1a2332' :
+    variant === 'admin' ? 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)' :
+    variant === 'bot' ? 'rgba(168, 85, 247, 0.15)' :
+    'rgba(148, 163, 184, 0.15)'
+  )};
+  color: ${({ variant }) => (
+    variant === 'admin' ? '#fff' :
+    '#cfefff'
+  )};
+  border: 1px solid ${({ variant }) => (
+    variant === 'user' ? '#003366' :
+    variant === 'admin' ? 'rgba(99, 102, 241, 0.4)' :
+    variant === 'bot' ? 'rgba(168, 85, 247, 0.35)' :
+    'rgba(148, 163, 184, 0.25)'
+  )};
 `;
 
 const MessageItem = styled.div`
@@ -129,6 +142,16 @@ const CardTitle = styled.h2`
   font-size: 18px;
 `;
 
+const StatusBadge = styled.span`
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: ${({ active }) => active ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.15)'};
+  border: 1px solid ${({ active }) => active ? 'rgba(34, 197, 94, 0.35)' : 'rgba(99, 102, 241, 0.3)'};
+  color: ${({ active }) => active ? '#34d399' : '#a78bfa'};
+`;
+
 // Funksjon for å signalisere at admin skriver
 const setAdminTyping = async (typing) => {
   try {
@@ -149,6 +172,10 @@ const ChatDashboard = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [selectedChatInfo, setSelectedChatInfo] = useState(null); // chat doc data (e.g., takenOver)
+  const messagesUnsubRef = useRef(null);
+  const chatInfoUnsubRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Load conversations from Firebase
   useEffect(() => {
@@ -197,9 +224,11 @@ const ChatDashboard = () => {
             if (!userChats[userId]) {
               userChats[userId] = [];
             }
+            const sender = data.sender;
+            const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
             userChats[userId].push({
               id: doc.id,
-              from: data.sender === 'user' ? 'user' : (data.sender === 'admin' ? 'admin' : 'bot'),
+              from: mappedFrom,
               text: data.text,
               timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
               userId: userId,
@@ -232,9 +261,11 @@ const ChatDashboard = () => {
                 const userMessages = [];
                 userMessagesSnapshot.forEach(doc => {
                   const data = doc.data();
+                  const sender = data.sender;
+                  const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
                   userMessages.push({
                     id: doc.id,
-                    from: data.sender === 'user' ? 'user' : (data.sender === 'admin' ? 'admin' : 'bot'),
+                    from: mappedFrom,
                     text: data.text,
                     timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
                     userId: userId,
@@ -319,48 +350,72 @@ const ChatDashboard = () => {
     };
   }, []);
 
-  const onSelect = (userId) => {
+  // Cleanup listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (messagesUnsubRef.current) messagesUnsubRef.current();
+      if (chatInfoUnsubRef.current) chatInfoUnsubRef.current();
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
+
+  const onSelect = async (userId) => {
     setSelected(userId);
-    
-    // Auto-refresh messages for selected conversation
-    if (userId) {
-      const refreshSelectedConversation = async () => {
-        try {
-          const messagesRef = collection(db, 'chats', userId, 'messages');
-          const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
-          const messagesSnapshot = await getDocs(messagesQuery);
-          
-          const messages = [];
-          messagesSnapshot.forEach((doc) => {
-            const data = doc.data();
-            messages.push({
-              id: doc.id,
-              from: data.sender === 'user' ? 'user' : 'admin',
-              text: data.text,
-              timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
-              userId: userId,
-              senderEmail: data.senderEmail
-            });
-          });
-          
-          setConversations(prev => ({
-            ...prev,
-            [userId]: messages
-          }));
-        } catch (error) {
-          console.error('Error refreshing conversation:', error);
-        }
-      };
-      
-      // Refresh immediately and then every 5 seconds
-      refreshSelectedConversation();
-      const messageInterval = setInterval(refreshSelectedConversation, 5000);
-      
-      // Store interval to clear it later
-      if (window.selectedConversationInterval) {
-        clearInterval(window.selectedConversationInterval);
+
+    // Unsubscribe previous listeners
+    if (messagesUnsubRef.current) {
+      messagesUnsubRef.current();
+      messagesUnsubRef.current = null;
+    }
+    if (chatInfoUnsubRef.current) {
+      chatInfoUnsubRef.current();
+      chatInfoUnsubRef.current = null;
+    }
+
+    if (!userId) return;
+
+    // Live messages subscription
+    try {
+      const messagesRef = collection(db, 'chats', userId, 'messages');
+      const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+      messagesUnsubRef.current = onSnapshot(messagesQuery, (snapshot) => {
+        const messages = snapshot.docs.map((d) => {
+          const data = d.data();
+          const sender = data.sender;
+          const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
+          return {
+            id: d.id,
+            from: mappedFrom,
+            text: data.text,
+            timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+            userId,
+            senderEmail: data.senderEmail
+          };
+        });
+        setConversations((prev) => ({ ...prev, [userId]: messages }));
+      });
+    } catch (err) {
+      console.error('onSelect: error subscribing to messages', err);
+    }
+
+    // Chat doc subscription (for takeover status)
+    try {
+      const chatRef = doc(db, 'chats', userId);
+      chatInfoUnsubRef.current = onSnapshot(chatRef, (snap) => {
+        setSelectedChatInfo(snap.exists() ? snap.data() : null);
+      });
+
+      // Ensure chat doc exists
+      const chatSnap = await getDoc(chatRef);
+      if (!chatSnap.exists()) {
+        await setDoc(chatRef, {
+          createdAt: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+          takenOver: false
+        }, { merge: true });
       }
-      window.selectedConversationInterval = messageInterval;
+    } catch (err) {
+      console.error('onSelect: error subscribing to chat doc', err);
     }
   };
 
@@ -383,6 +438,12 @@ const ChatDashboard = () => {
       
       const messagesRef = collection(db, 'chats', selected, 'messages');
       await addDoc(messagesRef, messageData);
+      // Update chat doc lastUpdated
+      try {
+        await updateDoc(doc(db, 'chats', selected), {
+          lastUpdated: serverTimestamp()
+        });
+      } catch (_) {}
       
       // Update local state
       const newMessage = {
@@ -403,6 +464,69 @@ const ChatDashboard = () => {
       console.error('Error sending message:', error);
     } finally {
       setSending(false);
+    }
+  };
+
+  // Add a system message into the conversation (visible to user)
+  const addSystemMessage = async (userId, text) => {
+    try {
+      const messagesRef = collection(db, 'chats', userId, 'messages');
+      await addDoc(messagesRef, {
+        text,
+        sender: 'system',
+        timestamp: serverTimestamp(),
+        userId
+      });
+    } catch (err) {
+      console.error('addSystemMessage error:', err);
+    }
+  };
+
+  const takeOverChat = async () => {
+    if (!selected) return;
+    try {
+      const chatRef = doc(db, 'chats', selected);
+      await setDoc(chatRef, {
+        takenOver: true,
+        takenOverByEmail: auth.currentUser?.email || 'admin',
+        takenOverByUid: auth.currentUser?.uid || 'admin',
+        takenOverAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+      await addSystemMessage(selected, `A support agent has taken over the conversation.`);
+      // Optional: notify bot backend to stop replying
+      try {
+        await fetch('https://api.vintrastudio.com/api/admin/takeover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: selected, takeover: true, admin: auth.currentUser?.email })
+        });
+      } catch (_) {}
+    } catch (err) {
+      console.error('takeOverChat error:', err);
+    }
+  };
+
+  const releaseChat = async () => {
+    if (!selected) return;
+    try {
+      const chatRef = doc(db, 'chats', selected);
+      await setDoc(chatRef, {
+        takenOver: false,
+        releasedAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      }, { merge: true });
+      await addSystemMessage(selected, `The conversation has been returned to the AI assistant.`);
+      // Optional: notify bot backend to resume
+      try {
+        await fetch('https://api.vintrastudio.com/api/admin/takeover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: selected, takeover: false, admin: auth.currentUser?.email })
+        });
+      } catch (_) {}
+    } catch (err) {
+      console.error('releaseChat error:', err);
     }
   };
 
@@ -610,9 +734,24 @@ const ChatDashboard = () => {
                   </button>
                 </div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <StatusBadge active={selectedChatInfo?.takenOver}>
+                  {selectedChatInfo?.takenOver ? `Taken over by ${selectedChatInfo?.takenOverByEmail || 'admin'}` : 'AI Assistant Active'}
+                </StatusBadge>
+                {!selectedChatInfo?.takenOver ? (
+                  <ActionButton bgColor="#7c3aed" onClick={takeOverChat} title="Take over this chat">
+                    <FiLock style={{ marginRight: 6 }} /> Take Over
+                  </ActionButton>
+                ) : (
+                  <ActionButton bgColor="#0ea5e9" onClick={releaseChat} title="Release back to AI">
+                    <FiUnlock style={{ marginRight: 6 }} /> Release to AI
+                  </ActionButton>
+                )}
+              </div>
+
               <MessagesContainer>
                 {conversations[selected].map((msg, index) => (
-                  <MessageBubble key={index} isUser={msg.from === 'user'}>
+                  <MessageBubble key={index} variant={msg.from}>
                     {msg.text}
                   </MessageBubble>
                 ))}
@@ -621,7 +760,15 @@ const ChatDashboard = () => {
                 rows="3"
                 placeholder="Write a reply..."
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // typing indicator with debounce
+                  try { setAdminTyping(true); } catch { /* ignore */ }
+                  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                  typingTimeoutRef.current = setTimeout(() => {
+                    try { setAdminTyping(false); } catch { /* ignore */ }
+                  }, 1500);
+                }}
                 onKeyPress={handleKeyPress}
               />
               <ActionButtons>

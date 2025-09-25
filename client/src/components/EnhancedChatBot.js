@@ -12,15 +12,15 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
+  updateDoc
 } from '../firebase';
 import axios from 'axios';
+import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle, FiLifeBuoy, FiAlertCircle, FiUser } from 'react-icons/fi';
+import { BsRobot, BsTranslate, BsChatDots, BsStars, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
-import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle } from 'react-icons/fi';
-import { BsRobot, BsTranslate, BsChatDots, BsStars } from 'react-icons/bs';
-import { IoSparkles } from 'react-icons/io5';
-
-// Theme definitions
+import { IoSparkles, IoPulse, IoAnalytics } from 'react-icons/io5';
+import TicketSystem from './TicketSystem';
 const themes = {
   light: {
     primary: '#6366f1',
@@ -505,6 +505,180 @@ const EmojiPickerContainer = styled.div`
   z-index: 1000;
 `;
 
+// Ticket Form Container
+const TicketFormContainer = styled(motion.div)`
+  position: absolute;
+  bottom: 60px;
+  right: 10px;
+  width: 350px;
+  background: ${props => props.theme.background};
+  border-radius: 15px;
+  box-shadow: 0 20px 60px ${props => props.theme.shadow};
+  border: 1px solid ${props => props.theme.border};
+  z-index: 1000;
+  overflow: hidden;
+`;
+
+const TicketFormHeader = styled.div`
+  background: ${props => props.theme.gradient};
+  padding: 15px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const TicketFormTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const TicketFormBody = styled.div`
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const FormLabel = styled.label`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${props => props.theme.text};
+`;
+
+const FormInput = styled.input`
+  padding: 10px;
+  background: ${props => props.theme.surface};
+  border: 1px solid ${props => props.theme.border};
+  border-radius: 8px;
+  color: ${props => props.theme.text};
+  font-size: 14px;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.primary};
+  }
+  
+  &::placeholder {
+    color: ${props => props.theme.textSecondary};
+  }
+`;
+
+const FormTextArea = styled.textarea`
+  padding: 10px;
+  background: ${props => props.theme.surface};
+  border: 1px solid ${props => props.theme.border};
+  border-radius: 8px;
+  color: ${props => props.theme.text};
+  font-size: 14px;
+  min-height: 80px;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.primary};
+  }
+  
+  &::placeholder {
+    color: ${props => props.theme.textSecondary};
+  }
+`;
+
+const FormSelect = styled.select`
+  padding: 10px;
+  background: ${props => props.theme.surface};
+  border: 1px solid ${props => props.theme.border};
+  border-radius: 8px;
+  color: ${props => props.theme.text};
+  font-size: 14px;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.primary};
+  }
+  
+  option {
+    background: ${props => props.theme.surface};
+  }
+`;
+
+const FormActions = styled.div`
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+`;
+
+const FormButton = styled(motion.button)`
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  
+  ${props => props.$primary ? css`
+    background: ${props => props.theme.gradient};
+    color: white;
+  ` : css`
+    background: ${props => props.theme.surface};
+    color: ${props => props.theme.textSecondary};
+    border: 1px solid ${props => props.theme.border};
+  `}
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+// Quick Action Buttons
+const QuickActions = styled.div`
+  display: flex;
+  gap: 8px;
+  padding: 10px 15px;
+  background: ${props => props.theme.surface};
+  border-top: 1px solid ${props => props.theme.border};
+  justify-content: center;
+`;
+
+const QuickActionButton = styled(motion.button)`
+  padding: 8px 12px;
+  background: ${props => props.theme.surface};
+  border: 1px solid ${props => props.theme.border};
+  border-radius: 20px;
+  color: ${props => props.theme.textSecondary};
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: ${props => props.theme.primary};
+    color: white;
+    border-color: ${props => props.theme.primary};
+  }
+`;
+
 // Component
 const EnhancedChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -514,9 +688,17 @@ const EnhancedChatBot = () => {
   const [theme, setTheme] = useState('dark');
   const [language, setLanguage] = useState('en');
   const [userId, setUserId] = useState('');
+  const [takenOver, setTakenOver] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [hasNotification, setHasNotification] = useState(false);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [ticketData, setTicketData] = useState({
+    title: '',
+    description: '',
+    category: 'general',
+    priority: 'medium'
+  });
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -559,6 +741,42 @@ const EnhancedChatBot = () => {
     setTheme(savedTheme);
     setLanguage(savedLanguage);
   }, []);
+
+  // Persist chat across refresh: subscribe to messages and chat doc
+  useEffect(() => {
+    if (!userId) return;
+
+    // Ensure chat doc exists
+    const chatRef = doc(db, 'chats', userId);
+    setDoc(chatRef, { createdAt: serverTimestamp() }, { merge: true }).catch(() => {});
+
+    // Subscribe to takeover state
+    const unsubChat = onSnapshot(chatRef, (snap) => {
+      const data = snap.data();
+      setTakenOver(!!data?.takenOver);
+    });
+
+    // Subscribe to messages
+    const msgsRef = collection(db, 'chats', userId, 'messages');
+    const msgsQ = query(msgsRef, orderBy('timestamp', 'asc'));
+    const unsubMsgs = onSnapshot(msgsQ, (snap) => {
+      const list = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          text: data.text,
+          sender: data.sender || 'bot',
+          timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+        };
+      });
+      setMessages(list);
+    });
+
+    return () => {
+      unsubChat();
+      unsubMsgs();
+    };
+  }, [userId]);
   
   // Auto-scroll to bottom
   useEffect(() => {
@@ -604,50 +822,45 @@ const EnhancedChatBot = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text) return;
+    if (!text || !userId) return;
 
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      text,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
     try {
-      // Save to Firebase
+      // Save user message to Firestore
       await addDoc(collection(db, 'chats', userId, 'messages'), {
-        ...userMessage,
+        text,
+        sender: 'user',
         timestamp: serverTimestamp(),
       });
+      // Update chat doc lastUpdated
+      try { await updateDoc(doc(db, 'chats', userId), { lastUpdated: serverTimestamp() }); } catch {}
+
+      // If a human agent has taken over, do not send bot reply
+      if (takenOver) {
+        setIsTyping(false);
+        return;
+      }
 
       // Simulate AI response (replace with actual API call)
-      setTimeout(() => {
-        const botMessage = {
-          id: Date.now() + 1,
-          text: generateResponse(text),
-          sender: 'bot',
-          timestamp: new Date(),
-        };
-        
-        setMessages(prev => [...prev, botMessage]);
+      setTimeout(async () => {
+        const reply = generateResponse(text);
+        try {
+          await addDoc(collection(db, 'chats', userId, 'messages'), {
+            text: reply,
+            sender: 'bot',
+            timestamp: serverTimestamp(),
+          });
+        } catch {}
         setIsTyping(false);
-        
-        // Save bot response
-        addDoc(collection(db, 'chats', userId, 'messages'), {
-          ...botMessage,
-          timestamp: serverTimestamp(),
-        });
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
+      // Optional: show a transient error bubble locally
       setMessages(prev => [...prev, {
-        id: Date.now() + 1,
+        id: `err_${Date.now()}`,
         text: t.error,
         sender: 'bot',
         timestamp: new Date(),
@@ -666,7 +879,10 @@ const EnhancedChatBot = () => {
       return "I can help you with information about VintraStudio and our game VOTE! What would you like to know?";
     }
     if (msg.includes('help')) {
-      return "I'm here to help! You can ask me about our services, the VOTE game, or any other questions you might have.";
+      return "I'm here to help! You can ask me about our services, the VOTE game, or any other questions you might have. If you need more detailed assistance, I can help you create a support ticket.";
+    }
+    if (msg.includes('ticket') || msg.includes('support') || msg.includes('issue') || msg.includes('problem')) {
+      return "It sounds like you might need additional support! Would you like me to help you create a support ticket? Click the ticket button below to get started.";
     }
     
     return "That's interesting! Let me help you with that. Could you provide more details?";
@@ -687,6 +903,65 @@ const EnhancedChatBot = () => {
     localStorage.setItem('chatTheme', newTheme);
   };
 
+  // Handle ticket creation
+  const handleCreateTicket = async () => {
+    if (!ticketData.title || !ticketData.description) return;
+    
+    try {
+      const ticket = {
+        ...ticketData,
+        status: 'open',
+        userId: userId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        messages: []
+      };
+      
+      await addDoc(collection(db, 'tickets'), ticket);
+      
+      // Add confirmation message to chat
+      const confirmationMessage = {
+        id: Date.now(),
+        text: `✅ Support ticket "${ticketData.title}" has been created successfully! Our team will respond soon.`,
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, confirmationMessage]);
+      
+      // Reset form
+      setTicketData({
+        title: '',
+        description: '',
+        category: 'general',
+        priority: 'medium'
+      });
+      setShowTicketForm(false);
+      
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      const errorMessage = {
+        id: Date.now(),
+        text: '❌ Sorry, there was an error creating your ticket. Please try again.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  // Handle quick ticket creation
+  const handleQuickTicket = (type) => {
+    const quickTickets = {
+      bug: { title: 'Bug Report', category: 'bug', priority: 'high' },
+      feature: { title: 'Feature Request', category: 'feature', priority: 'medium' },
+      support: { title: 'General Support', category: 'general', priority: 'medium' }
+    };
+    
+    setTicketData(prev => ({ ...prev, ...quickTickets[type] }));
+    setShowTicketForm(true);
+  };
+
   return (
     <ThemeProvider theme={currentTheme}>
       <GlobalChatStyles />
@@ -702,11 +977,11 @@ const EnhancedChatBot = () => {
               <Header>
                 <HeaderLeft>
                   <Avatar>
-                    <BsRobot />
+                    {takenOver ? <FiUser /> : <BsRobot />}
                   </Avatar>
                   <HeaderInfo>
                     <HeaderTitle>{t.title}</HeaderTitle>
-                    <HeaderStatus>{t.status}</HeaderStatus>
+                    <HeaderStatus>{takenOver ? (language === 'no' ? 'Supportmedarbeider aktiv' : 'Support Agent Active') : t.status}</HeaderStatus>
                   </HeaderInfo>
                 </HeaderLeft>
                 <HeaderActions>
@@ -732,7 +1007,7 @@ const EnhancedChatBot = () => {
                     transition={{ duration: 0.3 }}
                   >
                     <MessageAvatar $isUser={message.sender === 'user'}>
-                      {message.sender === 'user' ? '👤' : '🤖'}
+                      {message.sender === 'user' ? '👤' : (message.sender === 'admin' ? '👨‍💼' : '🤖')}
                     </MessageAvatar>
                     <MessageContent>
                       <MessageBubble $isUser={message.sender === 'user'}>
@@ -759,6 +1034,30 @@ const EnhancedChatBot = () => {
                 <div ref={messagesEndRef} />
               </MessagesContainer>
 
+              <QuickActions>
+                <QuickActionButton
+                  onClick={() => handleQuickTicket('bug')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FiAlertCircle /> Report Bug
+                </QuickActionButton>
+                <QuickActionButton
+                  onClick={() => handleQuickTicket('feature')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <IoSparkles /> Feature Request
+                </QuickActionButton>
+                <QuickActionButton
+                  onClick={() => handleQuickTicket('support')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FiLifeBuoy /> Get Support
+                </QuickActionButton>
+              </QuickActions>
+
               <InputContainer onSubmit={handleSubmit}>
                 <InputWrapper>
                   <Input
@@ -777,6 +1076,14 @@ const EnhancedChatBot = () => {
                       whileTap={{ scale: 0.9 }}
                     >
                       <FiSmile />
+                    </IconButton>
+                    <IconButton
+                      type="button"
+                      onClick={() => setShowTicketForm(!showTicketForm)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <BsTicketPerforated />
                     </IconButton>
                     <IconButton
                       type="button"
@@ -808,9 +1115,98 @@ const EnhancedChatBot = () => {
                   />
                 </EmojiPickerContainer>
               )}
+
+              {showTicketForm && (
+                <TicketFormContainer
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                  transition={{ type: 'spring', damping: 20 }}
+                >
+                  <TicketFormHeader>
+                    <TicketFormTitle>
+                      <BsTicketPerforated /> Create Support Ticket
+                    </TicketFormTitle>
+                    <HeaderButton onClick={() => setShowTicketForm(false)}>
+                      <FiX />
+                    </HeaderButton>
+                  </TicketFormHeader>
+                  
+                  <TicketFormBody>
+                    <FormGroup>
+                      <FormLabel>Title</FormLabel>
+                      <FormInput
+                        type="text"
+                        placeholder="Brief description of your issue"
+                        value={ticketData.title}
+                        onChange={(e) => setTicketData(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </FormGroup>
+                    
+                    <FormGroup>
+                      <FormLabel>Category</FormLabel>
+                      <FormSelect
+                        value={ticketData.category}
+                        onChange={(e) => setTicketData(prev => ({ ...prev, category: e.target.value }))}
+                      >
+                        <option value="general">General</option>
+                        <option value="technical">Technical</option>
+                        <option value="billing">Billing</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="bug">Bug Report</option>
+                      </FormSelect>
+                    </FormGroup>
+                    
+                    <FormGroup>
+                      <FormLabel>Priority</FormLabel>
+                      <FormSelect
+                        value={ticketData.priority}
+                        onChange={(e) => setTicketData(prev => ({ ...prev, priority: e.target.value }))}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </FormSelect>
+                    </FormGroup>
+                    
+                    <FormGroup>
+                      <FormLabel>Description</FormLabel>
+                      <FormTextArea
+                        placeholder="Describe your issue in detail..."
+                        value={ticketData.description}
+                        onChange={(e) => setTicketData(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </FormGroup>
+                    
+                    <FormActions>
+                      <FormButton
+                        type="button"
+                        onClick={() => setShowTicketForm(false)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Cancel
+                      </FormButton>
+                      <FormButton
+                        type="button"
+                        $primary
+                        onClick={handleCreateTicket}
+                        disabled={!ticketData.title || !ticketData.description}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <BsTicketPerforated /> Create Ticket
+                      </FormButton>
+                    </FormActions>
+                  </TicketFormBody>
+                </TicketFormContainer>
+              )}
             </ChatWindow>
           )}
         </AnimatePresence>
+
+        {/* Ticket System Integration - Remove standalone ticket system since it's now integrated */}
 
         <FloatingButton
           onClick={toggleChat}
@@ -821,11 +1217,17 @@ const EnhancedChatBot = () => {
         >
           <ButtonContent $isExpanded={isButtonExpanded}>
             {isButtonExpanded ? (
-              <>
-                <IoSparkles /> Chat with AI
-              </>
+              takenOver ? (
+                <>
+                  <FiUser /> Live Support
+                </>
+              ) : (
+                <>
+                  <IoSparkles /> Chat with AI
+                </>
+              )
             ) : (
-              <BsChatDots />
+              takenOver ? <FiUser /> : <BsChatDots />
             )}
           </ButtonContent>
         </FloatingButton>
