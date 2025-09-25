@@ -13,7 +13,8 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  updateDoc
+  updateDoc,
+  collectionGroup
 } from '../firebase';
 import axios from 'axios';
 import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle, FiLifeBuoy, FiAlertCircle, FiUser } from 'react-icons/fi';
@@ -689,6 +690,7 @@ const EnhancedChatBot = () => {
   const [language, setLanguage] = useState('en');
   const [userId, setUserId] = useState('');
   const [takenOver, setTakenOver] = useState(false);
+  const [adminTyping, setAdminTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [hasNotification, setHasNotification] = useState(false);
@@ -702,6 +704,8 @@ const EnhancedChatBot = () => {
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const takenOverRef = useRef(false);
+  const maintenanceRef = useRef(false);
   
   const currentTheme = themes[theme];
 
@@ -750,10 +754,15 @@ const EnhancedChatBot = () => {
     const chatRef = doc(db, 'chats', userId);
     setDoc(chatRef, { createdAt: serverTimestamp() }, { merge: true }).catch(() => {});
 
-    // Subscribe to takeover state
+    // Subscribe to takeover/maintenance state
     const unsubChat = onSnapshot(chatRef, (snap) => {
-      const data = snap.data();
-      setTakenOver(!!data?.takenOver);
+      const data = snap.data() || {};
+      setTakenOver(!!data.takenOver);
+      takenOverRef.current = !!data.takenOver;
+      maintenanceRef.current = !!data.maintenance;
+      setMaintenance(!!data.maintenance);
+      setExpectedWait(typeof data.expectedWait === 'number' ? data.expectedWait : null);
+      setAdminTyping(!!data.adminTyping);
     });
 
     // Subscribe to messages
@@ -777,6 +786,9 @@ const EnhancedChatBot = () => {
       unsubMsgs();
     };
   }, [userId]);
+
+  const [maintenance, setMaintenance] = useState(false);
+  const [expectedWait, setExpectedWait] = useState(null);
   
   // Auto-scroll to bottom
   useEffect(() => {
@@ -799,16 +811,6 @@ const EnhancedChatBot = () => {
   const toggleChat = () => {
     setIsOpen(!isOpen);
     setShowEmoji(false);
-    
-    if (!isOpen && messages.length === 0) {
-      // Add welcome message
-      setMessages([{
-        id: Date.now(),
-        text: t.welcome,
-        sender: 'bot',
-        timestamp: new Date(),
-      }]);
-    }
   };
 
   // Handle emoji select
@@ -818,11 +820,63 @@ const EnhancedChatBot = () => {
     inputRef.current?.focus();
   };
 
+  // Compute estimated wait time (minutes) from historical response times
+  const estimateWaitMinutes = async () => {
+    try {
+      const snap = await getDocs(collectionGroup(db, 'messages'));
+      // Aggregate response time deltas (user -> next admin)
+      const byUser = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        const pathParts = d.ref.path.split('/'); // chats/{userId}/messages/{messageId}
+        const uid = data.userId || (pathParts[0] === 'chats' ? pathParts[1] : null);
+        if (!uid || !data.timestamp) return;
+        let ts;
+        try {
+          ts = data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000);
+        } catch { ts = null; }
+        if (!ts || isNaN(ts.getTime())) return;
+        (byUser[uid] ||= []).push({ sender: data.sender, t: ts });
+      });
+
+      const deltas = [];
+      Object.values(byUser).forEach((arr) => {
+        arr.sort((a, b) => a.t - b.t);
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i].sender === 'user') {
+            // find first subsequent admin reply
+            const t0 = arr[i].t;
+            for (let j = i + 1; j < arr.length; j++) {
+              if (arr[j].sender === 'admin') {
+                const minutes = Math.max(0, (arr[j].t - t0) / 60000);
+                if (isFinite(minutes) && minutes < 24 * 60) deltas.push(minutes);
+                break;
+              }
+            }
+          }
+        }
+      });
+
+      if (deltas.length === 0) return 15;
+      // Use median to resist outliers
+      deltas.sort((a, b) => a - b);
+      const mid = Math.floor(deltas.length / 2);
+      const median = deltas.length % 2 ? deltas[mid] : (deltas[mid - 1] + deltas[mid]) / 2;
+      return Math.max(1, Math.round(median));
+    } catch (e) {
+      return 15;
+    }
+  };
+
   // Send message
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || !userId) return;
+    if (maintenanceRef.current && !takenOverRef.current) {
+      // In maintenance mode (no human takeover yet), do not allow sending
+      return;
+    }
 
     setInput('');
     setIsTyping(true);
@@ -837,14 +891,41 @@ const EnhancedChatBot = () => {
       // Update chat doc lastUpdated
       try { await updateDoc(doc(db, 'chats', userId), { lastUpdated: serverTimestamp() }); } catch {}
 
+      // If this is the first message of the chat, auto-post maintenance message with ETA
+      if ((messages?.length || 0) === 0) {
+        const eta = await estimateWaitMinutes();
+        // Locally block auto-bot reply and input by enabling maintenance
+        maintenanceRef.current = true;
+        try {
+          await addDoc(collection(db, 'chats', userId, 'messages'), {
+            text: `⚠️ Our bot is currently under construction. A support advisor will contact you shortly. Estimated wait time: ${eta} minutes.`,
+            sender: 'bot',
+            timestamp: serverTimestamp(),
+          });
+        } catch {}
+        try {
+          await setDoc(doc(db, 'chats', userId), {
+            maintenance: true,
+            expectedWait: eta,
+            lastUpdated: serverTimestamp()
+          }, { merge: true });
+        } catch {}
+        setIsTyping(false);
+        return; // Do not schedule AI reply
+      }
+
       // If a human agent has taken over, do not send bot reply
-      if (takenOver) {
+      if (takenOverRef.current) {
         setIsTyping(false);
         return;
       }
 
       // Simulate AI response (replace with actual API call)
       setTimeout(async () => {
+        if (takenOverRef.current || maintenanceRef.current) {
+          setIsTyping(false);
+          return;
+        }
         const reply = generateResponse(text);
         try {
           await addDoc(collection(db, 'chats', userId, 'messages'), {
@@ -981,7 +1062,14 @@ const EnhancedChatBot = () => {
                   </Avatar>
                   <HeaderInfo>
                     <HeaderTitle>{t.title}</HeaderTitle>
-                    <HeaderStatus>{takenOver ? (language === 'no' ? 'Supportmedarbeider aktiv' : 'Support Agent Active') : t.status}</HeaderStatus>
+                    <HeaderStatus>
+                      {takenOver
+                        ? (language === 'no' ? 'Supportmedarbeider aktiv' : 'Support Agent Active')
+                        : (maintenance
+                            ? (language === 'no' ? `Vedlikehold pågår${expectedWait ? ` • Forventet ventetid ${expectedWait} min` : ''}`
+                              : `Under Maintenance${expectedWait ? ` • ETA ${expectedWait} min` : ''}`)
+                            : t.status)}
+                    </HeaderStatus>
                   </HeaderInfo>
                 </HeaderLeft>
                 <HeaderActions>
@@ -1030,31 +1118,48 @@ const EnhancedChatBot = () => {
                     </MessageContent>
                   </MessageWrapper>
                 )}
+                {adminTyping && (
+                  <MessageWrapper $isUser={false}>
+                    <MessageAvatar $isUser={false}>👨‍💼</MessageAvatar>
+                    <MessageContent>
+                      <MessageBubble $isUser={false} $isTyping={true}>
+                        <span style={{ opacity: 0 }}>...</span>
+                      </MessageBubble>
+                    </MessageContent>
+                  </MessageWrapper>
+                )}
                 
                 <div ref={messagesEndRef} />
               </MessagesContainer>
 
               <QuickActions>
                 <QuickActionButton
-                  onClick={() => handleQuickTicket('bug')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Bug Report', category: 'bug', priority: 'high' } } }))}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <FiAlertCircle /> Report Bug
                 </QuickActionButton>
                 <QuickActionButton
-                  onClick={() => handleQuickTicket('feature')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Options / Settings', category: 'options', priority: 'medium' } } }))}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <IoSparkles /> Feature Request
+                  <IoSparkles /> Options
                 </QuickActionButton>
                 <QuickActionButton
-                  onClick={() => handleQuickTicket('support')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'General Support', category: 'general', priority: 'medium' } } }))}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <FiLifeBuoy /> Get Support
+                </QuickActionButton>
+                <QuickActionButton
+                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'tickets' } }))}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <BsTicketPerforated /> View Tickets
                 </QuickActionButton>
               </QuickActions>
 
@@ -1065,8 +1170,8 @@ const EnhancedChatBot = () => {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={t.placeholder}
-                    disabled={isTyping}
+                    placeholder={(maintenance && !takenOver) ? (language === 'no' ? `Vedlikehold – vennligst vent${expectedWait ? ` ~${expectedWait} min` : ''}` : `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`) : t.placeholder}
+                    disabled={isTyping || (maintenance && !takenOver)}
                   />
                   <InputActions>
                     <IconButton
@@ -1079,7 +1184,7 @@ const EnhancedChatBot = () => {
                     </IconButton>
                     <IconButton
                       type="button"
-                      onClick={() => setShowTicketForm(!showTicketForm)}
+                      onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create' } }))}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -1097,7 +1202,7 @@ const EnhancedChatBot = () => {
                 <IconButton
                   type="submit"
                   $primary
-                  disabled={!input.trim() || isTyping}
+                  disabled={!input.trim() || isTyping || (maintenance && !takenOver)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -1152,7 +1257,7 @@ const EnhancedChatBot = () => {
                         <option value="general">General</option>
                         <option value="technical">Technical</option>
                         <option value="billing">Billing</option>
-                        <option value="feature">Feature Request</option>
+                        <option value="options">Options</option>
                         <option value="bug">Bug Report</option>
                       </FormSelect>
                     </FormGroup>
@@ -1206,7 +1311,8 @@ const EnhancedChatBot = () => {
           )}
         </AnimatePresence>
 
-        {/* Ticket System Integration - Remove standalone ticket system since it's now integrated */}
+        {/* Ticket System Integration */}
+        <TicketSystem showButton={false} />
 
         <FloatingButton
           onClick={toggleChat}

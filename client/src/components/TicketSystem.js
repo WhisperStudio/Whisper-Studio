@@ -45,7 +45,7 @@ const TicketContainer = styled.div`
   position: fixed;
   bottom: 100px;
   right: 20px;
-  z-index: 9998;
+  z-index: 10050;
   animation: ${fadeIn} 0.5s ease;
 `;
 
@@ -106,7 +106,7 @@ const TicketWindow = styled(motion.div)`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 9999;
+  z-index: 10060;
 
   @media (max-width: 768px) {
     width: 90vw;
@@ -527,7 +527,7 @@ const SendButton = styled(motion.button)`
 `;
 
 // Main Component
-const TicketSystem = () => {
+const TicketSystem = ({ showButton = true }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('tickets');
   const [tickets, setTickets] = useState([]);
@@ -542,24 +542,50 @@ const TicketSystem = () => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Load tickets from Firebase
+  // Determine current userId shared with chat
+  const currentUserId = (typeof window !== 'undefined' && (localStorage.getItem('enhancedChatUserId') || localStorage.getItem('userId'))) || 'anonymous';
+
+  // Load current user's tickets from Firebase
   useEffect(() => {
     const ticketsRef = collection(db, 'tickets');
-    const q = query(ticketsRef, orderBy('createdAt', 'desc'));
+    let q;
+    try {
+      q = query(ticketsRef, where('userId', '==', currentUserId), orderBy('createdAt', 'desc'));
+    } catch (e) {
+      // Fallback without index
+      q = query(ticketsRef, orderBy('createdAt', 'desc'));
+    }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ticketsList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      let ticketsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Fallback client-side filter when no where clause
+      if (!ticketsList.every(t => t.userId === currentUserId)) {
+        ticketsList = ticketsList.filter(t => t.userId === currentUserId);
+      }
       setTickets(ticketsList);
 
-      // Count unread tickets
+      // Count unread tickets (open status)
       const unread = ticketsList.filter(t => t.status === 'open').length;
       setUnreadCount(unread);
     });
 
     return () => unsubscribe();
+  }, [currentUserId]);
+
+  // Listen for global event to open ticket overlay (from EnhancedChatBot quick action)
+  useEffect(() => {
+    const openTickets = (e) => {
+      setIsOpen(true);
+      const detail = e?.detail || {};
+      if (detail.tab) setActiveTab(detail.tab);
+      // Always reset any selected ticket when opening via global event
+      setSelectedTicket(null);
+      if (detail.formData) {
+        setFormData(prev => ({ ...prev, ...detail.formData }));
+      }
+    };
+    window.addEventListener('openTickets', openTickets);
+    return () => window.removeEventListener('openTickets', openTickets);
   }, []);
 
   // Create new ticket
@@ -572,7 +598,7 @@ const TicketSystem = () => {
       const ticketData = {
         ...formData,
         status: 'open',
-        userId: localStorage.getItem('userId') || 'anonymous',
+        userId: currentUserId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         messages: []
@@ -609,7 +635,7 @@ const TicketSystem = () => {
         text: chatMessage,
         sender: 'user',
         timestamp: new Date().toISOString(),
-        userId: localStorage.getItem('userId') || 'anonymous'
+        userId: currentUserId
       };
 
       // Update ticket with new message
@@ -649,10 +675,21 @@ const TicketSystem = () => {
     return date.toLocaleDateString();
   };
 
+  // Subscribe to selected ticket for real-time updates to messages
+  useEffect(() => {
+    if (!selectedTicket?.id) return;
+    const unsub = onSnapshot(doc(db, 'tickets', selectedTicket.id), (snap) => {
+      if (snap.exists()) {
+        setSelectedTicket({ id: snap.id, ...snap.data() });
+      }
+    });
+    return () => unsub();
+  }, [selectedTicket?.id]);
+
   return (
     <>
       <TicketContainer>
-        {!isOpen && (
+        {!isOpen && showButton && (
           <FloatingButton
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -771,7 +808,7 @@ const TicketSystem = () => {
                           <option value="general">General</option>
                           <option value="technical">Technical</option>
                           <option value="billing">Billing</option>
-                          <option value="feature">Feature Request</option>
+                          <option value="options">Options</option>
                           <option value="bug">Bug Report</option>
                         </Select>
                       </FormGroup>
@@ -878,7 +915,12 @@ const TicketSystem = () => {
                     placeholder="Type your message..."
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
                   />
                   <SendButton
                     onClick={handleSendMessage}

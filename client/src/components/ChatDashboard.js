@@ -7,71 +7,86 @@ import { auth } from '../firebase';
 
 
 const ChatDashboardContainer = styled.div`
-  background: #0b1121;
+  background: radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.15), transparent),
+              radial-gradient(900px 500px at 90% 20%, rgba(236,72,153,0.12), transparent),
+              #0b1121;
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 30px 40px rgba(0, 0, 0, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
   color: white;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  border: 1px solid rgba(148,163,184,0.12);
 `;
 
 const ChatListWrapper = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
 `;
 
 const ChatList = styled.div`
   flex: 1;
-  max-width: 300px;
-  border-right: 1px solid #ccc;
-  padding-right: 16px;
+  max-width: 320px;
+  padding: 16px;
   overflow-y: auto;
+  background: linear-gradient(180deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 `;
 
 const ChatListItem = styled.div`
-  padding: 8px;
-  border-top: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 12px;
   cursor: pointer;
-  background: ${({ active }) => (active ? "#182547" : "transparent")};
-  transition: background 0.2s;
+  background: ${({ active }) => (active ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(168,85,247,0.2))' : 'transparent')};
+  border: 1px solid ${({ active }) => (active ? 'rgba(99,102,241,0.35)' : 'rgba(148,163,184,0.15)')};
+  transition: all 0.25s ease;
   &:hover {
-    background: rgb(38, 55, 100);
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,85,247,0.16));
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
   }
 `;
 
 const ChatDetails = styled.div`
   flex: 2;
-  padding-left: 16px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(2,6,23,0.8), rgba(2,6,23,0.6));
+  border: 1px solid rgba(148,163,184,0.15);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 `;
 
 const MessagesContainer = styled.div`
-  max-height: 400px;
+  height: 480px;
   overflow-y: auto;
-  border: 1px solid #003366;
+  border: 1px solid rgba(99,102,241,0.25);
   padding: 16px;
   margin-bottom: 16px;
-  border-radius: 12px;
-  background: #152238;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(23,37,84,0.65), rgba(15,23,42,0.65));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 `;
 
 const MessageBubble = styled.div`
   padding: 12px 16px;
   margin: 4px 0;
-  border-radius: 12px;
+  border-radius: 14px;
   max-width: 75%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
   word-wrap: break-word;
   align-self: ${({ variant }) => (variant === 'user' ? 'flex-end' : 'flex-start')};
   background: ${({ variant }) => (
-    variant === 'user' ? '#1a2332' :
+    variant === 'user' ? 'linear-gradient(135deg, rgba(14,165,233,0.25), rgba(99,102,241,0.25))' :
     variant === 'admin' ? 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)' :
-    variant === 'bot' ? 'rgba(168, 85, 247, 0.15)' :
+    variant === 'bot' ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(59,130,246,0.16))' :
     'rgba(148, 163, 184, 0.15)'
   )};
   color: ${({ variant }) => (
@@ -79,7 +94,7 @@ const MessageBubble = styled.div`
     '#cfefff'
   )};
   border: 1px solid ${({ variant }) => (
-    variant === 'user' ? '#003366' :
+    variant === 'user' ? 'rgba(14,165,233,0.35)' :
     variant === 'admin' ? 'rgba(99, 102, 241, 0.4)' :
     variant === 'bot' ? 'rgba(168, 85, 247, 0.35)' :
     'rgba(148, 163, 184, 0.25)'
@@ -99,12 +114,29 @@ const MessageItem = styled.div`
 
 const AdminTextArea = styled.textarea`
   width: 100%;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  padding: 12px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
   font-family: inherit;
+  line-height: 1.4;
+  min-height: 90px;
+  max-height: 220px;
   resize: vertical;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96,165,250,0.2);
+  }
 `;
 
 const ActionButtons = styled.div`
@@ -143,13 +175,14 @@ const CardTitle = styled.h2`
 `;
 
 const StatusBadge = styled.span`
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: ${({ active }) => active ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.15)'};
-  border: 1px solid ${({ active }) => active ? 'rgba(34, 197, 94, 0.35)' : 'rgba(99, 102, 241, 0.3)'};
+  background: ${({ active }) => active ? 'rgba(34, 197, 94, 0.22)' : 'rgba(99, 102, 241, 0.18)'};
+  border: 1px solid ${({ active }) => active ? 'rgba(34, 197, 94, 0.4)' : 'rgba(99, 102, 241, 0.35)'};
   color: ${({ active }) => active ? '#34d399' : '#a78bfa'};
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 `;
 
 // Funksjon for å signalisere at admin skriver
@@ -176,6 +209,9 @@ const ChatDashboard = () => {
   const messagesUnsubRef = useRef(null);
   const chatInfoUnsubRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const allMessagesUnsubRef = useRef(null);
+  const adminTypingActiveRef = useRef(false);
+  const adminInputRef = useRef(null);
 
   // Load conversations from Firebase
   useEffect(() => {
@@ -335,15 +371,46 @@ const ChatDashboard = () => {
     
     loadConversations();
     
-    // Refresh every 10 seconds to reduce blinking
-    const interval = setInterval(() => {
-      // Only reload if not currently loading to prevent blinking
-      if (!loading) {
-        loadConversations();
-      }
-    }, 10000);
+    // Switch to real-time updates for smooth refresh
+    try {
+      allMessagesUnsubRef.current = onSnapshot(collectionGroup(db, 'messages'), (messagesSnapshot) => {
+        const userChats = {};
+        messagesSnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          let userId = data.userId;
+          if (!userId) {
+            const pathParts = docSnap.ref.path.split('/');
+            if (pathParts[0] === 'chats') userId = pathParts[1];
+          }
+          if (!userId) return;
+          if (!userChats[userId]) userChats[userId] = [];
+          const sender = data.sender;
+          const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
+          userChats[userId].push({
+            id: docSnap.id,
+            from: mappedFrom,
+            text: data.text,
+            timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+            userId: userId,
+            senderEmail: data.senderEmail
+          });
+        });
+
+        const convs = {};
+        Object.keys(userChats).forEach((uid) => {
+          const arr = userChats[uid];
+          arr.sort((a, b) => a.timestamp - b.timestamp);
+          convs[uid] = arr;
+        });
+        setConversations(convs);
+        setLoading(false);
+      });
+    } catch (err) {
+      console.error('ChatDashboard: Failed to start realtime messages subscription', err);
+    }
+
     return () => {
-      clearInterval(interval);
+      if (allMessagesUnsubRef.current) allMessagesUnsubRef.current();
       if (window.selectedConversationInterval) {
         clearInterval(window.selectedConversationInterval);
       }
@@ -441,7 +508,8 @@ const ChatDashboard = () => {
       // Update chat doc lastUpdated
       try {
         await updateDoc(doc(db, 'chats', selected), {
-          lastUpdated: serverTimestamp()
+          lastUpdated: serverTimestamp(),
+          adminTyping: false
         });
       } catch (_) {}
       
@@ -464,6 +532,8 @@ const ChatDashboard = () => {
       console.error('Error sending message:', error);
     } finally {
       setSending(false);
+      // Keep focus in textarea for fluid typing
+      try { adminInputRef.current?.focus(); } catch {}
     }
   };
 
@@ -527,6 +597,58 @@ const ChatDashboard = () => {
       } catch (_) {}
     } catch (err) {
       console.error('releaseChat error:', err);
+    }
+  };
+
+  // Replace entire conversation with a single maintenance message and mark as taken over
+  const resetToMaintenanceMessage = async () => {
+    if (!selected) return;
+    const confirm = window.confirm('This will delete all messages in this conversation and post a single maintenance message. Continue?');
+    if (!confirm) return;
+
+    let minutes = window.prompt('Enter expected wait time (minutes):', '15');
+    let wait = parseInt(minutes || '15', 10);
+    if (isNaN(wait) || wait <= 0) wait = 15;
+
+    const maintenanceText = `⚠️ Our bot is currently under construction. A support advisor will contact you shortly. Estimated wait time: ${wait} minutes.`;
+
+    try {
+      // Delete all messages
+      const messagesRef = collection(db, 'chats', selected, 'messages');
+      const snap = await getDocs(messagesRef);
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+
+      // Add single system message
+      await addDoc(messagesRef, {
+        text: maintenanceText,
+        sender: 'bot',
+        timestamp: serverTimestamp(),
+        userId: selected
+      });
+
+      // Mark chat as taken over and in maintenance
+      await setDoc(doc(db, 'chats', selected), {
+        takenOver: true,
+        maintenance: true,
+        expectedWait: wait,
+        lastUpdated: serverTimestamp(),
+        takenOverByEmail: auth.currentUser?.email || 'admin'
+      }, { merge: true });
+
+      // Update local state immediately
+      setConversations(prev => ({
+        ...prev,
+        [selected]: [{
+          id: Date.now().toString(),
+          from: 'bot',
+          text: maintenanceText,
+          timestamp: new Date(),
+          userId: selected
+        }]
+      }));
+    } catch (err) {
+      console.error('resetToMaintenanceMessage error:', err);
+      alert('Failed to reset conversation.');
     }
   };
 
@@ -747,6 +869,9 @@ const ChatDashboard = () => {
                     <FiUnlock style={{ marginRight: 6 }} /> Release to AI
                   </ActionButton>
                 )}
+                <ActionButton bgColor="#f59e0b" onClick={resetToMaintenanceMessage} title="Replace all messages with maintenance notice">
+                  Maintenance Msg
+                </ActionButton>
               </div>
 
               <MessagesContainer>
@@ -757,6 +882,7 @@ const ChatDashboard = () => {
                 ))}
               </MessagesContainer>
               <AdminTextArea
+                ref={adminInputRef}
                 rows="3"
                 placeholder="Write a reply..."
                 value={input}
@@ -764,13 +890,26 @@ const ChatDashboard = () => {
                   setInput(e.target.value);
                   // typing indicator with debounce
                   try { setAdminTyping(true); } catch { /* ignore */ }
+                  // Throttle Firestore writes to avoid lag
+                  if (selected && !adminTypingActiveRef.current) {
+                    adminTypingActiveRef.current = true;
+                    try { updateDoc(doc(db, 'chats', selected), { adminTyping: true }); } catch { /* ignore */ }
+                  }
                   if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
                   typingTimeoutRef.current = setTimeout(() => {
                     try { setAdminTyping(false); } catch { /* ignore */ }
+                    if (selected && adminTypingActiveRef.current) {
+                      try { updateDoc(doc(db, 'chats', selected), { adminTyping: false }); } catch { /* ignore */ }
+                      adminTypingActiveRef.current = false;
+                    }
                   }, 1500);
                 }}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
+                autoFocus
               />
+              <div style={{ color: '#9aaecf', fontSize: 12, marginTop: 4, opacity: 0.75 }}>
+                Press Enter to send • Shift+Enter for a new line
+              </div>
               <ActionButtons>
                 <ActionButton
                   bgColor="#2563eb"
