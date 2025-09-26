@@ -281,19 +281,21 @@ const Button = styled.button`
 `;
 
 // Permission descriptions
-const PERMISSION_DESCRIPTIONS = {
-  dashboard: 'Tilgang til hovedoversikten og statistikk',
-  chat: 'Kan se og administrere chat-samtaler',
-  analytics: 'Tilgang til analyser og rapporter',
-  users: 'Kan administrere vanlige brukere',
-  admins: 'Kan administrere administratorer',
-  settings: 'Tilgang til systeminnstillinger',
-  tasks: 'Kan opprette og administrere oppgaver',
-  tickets: 'Tilgang til support-billetter',
-  bugs: 'Kan se og håndtere feilrapporter',
-  database: 'Direkte databasetilgang',
-  security: 'Tilgang til sikkerhetssenter',
-  aiBot: 'Kan konfigurere AI-bot'
+const AVAILABLE_PERMISSIONS = {
+  dashboard: 'Dashboard Overview',
+  realtime: 'Real-time Monitor',
+  analytics: 'Analytics & Reports',
+  chat: 'Chat Dashboard',
+  aiBot: 'AI Assistant',
+  tickets: 'Support Tickets',
+  server: 'Server Status',
+  database: 'Database Access',
+  security: 'Security Center',
+  tasks: 'Task Management',
+  bugs: 'Bug Reports',
+  admins: 'Admin Management',
+  users: 'User Management',
+  settings: 'System Settings'
 };
 
 // Main Component
@@ -394,7 +396,7 @@ const PermissionModal = ({ user, onClose, onSave, availablePermissions }) => {
                   {label}
                 </PermissionName>
                 <PermissionDescription>
-                  {PERMISSION_DESCRIPTIONS[key]}
+                  Gi tilgang til {label.toLowerCase()}
                 </PermissionDescription>
               </PermissionInfo>
               <ToggleSwitch

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import {
   FiX, FiSave, FiUser, FiCalendar, FiFlag, FiFileText,
-  FiTag, FiClock, FiPlus, FiPercent
+  FiTag, FiClock, FiPlus, FiPercent, FiTrash2
 } from 'react-icons/fi';
 
 // Styled Components
@@ -297,14 +297,15 @@ const Button = styled.button`
     }
   }
   
-  &.secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
+  &.danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border: none;
+    color: #fff;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
     }
   }
 `;
@@ -314,6 +315,7 @@ const TaskForm = ({
   isOpen, 
   onClose, 
   onSubmit, 
+  onDelete,
   task = null, 
   admins = [] 
 }) => {
@@ -556,6 +558,25 @@ const TaskForm = ({
           </FormGrid>
 
           <FormActions>
+            {task && onDelete && (
+              <Button 
+                type="button" 
+                className="danger" 
+                onClick={() => {
+                  if (window.confirm('Er du sikker på at du vil slette denne oppgaven?')) {
+                    onDelete(task.id);
+                    onClose();
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: '#fff'
+                }}
+              >
+                <FiTrash2 />
+                Slett Oppgave
+              </Button>
+            )}
             <Button type="button" className="secondary" onClick={onClose}>
               Avbryt
             </Button>

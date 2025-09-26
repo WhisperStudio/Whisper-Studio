@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { 
   FiMail, FiCalendar, FiShield, FiTrash2, FiEdit3,
-  FiLock, FiUnlock, FiSettings, FiUser, FiAward
+  FiLock, FiUnlock, FiSettings, FiUser, FiAward, FiAlertTriangle
 } from 'react-icons/fi';
 import { BsAward, BsShieldCheck, BsPerson, BsPersonBadge } from 'react-icons/bs';
 
@@ -247,6 +247,7 @@ const getRoleIcon = (role) => {
     case 'owner': return <BsAward />;
     case 'admin': return <BsShieldCheck />;
     case 'support': return <BsPersonBadge />;
+    case 'pending': return <FiAlertTriangle />;
     default: return <BsPerson />;
   }
 };
@@ -256,17 +257,22 @@ const getRoleLabel = (role) => {
     case 'owner': return 'Eier';
     case 'admin': return 'Administrator';
     case 'support': return 'Support';
+    case 'pending': return 'Venter godkjenning';
     default: return 'Bruker';
   }
 };
 
-const getInitials = (name) => {
-  if (!name) return '?';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+const getRoleColor = (role) => {
+  switch(role) {
+    case 'owner': return 'linear-gradient(135deg, #fbbf24, #f59e0b)';
+    case 'admin': return 'linear-gradient(135deg, #60a5fa, #3b82f6)';
+    case 'support': return 'linear-gradient(135deg, #22c55e, #16a34a)';
+    case 'pending': return 'linear-gradient(135deg, #ef4444, #dc2626)';
+    default: return 'linear-gradient(135deg, #6b7280, #4b5563)';
+  }
 };
 
 const getAvatarColor = (name) => {
-  if (!name) return '#6b7280';
   const colors = [
     'linear-gradient(135deg, #60a5fa, #3b82f6)',
     'linear-gradient(135deg, #a78bfa, #8b5cf6)',
@@ -277,6 +283,15 @@ const getAvatarColor = (name) => {
   ];
   const index = name.charCodeAt(0) % colors.length;
   return colors[index];
+};
+
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
 };
 
 // Main Component
@@ -315,18 +330,21 @@ const UserCard = ({
       </RoleBadge>
 
       <CardHeader>
-        <Avatar color={getAvatarColor(user.displayName || user.email)}>
+        <Avatar color={getAvatarColor(user.email)}>
           {user.photoURL ? (
             <img 
               src={user.photoURL} 
-              alt={user.displayName || user.email}
+              alt={user.displayName}
               style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = getInitials(user.displayName || user.email);
+              }}
             />
           ) : (
             getInitials(user.displayName || user.email)
           )}
         </Avatar>
-        
         <UserInfo>
           <UserName>
             {user.displayName || 'Ingen navn'}

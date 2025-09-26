@@ -4,14 +4,12 @@ import {
   FiX, FiSave, FiUser, FiMail, FiLock, FiShield,
   FiUserPlus, FiKey, FiAlertCircle
 } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import { 
-  auth
+  auth, provider, signInWithPopup
 } from '../../firebase';
 import { 
-  createUserWithEmailAndPassword, updateProfile 
-} from 'firebase/auth';
-import { 
-  db, doc, setDoc, serverTimestamp 
+  db, doc, setDoc, getDoc, getDocs, collection, serverTimestamp 
 } from '../../firebase';
 
 // Styled Components (reuse from PermissionModal)
@@ -243,13 +241,14 @@ const Button = styled.button`
 const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     displayName: '',
-    role: 'user'
+    role: 'user',
+    photoURL: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [addMethod, setAddMethod] = useState('email'); // 'email' or 'google'
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -259,16 +258,16 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
-      setError('E-post og passord er påkrevd');
+  const handleEmailSubmit = async () => {
+    if (!formData.email) {
+      setError('E-postadresse er påkrevd');
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Passordet må være minst 6 tegn');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Ugyldig e-postformat');
       return;
     }
 
@@ -276,69 +275,57 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
     setError('');
 
     try {
-      // Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
-      // Update display name
-      if (formData.displayName) {
-        await updateProfile(userCredential.user, {
-          displayName: formData.displayName
-        });
+      // Generate a unique ID for the user (they will get proper UID when they sign in)
+      const tempId = 'pending_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Check if email already exists
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const existingUser = usersSnapshot.docs.find(doc => doc.data().email === formData.email);
+      
+      if (existingUser) {
+        setError('En bruker med denne e-postadressen eksisterer allerede');
+        setLoading(false);
+        return;
       }
 
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: formData.email,
+      // Create pre-authorized user entry
+      await setDoc(doc(db, 'preauthorized_users', tempId), {
+        email: formData.email.toLowerCase(),
         displayName: formData.displayName || formData.email,
         role: formData.role,
         permissions: getDefaultPermissions(formData.role),
         createdAt: serverTimestamp(),
-        lastActivity: serverTimestamp(),
-        createdBy: auth.currentUser?.uid
+        createdBy: auth.currentUser?.uid,
+        status: 'preauthorized'
       });
 
-      setSuccess('Bruker opprettet vellykket!');
+      setSuccess('Bruker forhåndsgodkjent! De kan nå logge inn med Google.');
       setTimeout(() => {
         onAdd();
         onClose();
-      }, 1500);
+      }, 2000);
 
     } catch (error) {
-      console.error('Error creating user:', error);
-      
-      // Handle specific error codes
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          setError('E-postadressen er allerede i bruk');
-          break;
-        case 'auth/invalid-email':
-          setError('Ugyldig e-postadresse');
-          break;
-        case 'auth/weak-password':
-          setError('Passordet er for svakt');
-          break;
-        default:
-          setError('Kunne ikke opprette bruker: ' + error.message);
-      }
+      console.error('Error adding user:', error);
+      setError('Kunne ikke legge til bruker: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
+
   const getDefaultPermissions = (role) => {
     switch (role) {
       case 'owner':
-        return Object.keys(PERMISSIONS);
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
       case 'admin':
-        return ['dashboard', 'chat', 'analytics', 'users', 'tasks', 'tickets', 'bugs', 'settings'];
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'settings'];
       case 'support':
-        return ['dashboard', 'chat', 'tickets', 'bugs'];
+        return []; // Support får ingen tilgang som standard - admin må gi tilgang
+      case 'user':
+        return []; // Vanlige brukere får ingen tilgang som standard
       default:
-        return ['dashboard'];
+        return [];
     }
   };
 
@@ -370,7 +357,12 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
           </CloseButton>
         </ModalHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (addMethod === 'email') {
+            handleEmailSubmit();
+          }
+        }}>
           {error && (
             <ErrorMessage>
               <FiAlertCircle />
@@ -392,7 +384,7 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
             </Label>
             <Input
               type="email"
-              placeholder="bruker@example.com"
+              placeholder="bruker@gmail.com"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               required
@@ -401,22 +393,8 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
 
           <FormGroup>
             <Label>
-              <FiLock />
-              Passord *
-            </Label>
-            <Input
-              type="password"
-              placeholder="Minst 6 tegn"
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              required
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label>
               <FiUser />
-              Visningsnavn
+              Visningsnavn (valgfritt)
             </Label>
             <Input
               type="text"
@@ -454,7 +432,7 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
               disabled={loading}
             >
               <FiSave />
-              {loading ? 'Oppretter...' : 'Opprett bruker'}
+              {loading ? 'Legger til...' : 'Legg til bruker'}
             </Button>
           </ModalActions>
         </form>

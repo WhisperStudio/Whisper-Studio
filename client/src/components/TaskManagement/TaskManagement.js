@@ -383,6 +383,8 @@ const TaskManagement = () => {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
+        // Refresh tasks to ensure UI updates
+        setTimeout(() => loadTasks(), 500);
       } else {
         // Fallback for mock data
         setTasks(prev => [taskData, ...prev]);
@@ -402,6 +404,8 @@ const TaskManagement = () => {
           ...taskData,
           updatedAt: serverTimestamp()
         });
+        // Refresh tasks to ensure UI updates
+        setTimeout(() => loadTasks(), 500);
       } else {
         // Fallback for mock data
         setTasks(prev => prev.map(task => 
@@ -419,10 +423,12 @@ const TaskManagement = () => {
 
   const handleDeleteTask = async (taskId) => {
     if (!window.confirm('Er du sikker på at du vil slette denne oppgaven?')) return;
-    
+
     try {
       if (db) {
         await deleteDoc(doc(db, 'tasks', taskId));
+        // Refresh tasks to ensure UI updates
+        setTimeout(() => loadTasks(), 500);
       } else {
         // Fallback for mock data
         setTasks(prev => prev.filter(task => task.id !== taskId));
@@ -562,8 +568,8 @@ const TaskManagement = () => {
                 setEditingTask(task);
                 setShowForm(true);
               }}
-              onDelete={handleDeleteTask}
-              onComplete={handleCompleteTask}
+              onDelete={(taskId) => handleDeleteTask(taskId)}
+              onComplete={(taskId) => handleCompleteTask(taskId)}
               onClick={(task) => {
                 setEditingTask(task);
                 setShowForm(true);
@@ -580,6 +586,7 @@ const TaskManagement = () => {
           setEditingTask(null);
         }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        onDelete={handleDeleteTask}
         task={editingTask}
         admins={admins}
       />

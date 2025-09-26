@@ -4,7 +4,7 @@ import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { auth, onAuthStateChanged } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
+import { db, collection, collectionGroup, getDocs, query, orderBy, where, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
 import { checkAdminStatus } from '../utils/firebaseAdmin';
 import ChatDashboard from '../components/ChatDashboard';
 import LiveChat from '../components/LiveChat';
@@ -25,6 +25,8 @@ import {
 } from '../components/AdminComponents';
 import { AdminLoadingScreen } from '../components/LoadingComponent';
 import TaskManagement from '../components/TaskManagement/TaskManagement';
+import PendingAccess from '../components/PendingAccess';
+import NoAccess from '../components/NoAccess';
 
 import {
   FiMessageSquare,
@@ -380,46 +382,148 @@ export default function AdminPanel() {
   const [userChecked, setUserChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState('user');
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const buttonRefs = useRef([]);
   const highlightRef = useRef(null);
+
+  // Load user permissions
+  useEffect(() => {
+    const loadPermissions = async () => {
+      if (currentUserRole === 'owner') {
+        // Owner har tilgang til alt
+        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings']);
+        setPermissionsLoaded(true);
+      } else if (currentUserRole === 'admin') {
+        // Admin har tilgang til alt unntatt owner-spesifikke seksjoner
+        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings']);
+        setPermissionsLoaded(true);
+      } else if (currentUserRole === 'support' || currentUserRole === 'user') {
+        // Support og vanlige brukere må ha eksplisitte permissions fra databasen
+        if (currentUser) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (userDoc.exists()) {
+              const permissions = userDoc.data().permissions || [];
+              console.log('Loaded permissions for support/user:', permissions);
+              setUserPermissions(permissions);
+            } else {
+              console.log('No user document found, setting empty permissions');
+              setUserPermissions([]);
+            }
+          } catch (error) {
+            console.error('Error loading permissions:', error);
+            setUserPermissions([]);
+          }
+        } else {
+          setUserPermissions([]);
+        }
+        setPermissionsLoaded(true);
+      } else {
+        // Pending eller ukjent rolle - ingen tilgang
+        setUserPermissions([]);
+        setPermissionsLoaded(true);
+      }
+    };
+    
+    if (currentUser && currentUserRole) {
+      loadPermissions();
+    }
+  }, [currentUser, currentUserRole]);
 
   // Firebase Auth guard
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const isAdmin = await checkAdminStatus(user);
-          if (isAdmin) {
+          // Check user role
+          const ownerEmails = [
+            'vintrastudio@gmail.com',
+            'vintra@whisper.no',
+            'vintra@example.com'
+          ];
+          
+          // Check if user is owner
+          if (ownerEmails.includes(user.email?.toLowerCase())) {
             setCurrentUser(user);
-            
-            // Check user role
-            const ownerEmails = [
-              'vintrastudio@gmail.com',
-              'vintra@whisper.no',
-              'vintra@example.com'
-            ];
-            
-            if (ownerEmails.includes(user.email?.toLowerCase())) {
-              setCurrentUserRole('owner');
-            } else {
-              // Check from database
-              const userDoc = await getDoc(doc(db, 'users', user.uid));
-              if (userDoc.exists()) {
-                setCurrentUserRole(userDoc.data().role || 'admin');
-              } else {
-                setCurrentUserRole('admin');
-              }
-            }
-            
+            setCurrentUserRole('owner');
             setUserChecked(true);
             setLoading(false);
           } else {
-            // Not an admin, redirect to login
-            await signOut(auth);
-            navigate("/login");
+            // Check from database if user exists and has permissions
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              
+              // Check if user has any role assigned
+              if (userData.role) {
+                setCurrentUser(user);
+                setCurrentUserRole(userData.role);
+                setUserChecked(true);
+                setLoading(false);
+              } else {
+                // User exists but no role assigned - show pending screen
+                setCurrentUser(user);
+                setCurrentUserRole('pending');
+                setUserChecked(true);
+                setLoading(false);
+              }
+            } else {
+              // Check if user is pre-authorized
+              const preAuthQuery = query(
+                collection(db, 'preauthorized_users'),
+                where('email', '==', user.email.toLowerCase())
+              );
+              const preAuthSnapshot = await getDocs(preAuthQuery);
+              
+              if (!preAuthSnapshot.empty) {
+                // User is pre-authorized, create their account with the pre-defined role
+                const preAuthData = preAuthSnapshot.docs[0].data();
+
+                await setDoc(doc(db, 'users', user.uid), {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName || preAuthData.displayName || user.email,
+                  photoURL: user.photoURL || '',
+                  role: preAuthData.role,
+                  permissions: preAuthData.permissions || getDefaultPermissions(preAuthData.role),
+                  provider: 'google',
+                  createdAt: serverTimestamp(),
+                  lastActivity: serverTimestamp(),
+                  preAuthorizedBy: preAuthData.createdBy
+                });
+
+                // Delete the pre-authorization entry
+                await deleteDoc(doc(db, 'preauthorized_users', preAuthSnapshot.docs[0].id));
+
+                setCurrentUser(user);
+                setCurrentUserRole(preAuthData.role);
+                setUserChecked(true);
+                setLoading(false);
+              } else {
+                // New user without pre-authorization - create pending entry
+                await setDoc(doc(db, 'users', user.uid), {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName || user.email,
+                  photoURL: user.photoURL || '',
+                  role: 'pending',
+                  permissions: [],
+                  provider: 'google',
+                  createdAt: serverTimestamp(),
+                  lastActivity: serverTimestamp()
+                });
+                
+                setCurrentUser(user);
+                setCurrentUserRole('pending');
+                setUserChecked(true);
+                setLoading(false);
+              }
+            }
           }
         } catch (error) {
-          console.error('Error checking admin status:', error);
+          console.error('Error checking user status:', error);
           navigate("/login");
         }
       } else {
@@ -430,24 +534,6 @@ export default function AdminPanel() {
 
     return () => unsubscribe();
   }, [navigate]);
-
-  // Firebase-based chat initialization (placeholder)
-  useEffect(() => {
-    if (active !== "chat" || !userChecked) return;
-    
-    // TODO: Implement Firebase-based chat system
-    // For now, we'll use mock data
-    const mockConversations = {
-      'user1': [
-        { from: 'user', text: 'Hello, I need help', userId: 'user1', timestamp: new Date() },
-        { from: 'admin', text: 'How can I help you?', userId: 'user1', timestamp: new Date() }
-      ],
-      'user2': [
-        { from: 'user', text: 'I have a question', userId: 'user2', timestamp: new Date() }
-      ]
-    };
-    setConversations(mockConversations);
-  }, [active, userChecked]);
 
   const sendChat = () => {
     if (!input.trim() || !selectedConv) return;
@@ -504,35 +590,92 @@ export default function AdminPanel() {
     );
   }
 
-  const MENU = [
-    { section: "🚀 Dashboard", items: [
-      { key: "dashboard", label: "Overview", icon: <BsSpeedometer2 /> },
-      { key: "realtime", label: "Real-time Monitor", icon: <IoPulse /> },
-      { key: "analytics", label: "Advanced Analytics", icon: <IoAnalytics /> },
-    ]},
-    { section: "💬 Communication", items: [
-      { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare /> },
-      { key: "aiBot", label: "AI Assistant", icon: <BsRobot /> },
-      { key: "tickets", label: "Support Tickets", icon: <FiFileText /> }
-    ]},
-    { section: "📊 Statistics", items: [
-      { key: "lineChart", label: "Analytics & Map", icon: <FiBarChart2 /> },
-      { key: "pieChart", label: "Pie Chart", icon: <FiPieChart /> },
-      { key: "botAdmin", label: "Activity Charts", icon: <BsGraphUp /> }
-    ]},
-    { section: "🛠️ System", items: [
-      { key: "server", label: "Server Status", icon: <FiServer /> },
-      { key: "database", label: "Database", icon: <FiDatabase /> },
-      { key: "security", label: "Security", icon: <BsShieldCheck /> }
-    ]},
-    { section: "⚙️ Management", items: [
-      { key: "taskManagement", label: "Oppgavebehandling", icon: <BsKanban /> },
-      { key: "bugDashboard", label: "Bug Reports", icon: <FiAlertTriangle /> },
-      { key: "adminManagement", label: "Admin Management", icon: <HiOutlineCog /> },
-      { key: "userManagement", label: "User Management", icon: <HiOutlineUserGroup /> },
-      { key: "settings", label: "Settings", icon: <FiSettings /> }
-    ]}
-  ];
+  // Show pending access screen for users waiting for approval
+  if (currentUserRole === 'pending') {
+    return <PendingAccess user={currentUser} />;
+  }
+  
+  // Check if user has any permissions at all
+  if ((currentUserRole === 'support' || currentUserRole === 'user') && userPermissions.length === 0) {
+    return <NoAccess user={currentUser} role={currentUserRole} />;
+  }
+
+  // Filter menu based on role and permissions
+  const getFilteredMenu = () => {
+    const allMenuItems = [
+      { section: "🚀 Dashboard", items: [
+        { key: "dashboard", label: "Overview", icon: <BsSpeedometer2 />, permission: 'dashboard' },
+        { key: "realtime", label: "Real-time Monitor", icon: <IoPulse />, permission: 'realtime' },
+        { key: "analytics", label: "Advanced Analytics", icon: <IoAnalytics />, permission: 'analytics' },
+      ]},
+      { section: "💬 Communication", items: [
+        { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare />, permission: 'chat' },
+        { key: "aiBot", label: "AI Assistant", icon: <BsRobot />, permission: 'aiBot' },
+        { key: "tickets", label: "Support Tickets", icon: <FiFileText />, permission: 'tickets' }
+      ]},
+      { section: "📊 Statistics", items: [
+        { key: "lineChart", label: "Analytics & Map", icon: <FiBarChart2 />, permission: 'analytics' },
+        { key: "pieChart", label: "Pie Chart", icon: <FiPieChart />, permission: 'analytics' },
+        { key: "botAdmin", label: "Activity Charts", icon: <BsGraphUp />, permission: 'analytics' }
+      ]},
+      { section: "🛠️ System", items: [
+        { key: "server", label: "Server Status", icon: <FiServer />, permission: 'server' },
+        { key: "database", label: "Database", icon: <FiDatabase />, permission: 'database' },
+        { key: "security", label: "Security", icon: <BsShieldCheck />, permission: 'security' }
+      ]},
+      { section: "⚙️ Management", items: [
+        { key: "taskManagement", label: "Oppgavebehandling", icon: <BsKanban />, permission: 'tasks' },
+        { key: "bugDashboard", label: "Bug Reports", icon: <FiAlertTriangle />, permission: 'bugs' },
+        { key: "adminManagement", label: "Admin Management", icon: <HiOutlineCog />, permission: 'admins' },
+        { key: "userManagement", label: "User Management", icon: <HiOutlineUserGroup />, permission: 'users' },
+        { key: "settings", label: "Settings", icon: <FiSettings />, permission: 'settings' }
+      ]}
+    ];
+
+    // Owner sees everything
+    if (currentUserRole === 'owner') {
+      return allMenuItems;
+    }
+
+    // Admin sees everything except user management (owner only)
+    if (currentUserRole === 'admin') {
+      return allMenuItems.map(section => ({
+        ...section,
+        items: section.items.filter(item => item.key !== 'userManagement')
+      })).filter(section => section.items.length > 0);
+    }
+
+    // Support and users see only what they have permission for
+    if (currentUserRole === 'support' || currentUserRole === 'user') {
+      return allMenuItems.map(section => ({
+        ...section,
+        items: section.items.filter(item => userPermissions.includes(item.permission))
+      })).filter(section => section.items.length > 0);
+    }
+
+    // Pending users see nothing
+    return [];
+  };
+
+  const MENU = getFilteredMenu();
+
+  // Helper function to get default permissions based on role
+  const getDefaultPermissions = (role) => {
+    switch (role) {
+      case 'owner':
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
+      case 'admin':
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings'];
+      case 'support':
+        return []; // Support får INGEN tilgang som standard - admin må eksplisitt gi tilgang
+      case 'user':
+        return []; // Vanlige brukere får INGEN tilgang som standard
+      case 'pending':
+        return []; // Ventende brukere får INGEN tilgang
+      default:
+        return [];
+    }
+  };
 
   const CONTENT = {
     dashboard: <DashboardOverview />,

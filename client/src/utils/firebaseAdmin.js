@@ -77,27 +77,42 @@ export const getOrCreateUser = async (firebaseUser) => {
 };
 
 /**
- * Check if current user is admin
+ * Check if current user has access to admin panel
+ * This includes: owner, admin, and support roles
  */
 export const checkAdminStatus = async (user) => {
   if (!user) return false;
   
   try {
-    // First check by email (fastest)
+    // Owner emails (highest priority)
+    const ownerEmails = [
+      'vintrastudio@gmail.com',
+      'vintra@whisper.no',
+      'vintra@example.com'
+    ];
+    
+    if (ownerEmails.includes(user.email?.toLowerCase())) {
+      await ensureAdminInFirestore(user);
+      return true;
+    }
+    
+    // Check by email in ADMIN_EMAILS list
     if (isAdminEmail(user.email)) {
-      // Ensure admin is stored in Firestore
       await ensureAdminInFirestore(user);
       return true;
     }
 
-    // Then check Firestore user document
+    // Check Firestore user document for role
     const userRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      if (userData.role === 'admin') {
-        await ensureAdminInFirestore(user);
+      // Allow owner, admin, and support roles to access admin panel
+      if (userData.role === 'owner' || userData.role === 'admin' || userData.role === 'support') {
+        if (userData.role === 'admin' || userData.role === 'owner') {
+          await ensureAdminInFirestore(user);
+        }
         return true;
       }
     }

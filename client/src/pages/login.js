@@ -63,8 +63,8 @@ export default function Login() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const isAdmin = await checkAdminStatus(user);
-          if (isAdmin) {
+          const hasAdminAccess = await checkAdminStatus(user);
+          if (hasAdminAccess) {
             navigate('/admin');
           } else {
             navigate('/');
@@ -100,10 +100,10 @@ export default function Login() {
         throw new Error('Failed to create user profile');
       }
 
-      // Check admin status and navigate
-      const isAdmin = await checkAdminStatus(user);
+      // Check if user has access to admin panel (owner, admin, or support)
+      const hasAdminAccess = await checkAdminStatus(user);
       
-      if (isAdmin) {
+      if (hasAdminAccess) {
         navigate('/admin');
       } else {
         navigate('/');

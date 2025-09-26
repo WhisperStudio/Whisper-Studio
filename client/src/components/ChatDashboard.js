@@ -214,206 +214,84 @@ const ChatDashboard = () => {
   const adminTypingActiveRef = useRef(false);
   const adminInputRef = useRef(null);
 
-  // Load conversations from Firebase
+  // Load conversations from Firebase with real-time updates
   useEffect(() => {
+    let unsubscribe;
+    
     const loadConversations = async () => {
       try {
         setLoading(true);
-        console.log('ChatDashboard: Loading conversations from Firebase...');
+        console.log('ChatDashboard: Setting up real-time chat listener...');
         
-        // First try to get chats collection directly
-        console.log('ChatDashboard: Trying direct chats collection approach...');
-        const chatsSnapshot = await getDocs(collection(db, 'chats'));
-        console.log('ChatDashboard: Found chat documents:', chatsSnapshot.size);
-        
-        if (chatsSnapshot.size > 0) {
-          console.log('ChatDashboard: Chat document IDs:');
-          chatsSnapshot.forEach(doc => {
-            console.log('- Chat ID:', doc.id, 'Data:', doc.data());
-          });
-        }
-        
-        // Also try collectionGroup approach
-        console.log('ChatDashboard: Trying collectionGroup messages approach...');
-        const messagesSnapshot = await getDocs(collectionGroup(db, 'messages'));
-        console.log('ChatDashboard: Found total messages across all chats:', messagesSnapshot.size);
-        
-        // Group messages by userId
-        const userChats = {};
-        messagesSnapshot.forEach(doc => {
-          const data = doc.data();
-          console.log('ChatDashboard: Processing message:', doc.id, data);
+        // Set up real-time listener for chats collection
+        const chatsRef = collection(db, 'chats');
+        unsubscribe = onSnapshot(chatsRef, async (chatsSnapshot) => {
+          console.log('ChatDashboard: Chat documents updated:', chatsSnapshot.size);
           
-          // Try multiple ways to get userId
-          let userId = data.userId || data.uid || data.user_id;
+          const convs = {};
           
-          // If no userId in message, try to extract from document path
-          if (!userId) {
-            const docPath = doc.ref.path; // e.g., "chats/userId/messages/messageId"
-            const pathParts = docPath.split('/');
-            if (pathParts.length >= 2 && pathParts[0] === 'chats') {
-              userId = pathParts[1];
-              console.log('ChatDashboard: Extracted userId from path:', userId);
-            }
-          }
-          
-          if (userId) {
-            if (!userChats[userId]) {
-              userChats[userId] = [];
-            }
-            const sender = data.sender;
-            const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
-            userChats[userId].push({
-              id: doc.id,
-              from: mappedFrom,
-              text: data.text,
-              timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
-              userId: userId,
-              senderEmail: data.senderEmail
-            });
-            console.log(`ChatDashboard: Added message to user ${userId}:`, data.text?.substring(0, 50));
-          } else {
-            console.warn('ChatDashboard: No userId found for message:', doc.id, data);
-          }
-        });
-        
-        console.log('ChatDashboard: Grouped messages by user:', Object.keys(userChats).length, 'users found');
-        
-        // If no messages found via collectionGroup, try direct approach
-        if (Object.keys(userChats).length === 0 && chatsSnapshot.size > 0) {
-          console.log('ChatDashboard: No messages via collectionGroup, trying direct chat approach...');
-          
+          // Process each chat document
           for (const chatDoc of chatsSnapshot.docs) {
             const userId = chatDoc.id;
-            console.log('ChatDashboard: Checking messages for user:', userId);
+            const chatData = chatDoc.data();
+            console.log('ChatDashboard: Processing chat for user:', userId);
             
+            // Get messages for this chat
             try {
               const messagesRef = collection(db, 'chats', userId, 'messages');
               const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
-              const userMessagesSnapshot = await getDocs(messagesQuery);
+              const messagesSnapshot = await getDocs(messagesQuery);
               
-              console.log(`ChatDashboard: Found ${userMessagesSnapshot.size} messages for user ${userId}`);
+              console.log(`ChatDashboard: Found ${messagesSnapshot.size} messages for user ${userId}`);
               
-              if (!userMessagesSnapshot.empty) {
+              if (messagesSnapshot.size > 0) {
                 const userMessages = [];
-                userMessagesSnapshot.forEach(doc => {
-                  const data = doc.data();
-                  const sender = data.sender;
-                  const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
+                messagesSnapshot.forEach(msgDoc => {
+                  const data = msgDoc.data();
+                  const sender = data.sender || data.from;
+                  const mappedFrom = sender === 'user' ? 'user' : 
+                                     sender === 'admin' ? 'admin' : 
+                                     sender === 'system' ? 'system' : 'bot';
+                  
                   userMessages.push({
-                    id: doc.id,
+                    id: msgDoc.id,
                     from: mappedFrom,
-                    text: data.text,
-                    timestamp: data.timestamp?.toDate() || new Date(data.timestamp?.seconds * 1000) || new Date(),
+                    text: data.text || data.message || '',
+                    timestamp: data.timestamp?.toDate() || new Date(),
                     userId: userId,
-                    senderEmail: data.senderEmail
+                    senderEmail: data.senderEmail || data.adminEmail
                   });
                 });
                 
-                if (userMessages.length > 0) {
-                  userChats[userId] = userMessages;
-                }
+                // Sort messages by timestamp
+                userMessages.sort((a, b) => a.timestamp - b.timestamp);
+                convs[userId] = userMessages;
+                
+                console.log(`ChatDashboard: Loaded ${userMessages.length} messages for user ${userId}`);
               }
             } catch (error) {
               console.error(`ChatDashboard: Error loading messages for user ${userId}:`, error);
             }
           }
           
-          console.log('ChatDashboard: After direct approach, found users:', Object.keys(userChats).length);
-        }
-        
-        const convs = {};
-        
-        // Process each user's messages
-        Object.keys(userChats).forEach(userId => {
-          const userMessages = userChats[userId];
-          
-          // Sort messages by timestamp (oldest first for conversation flow)
-          userMessages.sort((a, b) => a.timestamp - b.timestamp);
-          
-          convs[userId] = userMessages;
-          
-          console.log(`ChatDashboard: Processed user ${userId} with ${userMessages.length} messages`);
-        });
-        
-        console.log('ChatDashboard: Loaded conversations:', Object.keys(convs).length, convs);
-        
-        // Only update if there are actual changes to prevent unnecessary re-renders
-        const currentKeys = Object.keys(conversations).sort();
-        const newKeys = Object.keys(convs).sort();
-        const hasChanges = JSON.stringify(currentKeys) !== JSON.stringify(newKeys) ||
-          Object.keys(convs).some(userId => {
-            const currentMsgs = conversations[userId] || [];
-            const newMsgs = convs[userId] || [];
-            return currentMsgs.length !== newMsgs.length;
-          });
-        
-        if (hasChanges || Object.keys(conversations).length === 0) {
-          console.log('ChatDashboard: Changes detected, updating conversations');
+          console.log('ChatDashboard: Loaded conversations:', Object.keys(convs).length);
           setConversations(convs);
-        } else {
-          console.log('ChatDashboard: No changes detected, skipping update');
-        }
-        
-        setLoading(false);
+          setLoading(false);
+        }, (error) => {
+          console.error('ChatDashboard: Error in real-time listener:', error);
+          setLoading(false);
+        });
       } catch (error) {
-        console.error('ChatDashboard: Error loading conversations:', error);
-        // Fallback to mock data
-        const mockConversations = {
-          'demo-user-1': [
-            { from: 'user', text: 'Hello, I need help', userId: 'demo-user-1', timestamp: new Date() },
-            { from: 'admin', text: 'How can I help you?', userId: 'demo-user-1', timestamp: new Date() }
-          ]
-        };
-        setConversations(mockConversations);
+        console.error('ChatDashboard: Error setting up listener:', error);
         setLoading(false);
       }
     };
     
     loadConversations();
     
-    // Switch to real-time updates for smooth refresh
-    try {
-      allMessagesUnsubRef.current = onSnapshot(collectionGroup(db, 'messages'), (messagesSnapshot) => {
-        const userChats = {};
-        messagesSnapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          let userId = data.userId;
-          if (!userId) {
-            const pathParts = docSnap.ref.path.split('/');
-            if (pathParts[0] === 'chats') userId = pathParts[1];
-          }
-          if (!userId) return;
-          if (!userChats[userId]) userChats[userId] = [];
-          const sender = data.sender;
-          const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
-          userChats[userId].push({
-            id: docSnap.id,
-            from: mappedFrom,
-            text: data.text,
-            timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
-            userId: userId,
-            senderEmail: data.senderEmail
-          });
-        });
-
-        const convs = {};
-        Object.keys(userChats).forEach((uid) => {
-          const arr = userChats[uid];
-          arr.sort((a, b) => a.timestamp - b.timestamp);
-          convs[uid] = arr;
-        });
-        setConversations(convs);
-        setLoading(false);
-      });
-    } catch (err) {
-      console.error('ChatDashboard: Failed to start realtime messages subscription', err);
-    }
-
     return () => {
-      if (allMessagesUnsubRef.current) allMessagesUnsubRef.current();
-      if (window.selectedConversationInterval) {
-        clearInterval(window.selectedConversationInterval);
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
   }, []);

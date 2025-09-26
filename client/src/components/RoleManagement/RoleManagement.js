@@ -216,7 +216,8 @@ const ROLES = {
   OWNER: 'owner',
   ADMIN: 'admin',
   SUPPORT: 'support',
-  USER: 'user'
+  USER: 'user',
+  PENDING: 'pending'
 };
 
 const ROLE_HIERARCHY = {
@@ -293,10 +294,64 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
   const loadUsers = async () => {
     try {
       setLoading(true);
+      console.log('RoleManagement: Loading users from Firebase...');
       const usersRef = collection(db, 'users');
-      const q = query(usersRef, orderBy('createdAt', 'desc'));
       
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      // Don't use orderBy initially to avoid issues with missing fields
+      const unsubscribe = onSnapshot(usersRef, (snapshot) => {
+        console.log('RoleManagement: Users snapshot received, count:', snapshot.size);
+        
+        const usersList = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('RoleManagement: User loaded:', doc.id, data.email, data.role);
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            lastActivity: data.lastActivity?.toDate() || new Date()
+          };
+        });
+
+        // Set vintra emails as owner if exists
+        const ownerEmails = [
+          'vintrastudio@gmail.com',
+          'vintra@whisper.no',
+          'vintra@example.com'
+        ];
+
+        const updatedUsers = usersList.map(user => {
+          if (ownerEmails.includes(user.email?.toLowerCase())) {
+            return { ...user, role: ROLES.OWNER };
+          }
+          // Ensure role is set, default to 'pending' if not set
+          if (!user.role) {
+            return { ...user, role: ROLES.PENDING };
+          }
+          return user;
+        });
+        
+        // Sort by createdAt after loading
+        updatedUsers.sort((a, b) => b.createdAt - a.createdAt);
+        
+        console.log('RoleManagement: Total users loaded:', updatedUsers.length);
+        setUsers(updatedUsers);
+        setLoading(false);
+      }, (error) => {
+        console.error('RoleManagement: Error in snapshot listener:', error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('RoleManagement: Error loading users:', error);
+      setLoading(false);
+      
+      // Try to load without orderBy if there's an error
+      try {
+        const usersRef = collection(db, 'users');
+        const snapshot = await getDocs(usersRef);
+        console.log('RoleManagement: Fallback load, users count:', snapshot.size);
+        
         const usersList = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
@@ -304,7 +359,6 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
           lastActivity: doc.data().lastActivity?.toDate() || new Date()
         }));
         
-        // Set vintra emails as owner if exists
         const ownerEmails = [
           'vintrastudio@gmail.com',
           'vintra@whisper.no',
@@ -315,17 +369,18 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
           if (ownerEmails.includes(user.email?.toLowerCase())) {
             return { ...user, role: ROLES.OWNER };
           }
+          if (!user.role) {
+            return { ...user, role: ROLES.PENDING };
+          }
           return user;
         });
         
+        updatedUsers.sort((a, b) => b.createdAt - a.createdAt);
         setUsers(updatedUsers);
         setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } catch (error) {
-      console.error('Error loading users:', error);
-      setLoading(false);
+      } catch (fallbackError) {
+        console.error('RoleManagement: Fallback also failed:', fallbackError);
+      }
     }
   };
 
@@ -352,6 +407,9 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
 
     // Filter by tab
     switch (activeTab) {
+      case 'pending':
+        filtered = filtered.filter(user => user.role === ROLES.PENDING);
+        break;
       case 'owners':
         if (!isAdminView) {
           filtered = filtered.filter(user => user.role === ROLES.OWNER);
@@ -366,9 +424,7 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
         filtered = filtered.filter(user => user.role === ROLES.SUPPORT);
         break;
       case 'users':
-        filtered = filtered.filter(user => 
-          !user.role || user.role === ROLES.USER
-        );
+        filtered = filtered.filter(user => user.role === ROLES.USER);
         break;
       default:
         // Show all
@@ -395,15 +451,31 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
     return currentLevel > targetLevel;
   };
 
+  const getDefaultPermissions = (role) => {
+    switch (role) {
+      case 'owner':
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
+      case 'admin':
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'settings'];
+      case 'support':
+        return []; // Support får ingen tilgang som standard - admin må gi tilgang
+      case 'user':
+        return []; // Vanlige brukere får ingen tilgang som standard
+      default:
+        return [];
+    }
+  };
+
   const updateUserRole = async (userId, newRole) => {
     try {
       await updateDoc(doc(db, 'users', userId), {
         role: newRole,
+        permissions: getDefaultPermissions(newRole),
         updatedAt: serverTimestamp()
       });
+      loadUsers();
     } catch (error) {
       console.error('Error updating user role:', error);
-      alert('Feil ved oppdatering av brukerrolle');
     }
   };
 
@@ -420,28 +492,38 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
   };
 
   const deleteUser = async (userId) => {
+    if (!window.confirm('Er du sikker på at du vil slette denne brukeren? Brukeren vil miste all tilgang til systemet.')) {
+      return;
+    }
+
     try {
+      // Delete from Firestore
       await deleteDoc(doc(db, 'users', userId));
-      // Note: This only deletes from Firestore, not from Firebase Auth
-      // For complete deletion, you'd need a backend function
+      
+      // Note: We cannot delete the user from Firebase Auth directly
+      // The user will still be able to sign in with Google, but won't have access
+      // as their Firestore document is deleted
+      
+      loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
       alert('Feil ved sletting av bruker');
     }
   };
-
   const getStats = () => {
     const owners = users.filter(u => u.role === ROLES.OWNER).length;
     const admins = users.filter(u => u.role === ROLES.ADMIN).length;
     const support = users.filter(u => u.role === ROLES.SUPPORT).length;
-    const regularUsers = users.filter(u => !u.role || u.role === ROLES.USER).length;
+    const regularUsers = users.filter(u => u.role === ROLES.USER).length;
+    const pending = users.filter(u => u.role === ROLES.PENDING).length;
     
     return { 
-      total: users.length, 
-      owners, 
-      admins, 
-      support, 
-      users: regularUsers 
+      total: users.length,
+      owners,
+      admins,
+      support,
+      users: regularUsers,
+      pending
     };
   };
 
@@ -487,7 +569,7 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
           <StatValue>{stats.admins}</StatValue>
           <StatLabel>Administratorer</StatLabel>
         </StatCard>
-        <StatCard color="linear-gradient(90deg, #a78bfa, #8b5cf6)">
+        <StatCard color="linear-gradient(90deg, #22c55e, #16a34a)">
           <StatValue>{stats.support}</StatValue>
           <StatLabel>Support</StatLabel>
         </StatCard>
@@ -495,12 +577,23 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
           <StatValue>{stats.users}</StatValue>
           <StatLabel>Brukere</StatLabel>
         </StatCard>
+        {stats.pending > 0 && (
+          <StatCard color="linear-gradient(90deg, #ef4444, #dc2626)">
+            <StatValue>{stats.pending}</StatValue>
+            <StatLabel>Venter godkjenning</StatLabel>
+          </StatCard>
+        )}
       </StatsGrid>
 
       <TabContainer>
         <Tab active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
-          <FiUsers /> Alle ({isAdminView ? stats.support + stats.users : stats.total})
+          <FiUsers /> Alle ({isAdminView ? stats.support + stats.users + stats.pending : stats.total})
         </Tab>
+        {stats.pending > 0 && (
+          <Tab active={activeTab === 'pending'} onClick={() => setActiveTab('pending')}>
+            <FiAlertTriangle /> Venter ({stats.pending})
+          </Tab>
+        )}
         {!isAdminView && (
           <Tab active={activeTab === 'owners'} onClick={() => setActiveTab('owners')}>
             <BsAward /> Eiere ({stats.owners})
