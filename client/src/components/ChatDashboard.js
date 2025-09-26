@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { FiLock, FiUnlock, FiTrash2, FiMessageCircle, FiUser, FiX } from 'react-icons/fi';
 import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
 import { auth } from '../firebase';
+import { CompactLoader } from './LoadingComponent';
 
 
 const ChatDashboardContainer = styled.div`
@@ -699,10 +700,11 @@ const ChatDashboard = () => {
   if (loading) {
     return (
       <ChatDashboardContainer>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#99e6ff' }}>
-          <FiMessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-          <div>Loading conversations...</div>
-        </div>
+        <CompactLoader 
+          size="large" 
+          text="Laster samtaler..." 
+          color="#99e6ff" 
+        />
       </ChatDashboardContainer>
     );
   }

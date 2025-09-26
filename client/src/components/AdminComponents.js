@@ -4,6 +4,7 @@ import {
   db, collection, getDocs, query, orderBy, limit, where, onSnapshot,
   updateDoc, doc, deleteDoc, serverTimestamp, addDoc
 } from '../firebase';
+import { CompactLoader, SkeletonLoader } from './LoadingComponent';
 import {
   FiUsers, FiMessageSquare, FiSettings, FiDatabase, FiServer, FiShield,
   FiActivity, FiAlertTriangle, FiCheckCircle, FiClock, FiEdit3, FiTrash2,
@@ -297,9 +298,11 @@ export const AdvancedAnalytics = () => {
         <Header>
           <Title><IoAnalytics /> Advanced Analytics</Title>
         </Header>
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.6)' }}>
-          Loading analytics data...
-        </div>
+        <CompactLoader 
+          size="large" 
+          text="Analyserer data og genererer statistikk..." 
+          color="#a78bfa" 
+        />
       </Container>
     );
   }
@@ -919,9 +922,11 @@ export const TicketsView = () => {
         <Header>
           <Title><FiFileText /> Support Tickets</Title>
         </Header>
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.6)' }}>
-          Loading tickets...
-        </div>
+        <CompactLoader 
+          size="large" 
+          text="Laster support tickets..." 
+          color="#f472b6" 
+        />
       </Container>
     );
   }

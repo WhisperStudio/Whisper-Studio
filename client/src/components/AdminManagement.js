@@ -7,11 +7,15 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  updateDoc,
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  where,
+  onSnapshot,
+  getDoc
 } from '../firebase';
-import { auth } from '../firebase';
+import { auth, createUserWithEmailAndPassword } from '../firebase';
 import { 
   FiUsers, 
   FiUserPlus, 
@@ -28,8 +32,17 @@ import {
   FiSettings,
   FiStar,
   FiTrash2,
-  FiAlertTriangle
+  FiAlertTriangle,
+  FiEdit3,
+  FiCheck,
+  FiX,
+  FiLock,
+  FiUnlock,
+  FiCrown,
+  FiUserCheck
 } from 'react-icons/fi';
+import { BsCrown, BsShieldCheck, BsPerson } from 'react-icons/bs';
+import { CompactLoader } from './LoadingComponent';
 
 const Container = styled.div`
   max-width: 1400px;

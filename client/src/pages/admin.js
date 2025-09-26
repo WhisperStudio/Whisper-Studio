@@ -2,10 +2,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, onAuthStateChanged } from '../firebase';
+import { signOut } from 'firebase/auth';
+import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
 import { checkAdminStatus } from '../utils/firebaseAdmin';
-
 import ChatDashboard from '../components/ChatDashboard';
 import LiveChat from '../components/LiveChat';
 import VisitorAnalytics from '../components/VisitorAnalytics';
@@ -14,12 +14,17 @@ import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart from '../components/ChatGeoChart';
 import BugDashboard from '../components/BugDashboard';
 import AdminManagement from '../components/AdminManagement';
+import RoleManagement from '../components/RoleManagement/RoleManagement';
+import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
+import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
 import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard';
 import { 
   ServerStatus, DatabaseManager, SecurityCenter,
   UserManagement, SystemSettings, AdvancedAnalytics,
   AIBotConfig, TicketsView 
 } from '../components/AdminComponents';
+import { AdminLoadingScreen } from '../components/LoadingComponent';
+import TaskManagement from '../components/TaskManagement/TaskManagement';
 
 import {
   FiMessageSquare,
@@ -81,6 +86,7 @@ import {
 } from 'react-icons/bs';
 import { IoSparkles, IoRocketSharp, IoPulse, IoAnalytics } from 'react-icons/io5';
 import { HiOutlineChartBar, HiOutlineUserGroup, HiOutlineCog } from 'react-icons/hi';
+import { BsKanban } from 'react-icons/bs';
 
 // Global Styles
 const GlobalAdminStyles = createGlobalStyle`
@@ -370,11 +376,12 @@ export default function AdminPanel() {
   const [selectedConv, setSelectedConv] = useState(null);
   const [input, setInput] = useState("");
   const [active, setActive] = useState("dashboard");
-  const [userChecked, setUserChecked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userChecked, setUserChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const highlightRef = useRef();
+  const [currentUserRole, setCurrentUserRole] = useState('user');
   const buttonRefs = useRef([]);
+  const highlightRef = useRef(null);
 
   // Firebase Auth guard
   useEffect(() => {
@@ -384,6 +391,26 @@ export default function AdminPanel() {
           const isAdmin = await checkAdminStatus(user);
           if (isAdmin) {
             setCurrentUser(user);
+            
+            // Check user role
+            const ownerEmails = [
+              'vintrastudio@gmail.com',
+              'vintra@whisper.no',
+              'vintra@example.com'
+            ];
+            
+            if (ownerEmails.includes(user.email?.toLowerCase())) {
+              setCurrentUserRole('owner');
+            } else {
+              // Check from database
+              const userDoc = await getDoc(doc(db, 'users', user.uid));
+              if (userDoc.exists()) {
+                setCurrentUserRole(userDoc.data().role || 'admin');
+              } else {
+                setCurrentUserRole('admin');
+              }
+            }
+            
             setUserChecked(true);
             setLoading(false);
           } else {
@@ -468,18 +495,12 @@ export default function AdminPanel() {
 
   if (loading || !userChecked) {
     return (
-      <Page>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          color: '#fff',
-          fontSize: '18px'
-        }}>
-          Loading Admin Panel...
-        </div>
-      </Page>
+      <AdminLoadingScreen 
+        title="Whisper Studio Admin"
+        subtitle="Verifiserer tilgang og laster sikker dashboard..."
+        showProgress={true}
+        showDots={true}
+      />
     );
   }
 
@@ -505,6 +526,7 @@ export default function AdminPanel() {
       { key: "security", label: "Security", icon: <BsShieldCheck /> }
     ]},
     { section: "⚙️ Management", items: [
+      { key: "taskManagement", label: "Oppgavebehandling", icon: <BsKanban /> },
       { key: "bugDashboard", label: "Bug Reports", icon: <FiAlertTriangle /> },
       { key: "adminManagement", label: "Admin Management", icon: <HiOutlineCog /> },
       { key: "userManagement", label: "User Management", icon: <HiOutlineUserGroup /> },
@@ -530,9 +552,10 @@ export default function AdminPanel() {
     server: <ServerStatus />,
     database: <DatabaseManager />,
     security: <SecurityCenter />,
+    taskManagement: <TaskManagement />,
     bugDashboard: <BugDashboard />,
-    adminManagement: <AdminManagement />,
-    userManagement: <UserManagement />,
+    adminManagement: <AdminSupportManagement />,
+    userManagement: <OwnerUserManagement />,
     settings: <SystemSettings />
   };
 

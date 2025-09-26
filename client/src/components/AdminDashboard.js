@@ -4,6 +4,7 @@ import {
   db, collection, getDocs, query, orderBy, limit, where, onSnapshot,
   updateDoc, doc, deleteDoc, serverTimestamp, addDoc
 } from '../firebase';
+import { CompactLoader, SkeletonLoader } from './LoadingComponent';
 import {
   FiUsers, FiMessageSquare, FiBarChart2, FiTrendingUp, FiClock,
   FiCheckCircle, FiAlertCircle, FiRefreshCw, FiFilter, FiEdit3,
@@ -858,6 +859,31 @@ export const DashboardOverview = () => {
       borderWidth: 0
     }]
   };
+
+  if (loading) {
+    return (
+      <DashboardContainer>
+        <HeaderSection>
+          <Title>
+            <BsSpeedometer2 /> Dashboard Overview
+          </Title>
+          <ActionButtons>
+            <ActionButton onClick={loadDashboardData}>
+              <FiRefreshCw /> Refresh
+            </ActionButton>
+            <ActionButton>
+              <FiDownload /> Export
+            </ActionButton>
+          </ActionButtons>
+        </HeaderSection>
+        <CompactLoader 
+          size="large" 
+          text="Laster dashboard data..." 
+          color="#60a5fa" 
+        />
+      </DashboardContainer>
+    );
+  }
 
   return (
     <DashboardContainer>
