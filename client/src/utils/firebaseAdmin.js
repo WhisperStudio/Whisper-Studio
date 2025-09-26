@@ -59,11 +59,14 @@ export const getOrCreateUser = async (firebaseUser) => {
       const userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        role: isAdminEmail(firebaseUser.email) ? 'admin' : 'user',
+        displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+        photoURL: firebaseUser.photoURL || '',
+        role: isAdminEmail(firebaseUser.email) ? 'admin' : 'pending', // New users start as pending
+        permissions: [], // Empty permissions by default
+        provider: firebaseUser.providerData?.[0]?.providerId || 'password',
         createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp()
+        lastLogin: serverTimestamp(),
+        lastActivity: serverTimestamp()
       };
 
       // Use setDoc instead of addDoc to use UID as document ID
