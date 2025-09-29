@@ -312,7 +312,7 @@ const TaskManagement = () => {
 
         const tasksList = snapshot.docs.map(doc => {
           const data = doc.data();
-          return {
+          const task = {
             id: doc.id,
             title: data.title || '',
             description: data.description || '',
@@ -322,9 +322,12 @@ const TaskManagement = () => {
             dueDate: data.dueDate || '',
             progress: data.progress || 0,
             tags: data.tags || [],
+            comments: data.comments || [], // Include comments from Firebase
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
           };
+          console.log('Processed task:', task);
+          return task;
         });
 
         console.log('✅ Real-time tasks loaded:', tasksList.length);
@@ -382,10 +385,11 @@ const TaskManagement = () => {
             description: data.description || '',
             assignedTo: data.assignedTo || '',
             priority: data.priority || 'medium',
-            status: data.status || 'todo',
+            status: data.status || 'backlog',
             dueDate: data.dueDate || '',
             progress: data.progress || 0,
             tags: data.tags || [],
+            comments: data.comments || [], // Include comments from Firebase
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
           };
@@ -441,7 +445,21 @@ const TaskManagement = () => {
         progress: 65,
         dueDate: '2024-01-15',
         createdAt: '2024-01-01T10:00:00Z',
-        tags: ['ui', 'design', 'admin']
+        tags: ['ui', 'design', 'admin'],
+        comments: [
+          {
+            id: 'c1',
+            text: 'Har startet med designendringene. Ser bra ut så langt!',
+            author: 'Admin Bruker',
+            createdAt: '2024-01-02T14:30:00Z'
+          },
+          {
+            id: 'c2',
+            text: 'Kan du også oppdatere fargepaletten for å matche den nye brandingguiden?',
+            author: 'Super Admin',
+            createdAt: '2024-01-03T09:15:00Z'
+          }
+        ]
       },
       {
         id: '2',
@@ -453,7 +471,15 @@ const TaskManagement = () => {
         progress: 20,
         dueDate: '2024-01-10',
         createdAt: '2024-01-02T14:30:00Z',
-        tags: ['database', 'performance']
+        tags: ['database', 'performance'],
+        comments: [
+          {
+            id: 'c3',
+            text: 'Dette er en høy prioritet oppgave. Kan vi få en statusoppdatering?',
+            author: 'Admin Bruker',
+            createdAt: '2024-01-04T11:00:00Z'
+          }
+        ]
       },
       {
         id: '3',
@@ -465,7 +491,8 @@ const TaskManagement = () => {
         progress: 100,
         dueDate: '2024-01-20',
         createdAt: '2024-01-03T09:15:00Z',
-        tags: ['notifications', 'features']
+        tags: ['notifications', 'features'],
+        comments: []
       },
       {
         id: '4',
@@ -477,7 +504,8 @@ const TaskManagement = () => {
         progress: 0,
         dueDate: '2024-02-01',
         createdAt: '2024-01-04T11:00:00Z',
-        tags: ['auth', 'security']
+        tags: ['auth', 'security'],
+        comments: []
       },
       {
         id: '5',
@@ -489,7 +517,8 @@ const TaskManagement = () => {
         progress: 85,
         dueDate: '2024-01-25',
         createdAt: '2024-01-05T13:20:00Z',
-        tags: ['documentation', 'api']
+        tags: ['documentation', 'api'],
+        comments: []
       }
     ];
 
@@ -571,6 +600,7 @@ const TaskManagement = () => {
           dueDate: taskData.dueDate || '',
           progress: taskData.progress || 0,
           tags: taskData.tags || [],
+          comments: [], // Initialize empty comments array
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
@@ -587,6 +617,7 @@ const TaskManagement = () => {
         const newTask = {
           ...taskData,
           id: Date.now().toString(),
+          comments: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -599,6 +630,7 @@ const TaskManagement = () => {
       const fallbackTask = {
         ...taskData,
         id: Date.now().toString(),
+        comments: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -624,6 +656,7 @@ const TaskManagement = () => {
         };
 
         await updateDoc(taskRef, taskToUpdate);
+        console.log('✅ Task updated in Firebase');
         // Refresh to get updated data
         await loadTasks();
       } else {
@@ -638,6 +671,7 @@ const TaskManagement = () => {
       setTasks(prev => prev.map(task =>
         task.id === taskData.id ? { ...taskData, updatedAt: new Date().toISOString() } : task
       ));
+      throw error; // Re-throw to let TaskForm know about the error
     }
   };
 
@@ -660,15 +694,10 @@ const TaskManagement = () => {
     }
   };
 
-  const handleCompleteTask = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-      const updatedTask = {
-        ...task,
-        status: task.status === 'completed' ? 'backlog' : 'completed'
-      };
-      await handleUpdateTask(updatedTask);
-    }
+  const handleEditTask = (task) => {
+    console.log('=== EDITING TASK ===', task);
+    setEditingTask(task);
+    setShowForm(true);
   };
 
   const getTaskStats = () => {
@@ -768,6 +797,7 @@ const TaskManagement = () => {
         viewMode={viewMode}
         onTaskUpdate={handleUpdateTask}
         onTaskDelete={handleDeleteTask}
+        onTaskEdit={handleEditTask}
         onTaskCreate={() => setShowForm(true)}
       />
 
@@ -779,6 +809,7 @@ const TaskManagement = () => {
         }}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         onDelete={handleDeleteTask}
+        onTaskUpdate={handleUpdateTask}
         task={editingTask}
         admins={admins}
       />

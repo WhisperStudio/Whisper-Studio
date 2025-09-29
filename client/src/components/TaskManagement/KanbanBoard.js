@@ -397,7 +397,7 @@ const COLUMNS = [
   }
 ];
 
-const KanbanBoard = ({ tasks, onTaskUpdate, onTaskDelete, onTaskCreate }) => {
+const KanbanBoard = ({ tasks, onTaskUpdate, onTaskDelete, onTaskEdit, onTaskCreate }) => {
   const [columns, setColumns] = useState(COLUMNS);
 
   console.log('🎯 KANBAN BOARD RENDER');
@@ -546,7 +546,7 @@ const KanbanBoard = ({ tasks, onTaskUpdate, onTaskDelete, onTaskCreate }) => {
                                 ? `${provided.draggableProps.style?.transform || ''} rotate(5deg)`
                                 : provided.draggableProps.style?.transform
                             }}
-                            onClick={() => onTaskUpdate({ ...task, status: column.status })}
+                            onClick={() => onTaskEdit(task)}
                           >
                             <TaskHeader>
                               <TaskTitle>{task.title}</TaskTitle>

@@ -1,3 +1,4 @@
+// React imports
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import {
@@ -5,7 +6,11 @@ import {
   FiTag, FiClock, FiPlus, FiPercent, FiTrash2
 } from 'react-icons/fi';
 
-// Styled Components
+// Firebase imports
+import {
+  db, collection, doc, updateDoc, serverTimestamp
+} from '../../firebase';
+
 const FormOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -297,20 +302,19 @@ const Button = styled.button`
     }
   }
   
-  &.danger {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    border: none;
-    color: #fff;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
-      background: linear-gradient(135deg, #dc2626, #b91c1c);
-    }
-  }
-`;
+  &.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
 
-// Main Component
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+  }`;
+
 const TaskForm = ({ 
   isOpen, 
   onClose, 
@@ -331,6 +335,8 @@ const TaskForm = ({
   });
   
   const [newTag, setNewTag] = useState('');
+  const [newComment, setNewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -377,15 +383,44 @@ const TaskForm = ({
 
   const handleRemoveTag = (tagToRemove) => {
     setFormData(prev => ({
-      ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !task) return;
+
+    try {
+      const comment = {
+        id: Date.now().toString(),
+        text: newComment.trim(),
+        author: 'Current User', // TODO: Get from auth context
+        createdAt: new Date().toISOString()
+      };
+
+      const updatedComments = [...(task.comments || []), comment];
+
+      // Update task in Firebase
+      if (db) {
+        const taskRef = doc(db, 'tasks', task.id);
+        await updateDoc(taskRef, {
+          comments: updatedComments,
+          updatedAt: serverTimestamp()
+        });
+        console.log('✅ Comment added to Firebase');
+      }
+
+      setNewComment('');
+    } catch (error) {
+      console.error('❌ Error adding comment:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('=== FORM SUBMIT STARTED ===');
     console.log('Form data:', formData);
+    console.log('Task being edited:', task);
     console.log('onSubmit function:', typeof onSubmit);
 
     if (!formData.title.trim()) {
@@ -393,7 +428,10 @@ const TaskForm = ({
       return;
     }
 
+    setIsSubmitting(true);
+
     const taskData = {
+      id: task?.id, // Include the task ID for updates
       title: formData.title.trim(),
       description: formData.description.trim(),
       assignedTo: formData.assignedTo,
@@ -407,17 +445,20 @@ const TaskForm = ({
     console.log('✅ Form validation passed, calling onSubmit with:', taskData);
 
     try {
-      onSubmit(taskData);
-      console.log('✅ onSubmit called successfully');
+      await onSubmit(taskData);
+      console.log('✅ onSubmit completed successfully');
+      onClose(); // Only close after successful update
     } catch (error) {
       console.error('❌ Error calling onSubmit:', error);
+      // Keep form open on error
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
       handleSubmit(e);
     }
   };
@@ -578,11 +619,94 @@ const TaskForm = ({
             </FormGroup>
           </FormGrid>
 
+          {/* Comments Section */}
+          {task && (
+            <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#fff', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                💬 Kommentarer ({task.comments?.length || 0})
+              </h3>
+
+              {/* Comment List */}
+              <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '20px' }}>
+                {task.comments?.map(comment => (
+                  <div key={comment.id} style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px',
+                    transition: 'all 0.3s'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#60a5fa' }}>
+                        {comment.author}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)' }}>
+                        {new Date(comment.createdAt).toLocaleDateString('nb-NO')}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                      {comment.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Comment Input */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Legg til en kommentar..."
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: '80px'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                      e.preventDefault();
+                      handleAddComment();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  style={{
+                    padding: '12px 16px',
+                    background: newComment.trim() ? 'linear-gradient(135deg, #60a5fa, #a78bfa)' : 'rgba(255, 255, 255, 0.1)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    cursor: newComment.trim() ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  📝 Legg til
+                </button>
+              </div>
+            </div>
+          )}
+
           <FormActions>
             {task && onDelete && (
-              <Button 
-                type="button" 
-                className="danger" 
+              <Button
+                type="button"
+                className="danger"
                 onClick={() => {
                   if (window.confirm('Er du sikker på at du vil slette denne oppgaven?')) {
                     onDelete(task.id);
@@ -601,9 +725,9 @@ const TaskForm = ({
             <Button type="button" className="secondary" onClick={onClose}>
               Avbryt
             </Button>
-            <Button type="submit" className="primary">
+            <Button type="submit" className="primary" disabled={isSubmitting}>
               <FiSave />
-              {task ? 'Oppdater' : 'Opprett'} Oppgave
+              {isSubmitting ? 'Oppdaterer...' : (task ? 'Oppdater' : 'Opprett')} Oppgave
             </Button>
           </FormActions>
         </form>
