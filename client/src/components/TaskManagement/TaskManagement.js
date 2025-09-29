@@ -256,16 +256,22 @@ const TaskManagement = () => {
 
     // Test Firebase connection
     testFirebaseConnection();
+
+    // Set up periodic refresh to simulate real-time updates
+    const refreshInterval = setInterval(() => {
+      loadTasks();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
 
-  // Cleanup Firebase listeners on unmount
+  // Filter tasks whenever tasks or filters change
   useEffect(() => {
-    return () => {
-      if (unsubscribeTasks) {
-        unsubscribeTasks();
-      }
-    };
-  }, [unsubscribeTasks]);
+    filterTasks();
+  }, [tasks, filters]);
+
 
   const testFirebaseConnection = async () => {
     try {
@@ -303,21 +309,18 @@ const TaskManagement = () => {
         return;
       }
 
-      // Unsubscribe from previous listener if it exists
-      if (unsubscribeTasks) {
-        console.log('Unsubscribing from previous listener');
-        unsubscribeTasks();
-      }
-
-      // Try to load from Firebase first
+      // Try to load from Firebase first with improved error handling
       const tasksRef = collection(db, 'tasks');
       console.log('Tasks collection reference:', tasksRef);
 
-      const q = query(tasksRef, orderBy('createdAt', 'desc'));
-      console.log('Query created:', q);
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      // Use getDocs instead of onSnapshot to avoid real-time listener issues
+      try {
+        const q = query(tasksRef, orderBy('createdAt', 'desc'));
+        console.log('Query created:', q);
+        
+        const snapshot = await getDocs(q);
         console.log('Firebase snapshot received:', snapshot.size, 'documents');
+        
         const tasksList = snapshot.docs.map(doc => {
           const data = doc.data();
           const task = {
@@ -330,28 +333,23 @@ const TaskManagement = () => {
             dueDate: data.dueDate || '',
             progress: data.progress || 0,
             tags: data.tags || [],
-            // Handle server timestamps properly
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
           };
           console.log('Processed task:', task);
           return task;
         });
+        
         console.log('Loaded tasks from Firebase:', tasksList);
         setTasks(tasksList);
         setLoading(false);
-      }, (error) => {
-        console.error('Error loading tasks from Firebase:', error);
+      } catch (firebaseError) {
+        console.error('Firebase query failed:', firebaseError);
         // Fallback to mock data
         loadMockTasks();
-      });
-
-      // Store the unsubscribe function
-      setUnsubscribeTasks(() => unsubscribe);
-
-      return unsubscribe;
+      }
     } catch (error) {
-      console.error('Error setting up tasks listener:', error);
+      console.error('Error setting up tasks:', error);
       loadMockTasks();
     }
   };
@@ -528,8 +526,8 @@ const TaskManagement = () => {
         const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
         console.log('✅ Task successfully created in Firebase with ID:', docRef.id);
 
-        // The real-time listener will automatically pick up the new task
-        // No need to manually refresh
+        // Refresh tasks to show the new task
+        await loadTasks();
       } else {
         console.error('❌ Firebase DB not available');
         // Fallback for mock data
@@ -573,8 +571,8 @@ const TaskManagement = () => {
         };
 
         await updateDoc(taskRef, taskToUpdate);
-        // The real-time listener will automatically pick up the updated task
-        // No need to manually refresh
+        // Refresh to get updated data
+        await loadTasks();
       } else {
         // Fallback for mock data
         setTasks(prev => prev.map(task =>
@@ -596,8 +594,8 @@ const TaskManagement = () => {
     try {
       if (db) {
         await deleteDoc(doc(db, 'tasks', taskId));
-        // The real-time listener will automatically pick up the deleted task
-        // No need to manually refresh
+        // Refresh to get updated data
+        await loadTasks();
       } else {
         // Fallback for mock data
         setTasks(prev => prev.filter(task => task.id !== taskId));
