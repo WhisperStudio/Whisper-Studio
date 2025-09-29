@@ -13,13 +13,13 @@ const FormOverlay = styled.div`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
   animation: fadeIn 0.3s ease-out;
-  
+  cursor: default;
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -28,7 +28,6 @@ const FormOverlay = styled.div`
 
 const FormContainer = styled.div`
   background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
   padding: 32px;
@@ -38,6 +37,7 @@ const FormContainer = styled.div`
   overflow-y: auto;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
+  cursor: default;
   
   @keyframes slideUp {
     from { 
