@@ -340,7 +340,7 @@ export const processFileUpload = async (file) => {
   };
 };
 
-// Emoji suggestions based on sentiment
+// Emoji suggestions based on sentiment.
 export const getEmojiSuggestions = (sentiment) => {
   const emojiMap = {
     positive: ['😊', '👍', '🎉', '✨', '💪', '🌟'],
