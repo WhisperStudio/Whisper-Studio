@@ -248,22 +248,23 @@ const TaskManagement = () => {
   });
   const [unsubscribeTasks, setUnsubscribeTasks] = useState(null);
 
-  // Load tasks and admins from Firebase
+  // Load tasks and admins from Firebase with real-time updates
   useEffect(() => {
-    console.log('=== INITIALIZING TASK MANAGEMENT ===');
+    console.log('=== INITIALIZING TASK MANAGEMENT WITH REAL-TIME UPDATES ===');
     loadTasks();
     loadAdmins();
 
     // Test Firebase connection
     testFirebaseConnection();
 
-    // Set up periodic refresh to simulate real-time updates
-    const refreshInterval = setInterval(() => {
-      loadTasks();
-    }, 30000); // Refresh every 30 seconds
+    // Set up real-time listener for tasks
+    const unsubscribe = setupRealtimeListener();
 
     return () => {
-      clearInterval(refreshInterval);
+      if (unsubscribe) {
+        console.log('=== CLEANING UP REAL-TIME LISTENER ===');
+        unsubscribe();
+      }
     };
   }, []);
 
@@ -295,6 +296,58 @@ const TaskManagement = () => {
     }
   };
 
+  const setupRealtimeListener = () => {
+    if (!db) {
+      console.error('Firebase DB not available for real-time listener');
+      return null;
+    }
+
+    try {
+      console.log('=== SETTING UP REAL-TIME LISTENER ===');
+      const tasksRef = collection(db, 'tasks');
+      const q = query(tasksRef, orderBy('createdAt', 'desc'));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('🔥 REAL-TIME UPDATE RECEIVED:', snapshot.size, 'documents');
+
+        const tasksList = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: data.title || '',
+            description: data.description || '',
+            assignedTo: data.assignedTo || '',
+            priority: data.priority || 'medium',
+            status: data.status || 'backlog',
+            dueDate: data.dueDate || '',
+            progress: data.progress || 0,
+            tags: data.tags || [],
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
+          };
+        });
+
+        console.log('✅ Real-time tasks loaded:', tasksList.length);
+        setTasks(tasksList);
+
+        // Set loading to false after first real-time update
+        if (loading) {
+          setLoading(false);
+        }
+      }, (error) => {
+        console.error('❌ Real-time listener error:', error);
+        // Fallback to mock data if real-time fails
+        loadMockTasks();
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('❌ Error setting up real-time listener:', error);
+      loadMockTasks();
+      return null;
+    }
+  };
+
   const loadTasks = async () => {
     try {
       setLoading(true);
@@ -313,7 +366,7 @@ const TaskManagement = () => {
       const tasksRef = collection(db, 'tasks');
       console.log('Tasks collection reference:', tasksRef);
 
-      // Use getDocs instead of onSnapshot to avoid real-time listener issues
+      // Use getDocs for initial load (real-time listener will handle updates)
       try {
         const q = query(tasksRef, orderBy('createdAt', 'desc'));
         console.log('Query created:', q);
