@@ -1,6 +1,6 @@
 // pages/api/chat-activity.js
 import { format, subHours, subDays, differenceInHours, differenceInCalendarDays } from 'date-fns'
-import { db } from '../../lib/firebaseAdmin'  // <-- admin‐SDK
+import { db } from '../../lib/firebaseAdmin'  // <-- admin‐SDK.
 
 export default async function handler(req, res) {
   const range = req.query.range || '24h'
