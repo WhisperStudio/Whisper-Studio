@@ -350,7 +350,7 @@ const TaskForm = ({
         description: '',
         assignedTo: '',
         priority: 'medium',
-        status: 'pending',
+        status: 'backlog',
         dueDate: '',
         progress: 0,
         tags: []
