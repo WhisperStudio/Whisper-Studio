@@ -165,19 +165,25 @@ const StatusBadge = styled.span`
   background: ${props =>
     props.status === 'completed' ? 'rgba(34, 197, 94, 0.15)' :
     props.status === 'in-progress' ? 'rgba(59, 130, 246, 0.15)' :
-    props.status === 'pending' ? 'rgba(245, 158, 11, 0.15)' :
+    props.status === 'todo' ? 'rgba(245, 158, 11, 0.15)' :
+    props.status === 'review' ? 'rgba(168, 85, 247, 0.15)' :
+    props.status === 'backlog' ? 'rgba(107, 114, 128, 0.15)' :
     'rgba(107, 114, 128, 0.15)'
   };
   color: ${props =>
     props.status === 'completed' ? '#22c55e' :
     props.status === 'in-progress' ? '#3b82f6' :
-    props.status === 'pending' ? '#f59e0b' :
+    props.status === 'todo' ? '#f59e0b' :
+    props.status === 'review' ? '#a855f7' :
+    props.status === 'backlog' ? '#6b7280' :
     '#6b7280'
   };
   border: 1px solid ${props =>
     props.status === 'completed' ? 'rgba(34, 197, 94, 0.3)' :
     props.status === 'in-progress' ? 'rgba(59, 130, 246, 0.3)' :
-    props.status === 'pending' ? 'rgba(245, 158, 11, 0.3)' :
+    props.status === 'todo' ? 'rgba(245, 158, 11, 0.3)' :
+    props.status === 'review' ? 'rgba(168, 85, 247, 0.3)' :
+    props.status === 'backlog' ? 'rgba(107, 114, 128, 0.3)' :
     'rgba(107, 114, 128, 0.3)'
   };
   border-radius: 8px;
@@ -439,7 +445,10 @@ const TaskCard = ({
           <StatusBadge status={task.status}>
             {task.status === 'completed' ? 'Fullført' :
              task.status === 'in-progress' ? 'Pågår' :
-             task.status === 'pending' ? 'Venter' : 'Ny'}
+             task.status === 'todo' ? 'Todo' :
+             task.status === 'review' ? 'Review' :
+             task.status === 'backlog' ? 'Backlog' :
+             'Ny'}
           </StatusBadge>
         </div>
       </TaskFooter>

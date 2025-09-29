@@ -31,12 +31,13 @@ const RANGES = [
   { label: "Last 7 d", value: "7d" },
   { label: "Last 30 d", value: "30d" },
   { label: "Last 1 y", value: "1y" },
+  { label: "All time", value: "all" },
 ];
 
 export default function ChatActivityChart() {
-  const [range, setRange] = useState("1h");
+  const [range, setRange] = useState("all");
   const [now, setNow] = useState(new Date());
-  const [windowStart, setWindowStart] = useState(subHours(new Date(), 1));
+  const [windowStart, setWindowStart] = useState(new Date(2020, 0, 1));
   const [points, setPoints] = useState([]);
   const [chartKey, setChartKey] = useState(0); // For å force re-render av chart
 
@@ -53,7 +54,8 @@ export default function ChatActivityChart() {
     else if (range === "24h") ws = subHours(now, 24);
     else if (range === "7d") ws = subDays(now, 7);
     else if (range === "30d") ws = subDays(now, 30);
-    else ws = startOfMonth(subYears(now, 1)); // 1y
+    else if (range === "1y") ws = startOfMonth(subYears(now, 1));
+    else ws = new Date(2020, 0, 1); // All time - start from 2020
     setWindowStart(ws);
 
     // 2) Lag buckets - fikser tidsintervall problemet
@@ -79,8 +81,11 @@ export default function ChatActivityChart() {
       for (let d = 0; d <= 30; d++) {
         buckets.push(startOfDay(new Date(ws.getTime() + d * 86_400_000)));
       }
-    } else {
+    } else if (range === "1y") {
       // For 1y: lag månedlige buckets
+      buckets.push(...eachMonthOfInterval({ start: ws, end: startOfMonth(now) }));
+    } else {
+      // All time: lag månedlige buckets for all time
       buckets.push(...eachMonthOfInterval({ start: ws, end: startOfMonth(now) }));
     }
 
@@ -134,7 +139,7 @@ export default function ChatActivityChart() {
   const isHour = range === "1h";
   const isDay = range === "24h";
   const isWeek = range === "7d" || range === "30d";
-  const isYear = range === "1y";
+  const isYear = range === "1y" || range === "all";
 
   const unit = isHour ? "minute" : isDay ? "hour" : isWeek ? "day" : "month";
 

@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import {
   FiPlus, FiRefreshCw, FiDownload, FiUpload, FiSettings,
-  FiCheckCircle, FiClock, FiAlertTriangle, FiUsers
+  FiCheckCircle, FiClock, FiUsers
 } from 'react-icons/fi';
 import { BsKanban } from 'react-icons/bs';
 
 // Import components
-import TaskCard from './TaskCard';
+import KanbanBoard from './KanbanBoard';
 import TaskForm from './TaskForm';
 import TaskFilters from './TaskFilters';
 import { CompactLoader } from '../LoadingComponent';
 
 // Firebase imports (assuming these exist)
-import { 
-  db, collection, getDocs, addDoc, updateDoc, deleteDoc, 
-  doc, query, orderBy, onSnapshot, serverTimestamp, where 
+import {
+  db, collection, getDocs, addDoc, updateDoc, deleteDoc,
+  doc, query, orderBy, onSnapshot, serverTimestamp, where, limit
 } from '../../firebase';
 
 // Styled Components
@@ -58,6 +58,31 @@ const Title = styled.h1`
 const HeaderActions = styled.div`
   display: flex;
   gap: 12px;
+  align-items: center;
+`;
+
+const ViewToggle = styled.div`
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+`;
+
+const ViewButton = styled.button`
+  padding: 8px 12px;
+  background: ${props => props.active ? 'rgba(96, 165, 250, 0.2)' : 'transparent'};
+  border: none;
+  border-radius: 8px;
+  color: ${props => props.active ? '#60a5fa' : 'rgba(255, 255, 255, 0.6)'};
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.active ? 'rgba(96, 165, 250, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+  }
 `;
 
 const ActionButton = styled.button`
@@ -221,40 +246,110 @@ const TaskManagement = () => {
     status: '',
     sortBy: 'createdAt'
   });
+  const [unsubscribeTasks, setUnsubscribeTasks] = useState(null);
 
   // Load tasks and admins from Firebase
   useEffect(() => {
+    console.log('=== INITIALIZING TASK MANAGEMENT ===');
     loadTasks();
     loadAdmins();
+
+    // Test Firebase connection
+    testFirebaseConnection();
   }, []);
 
-  // Filter tasks when filters change
+  // Cleanup Firebase listeners on unmount
   useEffect(() => {
-    filterTasks();
-  }, [tasks, filters]);
+    return () => {
+      if (unsubscribeTasks) {
+        unsubscribeTasks();
+      }
+    };
+  }, [unsubscribeTasks]);
+
+  const testFirebaseConnection = async () => {
+    try {
+      console.log('=== TESTING FIREBASE CONNECTION ===');
+      if (!db) {
+        console.error('❌ Firebase DB is null - check Firebase configuration');
+        return;
+      }
+
+      // Try to access the tasks collection
+      const testRef = collection(db, 'tasks');
+      console.log('✅ Firebase connection test passed - can access tasks collection');
+
+      // Try a simple query to see if there are any documents
+      const testQuery = query(testRef, orderBy('createdAt', 'desc'));
+      const testSnapshot = await getDocs(testQuery);
+      console.log('✅ Firebase query test passed - found', testSnapshot.size, 'documents');
+
+    } catch (error) {
+      console.error('❌ Firebase connection test failed:', error);
+    }
+  };
 
   const loadTasks = async () => {
     try {
       setLoading(true);
-      
+      console.log('Loading tasks - attempting to connect to Firebase...');
+
+      // Test Firebase connection
+      if (db) {
+        console.log('Firebase DB instance exists');
+      } else {
+        console.error('Firebase DB instance is null');
+        loadMockTasks();
+        return;
+      }
+
+      // Unsubscribe from previous listener if it exists
+      if (unsubscribeTasks) {
+        console.log('Unsubscribing from previous listener');
+        unsubscribeTasks();
+      }
+
       // Try to load from Firebase first
       const tasksRef = collection(db, 'tasks');
+      console.log('Tasks collection reference:', tasksRef);
+
       const q = query(tasksRef, orderBy('createdAt', 'desc'));
-      
+      console.log('Query created:', q);
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const tasksList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        console.log('Firebase snapshot received:', snapshot.size, 'documents');
+        const tasksList = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const task = {
+            id: doc.id,
+            title: data.title || '',
+            description: data.description || '',
+            assignedTo: data.assignedTo || '',
+            priority: data.priority || 'medium',
+            status: data.status || 'todo',
+            dueDate: data.dueDate || '',
+            progress: data.progress || 0,
+            tags: data.tags || [],
+            // Handle server timestamps properly
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString()
+          };
+          console.log('Processed task:', task);
+          return task;
+        });
+        console.log('Loaded tasks from Firebase:', tasksList);
         setTasks(tasksList);
         setLoading(false);
       }, (error) => {
-        console.error('Error loading tasks:', error);
+        console.error('Error loading tasks from Firebase:', error);
         // Fallback to mock data
         loadMockTasks();
       });
 
-      return () => unsubscribe();
+      // Store the unsubscribe function
+      setUnsubscribeTasks(() => unsubscribe);
+
+      return unsubscribe;
     } catch (error) {
       console.error('Error setting up tasks listener:', error);
       loadMockTasks();
@@ -287,8 +382,8 @@ const TaskManagement = () => {
     const mockTasks = [
       {
         id: '1',
-        title: 'Oppdater brukergrensesnitt',
-        description: 'Implementer nye designelementer i admin-panelet',
+        title: 'Update user interface',
+        description: 'Implement new design elements in admin panel',
         assignedTo: 'Admin Bruker',
         priority: 'high',
         status: 'in-progress',
@@ -299,11 +394,11 @@ const TaskManagement = () => {
       },
       {
         id: '2',
-        title: 'Fiks database ytelse',
-        description: 'Optimalisere spørringer for bedre responstid',
+        title: 'Fix database performance',
+        description: 'Optimize queries for better response time',
         assignedTo: 'Super Admin',
         priority: 'urgent',
-        status: 'pending',
+        status: 'todo',
         progress: 20,
         dueDate: '2024-01-10',
         createdAt: '2024-01-02T14:30:00Z',
@@ -311,8 +406,8 @@ const TaskManagement = () => {
       },
       {
         id: '3',
-        title: 'Implementer notifikasjoner',
-        description: 'Legg til push-notifikasjoner for viktige hendelser',
+        title: 'Implement notifications',
+        description: 'Add push notifications for important events',
         assignedTo: 'Moderator',
         priority: 'medium',
         status: 'completed',
@@ -320,18 +415,47 @@ const TaskManagement = () => {
         dueDate: '2024-01-20',
         createdAt: '2024-01-03T09:15:00Z',
         tags: ['notifications', 'features']
+      },
+      {
+        id: '4',
+        title: 'Add user authentication',
+        description: 'Implement secure login system',
+        assignedTo: '',
+        priority: 'high',
+        status: 'backlog',
+        progress: 0,
+        dueDate: '2024-02-01',
+        createdAt: '2024-01-04T11:00:00Z',
+        tags: ['auth', 'security']
+      },
+      {
+        id: '5',
+        title: 'Create API documentation',
+        description: 'Document all API endpoints and usage',
+        assignedTo: 'Admin Bruker',
+        priority: 'medium',
+        status: 'review',
+        progress: 85,
+        dueDate: '2024-01-25',
+        createdAt: '2024-01-05T13:20:00Z',
+        tags: ['documentation', 'api']
       }
     ];
-    
+
     setTasks(mockTasks);
     setLoading(false);
   };
 
   const filterTasks = () => {
+    console.log('🔍 FILTER TASKS CALLED');
+    console.log('Current tasks:', tasks.length, tasks);
+    console.log('Current filters:', filters);
+
     let filtered = [...tasks];
 
     // Search filter
     if (filters.search) {
+      console.log('Applying search filter:', filters.search);
       filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
         task.description.toLowerCase().includes(filters.search.toLowerCase())
@@ -340,6 +464,7 @@ const TaskManagement = () => {
 
     // Assigned to filter
     if (filters.assignedTo) {
+      console.log('Applying assigned filter:', filters.assignedTo);
       if (filters.assignedTo === 'unassigned') {
         filtered = filtered.filter(task => !task.assignedTo);
       } else {
@@ -349,11 +474,13 @@ const TaskManagement = () => {
 
     // Priority filter
     if (filters.priority) {
+      console.log('Applying priority filter:', filters.priority);
       filtered = filtered.filter(task => task.priority === filters.priority);
     }
 
     // Status filter
     if (filters.status) {
+      console.log('Applying status filter:', filters.status);
       filtered = filtered.filter(task => task.status === filters.status);
     }
 
@@ -372,27 +499,60 @@ const TaskManagement = () => {
       }
     });
 
+    console.log('✅ Filtered result:', filtered.length, 'tasks');
+    console.log('Filtered tasks:', filtered);
     setFilteredTasks(filtered);
   };
 
   const handleCreateTask = async (taskData) => {
     try {
+      console.log('=== TASK CREATION STARTED ===');
+      console.log('Creating task with data:', taskData);
+
       if (db) {
-        await addDoc(collection(db, 'tasks'), {
-          ...taskData,
+        console.log('Firebase DB available, attempting to save...');
+        const taskToSave = {
+          title: taskData.title,
+          description: taskData.description,
+          assignedTo: taskData.assignedTo || '',
+          priority: taskData.priority,
+          status: taskData.status,
+          dueDate: taskData.dueDate || '',
+          progress: taskData.progress || 0,
+          tags: taskData.tags || [],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        // Refresh tasks to ensure UI updates
-        setTimeout(() => loadTasks(), 500);
+        };
+
+        console.log('Task data to save to Firebase:', taskToSave);
+        const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
+        console.log('✅ Task successfully created in Firebase with ID:', docRef.id);
+
+        // The real-time listener will automatically pick up the new task
+        // No need to manually refresh
       } else {
+        console.error('❌ Firebase DB not available');
         // Fallback for mock data
-        setTasks(prev => [taskData, ...prev]);
+        const newTask = {
+          ...taskData,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        console.log('Adding to local tasks as fallback:', newTask);
+        setTasks(prev => [newTask, ...prev]);
       }
     } catch (error) {
-      console.error('Error creating task:', error);
-      // Fallback
-      setTasks(prev => [taskData, ...prev]);
+      console.error('❌ Error creating task:', error);
+      // Fallback - always add to local tasks so user sees the task
+      const fallbackTask = {
+        ...taskData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      console.log('Adding as fallback after error:', fallbackTask);
+      setTasks(prev => [fallbackTask, ...prev]);
     }
   };
 
@@ -400,23 +560,32 @@ const TaskManagement = () => {
     try {
       if (db) {
         const taskRef = doc(db, 'tasks', taskData.id);
-        await updateDoc(taskRef, {
-          ...taskData,
+        const taskToUpdate = {
+          title: taskData.title,
+          description: taskData.description,
+          assignedTo: taskData.assignedTo || '',
+          priority: taskData.priority,
+          status: taskData.status,
+          dueDate: taskData.dueDate || '',
+          progress: taskData.progress || 0,
+          tags: taskData.tags || [],
           updatedAt: serverTimestamp()
-        });
-        // Refresh tasks to ensure UI updates
-        setTimeout(() => loadTasks(), 500);
+        };
+
+        await updateDoc(taskRef, taskToUpdate);
+        // The real-time listener will automatically pick up the updated task
+        // No need to manually refresh
       } else {
         // Fallback for mock data
-        setTasks(prev => prev.map(task => 
-          task.id === taskData.id ? taskData : task
+        setTasks(prev => prev.map(task =>
+          task.id === taskData.id ? { ...taskData, updatedAt: new Date().toISOString() } : task
         ));
       }
     } catch (error) {
       console.error('Error updating task:', error);
       // Fallback
-      setTasks(prev => prev.map(task => 
-        task.id === taskData.id ? taskData : task
+      setTasks(prev => prev.map(task =>
+        task.id === taskData.id ? { ...taskData, updatedAt: new Date().toISOString() } : task
       ));
     }
   };
@@ -427,8 +596,8 @@ const TaskManagement = () => {
     try {
       if (db) {
         await deleteDoc(doc(db, 'tasks', taskId));
-        // Refresh tasks to ensure UI updates
-        setTimeout(() => loadTasks(), 500);
+        // The real-time listener will automatically pick up the deleted task
+        // No need to manually refresh
       } else {
         // Fallback for mock data
         setTasks(prev => prev.filter(task => task.id !== taskId));
@@ -445,22 +614,21 @@ const TaskManagement = () => {
     if (task) {
       const updatedTask = {
         ...task,
-        status: task.status === 'completed' ? 'pending' : 'completed'
+        status: task.status === 'completed' ? 'backlog' : 'completed'
       };
       await handleUpdateTask(updatedTask);
     }
   };
 
   const getTaskStats = () => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-    const pending = tasks.filter(t => t.status === 'pending').length;
-    const overdue = tasks.filter(t => 
-      t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'completed'
-    ).length;
+    const total = filteredTasks.length;
+    const completed = filteredTasks.filter(t => t.status === 'completed').length;
+    const inProgress = filteredTasks.filter(t => t.status === 'in-progress').length;
+    const backlog = filteredTasks.filter(t => t.status === 'backlog').length;
+    const todo = filteredTasks.filter(t => t.status === 'todo').length;
+    const review = filteredTasks.filter(t => t.status === 'review').length;
 
-    return { total, completed, inProgress, pending, overdue };
+    return { total, completed, inProgress, backlog, todo, review };
   };
 
   const stats = getTaskStats();
@@ -486,17 +654,17 @@ const TaskManagement = () => {
     <TaskManagementContainer>
       <Header>
         <Title>
-          <BsKanban /> Oppgavebehandling
+          <BsKanban /> Vintra Projects
         </Title>
         <HeaderActions>
           <ActionButton onClick={() => loadTasks()}>
-            <FiRefreshCw /> Oppdater
+            <FiRefreshCw /> Refresh
           </ActionButton>
           <ActionButton>
-            <FiDownload /> Eksporter
+            <FiDownload /> Export
           </ActionButton>
           <ActionButton primary onClick={() => setShowForm(true)}>
-            <FiPlus /> Ny Oppgave
+            <FiPlus /> New Task
           </ActionButton>
         </HeaderActions>
       </Header>
@@ -507,7 +675,7 @@ const TaskManagement = () => {
             <BsKanban />
           </StatIcon>
           <StatValue>{stats.total}</StatValue>
-          <StatLabel>Totale Oppgaver</StatLabel>
+          <StatLabel>Total Tasks</StatLabel>
         </StatCard>
 
         <StatCard color="linear-gradient(90deg, #34d399, #10b981)">
@@ -515,7 +683,7 @@ const TaskManagement = () => {
             <FiCheckCircle />
           </StatIcon>
           <StatValue>{stats.completed}</StatValue>
-          <StatLabel>Fullførte</StatLabel>
+          <StatLabel>Completed</StatLabel>
         </StatCard>
 
         <StatCard color="linear-gradient(90deg, #fbbf24, #f59e0b)">
@@ -523,15 +691,15 @@ const TaskManagement = () => {
             <FiClock />
           </StatIcon>
           <StatValue>{stats.inProgress}</StatValue>
-          <StatLabel>Pågående</StatLabel>
+          <StatLabel>In Progress</StatLabel>
         </StatCard>
 
-        <StatCard color="linear-gradient(90deg, #ef4444, #dc2626)">
-          <StatIcon color="linear-gradient(135deg, #ef4444, #dc2626)">
-            <FiAlertTriangle />
+        <StatCard color="linear-gradient(90deg, #8b5cf6, #7c3aed)">
+          <StatIcon color="linear-gradient(135deg, #8b5cf6, #7c3aed)">
+            <FiUsers />
           </StatIcon>
-          <StatValue>{stats.overdue}</StatValue>
-          <StatLabel>Forfalt</StatLabel>
+          <StatValue>{stats.backlog}</StatValue>
+          <StatLabel>Backlog</StatLabel>
         </StatCard>
       </StatsGrid>
 
@@ -544,40 +712,13 @@ const TaskManagement = () => {
         onViewModeChange={setViewMode}
       />
 
-      {filteredTasks.length === 0 ? (
-        <EmptyState>
-          <BsKanban />
-          <h3>Ingen oppgaver funnet</h3>
-          <p>
-            {tasks.length === 0 
-              ? 'Opprett din første oppgave for å komme i gang!'
-              : 'Prøv å justere filtrene for å se flere oppgaver.'
-            }
-          </p>
-          <ActionButton primary onClick={() => setShowForm(true)}>
-            <FiPlus /> Opprett Oppgave
-          </ActionButton>
-        </EmptyState>
-      ) : (
-        <TasksContainer viewMode={viewMode}>
-          {filteredTasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onEdit={(task) => {
-                setEditingTask(task);
-                setShowForm(true);
-              }}
-              onDelete={(taskId) => handleDeleteTask(taskId)}
-              onComplete={(taskId) => handleCompleteTask(taskId)}
-              onClick={(task) => {
-                setEditingTask(task);
-                setShowForm(true);
-              }}
-            />
-          ))}
-        </TasksContainer>
-      )}
+      <KanbanBoard
+        tasks={filteredTasks}
+        viewMode={viewMode}
+        onTaskUpdate={handleUpdateTask}
+        onTaskDelete={handleDeleteTask}
+        onTaskCreate={() => setShowForm(true)}
+      />
 
       <TaskForm
         isOpen={showForm}

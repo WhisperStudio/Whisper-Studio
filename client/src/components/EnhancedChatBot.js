@@ -16,12 +16,12 @@ import {
   updateDoc,
   collectionGroup
 } from '../firebase';
-import axios from 'axios';
 import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle, FiLifeBuoy, FiAlertCircle, FiUser } from 'react-icons/fi';
 import { BsRobot, BsTranslate, BsChatDots, BsStars, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
 import { IoSparkles, IoPulse, IoAnalytics } from 'react-icons/io5';
 import TicketSystem from './TicketSystem';
+import { generateAIResponse } from '../services/aiService';
 const themes = {
   light: {
     primary: '#6366f1',
@@ -891,11 +891,9 @@ const EnhancedChatBot = () => {
       // Update chat doc lastUpdated
       try { await updateDoc(doc(db, 'chats', userId), { lastUpdated: serverTimestamp() }); } catch {}
 
-      // If this is the first message of the chat, auto-post maintenance message with ETA
-      if ((messages?.length || 0) === 0) {
+      // If this is the first message of the chat and we're in maintenance mode, show maintenance message
+      if ((messages?.length || 0) === 0 && maintenanceRef.current) {
         const eta = await estimateWaitMinutes();
-        // Locally block auto-bot reply and input by enabling maintenance
-        maintenanceRef.current = true;
         try {
           await addDoc(collection(db, 'chats', userId, 'messages'), {
             text: `⚠️ Our bot is currently under construction. A support advisor will contact you shortly. Estimated wait time: ${eta} minutes.`,
@@ -920,20 +918,34 @@ const EnhancedChatBot = () => {
         return;
       }
 
-      // Simulate AI response (replace with actual API call)
+      // Use AI service for response instead of simple generateResponse
       setTimeout(async () => {
         if (takenOverRef.current || maintenanceRef.current) {
           setIsTyping(false);
           return;
         }
-        const reply = generateResponse(text);
+
         try {
-          await addDoc(collection(db, 'chats', userId, 'messages'), {
-            text: reply,
-            sender: 'bot',
-            timestamp: serverTimestamp(),
-          });
-        } catch {}
+          const reply = await generateAIResponse(text, userId);
+          try {
+            await addDoc(collection(db, 'chats', userId, 'messages'), {
+              text: reply,
+              sender: 'bot',
+              timestamp: serverTimestamp(),
+            });
+          } catch {}
+        } catch (error) {
+          console.error('Error generating AI response:', error);
+          // Fallback to simple response if AI fails
+          const fallbackReply = generateResponse(text);
+          try {
+            await addDoc(collection(db, 'chats', userId, 'messages'), {
+              text: fallbackReply,
+              sender: 'bot',
+              timestamp: serverTimestamp(),
+            });
+          } catch {}
+        }
         setIsTyping(false);
       }, 1200);
     } catch (error) {
@@ -949,10 +961,10 @@ const EnhancedChatBot = () => {
     }
   };
 
-  // Generate response (placeholder - replace with OpenAI)
+  // Generate response (placeholder - now using AI service)
   const generateResponse = (message) => {
     const msg = message.toLowerCase();
-    
+
     if (msg.includes('hello') || msg.includes('hi')) {
       return "Hello! How can I assist you today?";
     }
@@ -965,7 +977,7 @@ const EnhancedChatBot = () => {
     if (msg.includes('ticket') || msg.includes('support') || msg.includes('issue') || msg.includes('problem')) {
       return "It sounds like you might need additional support! Would you like me to help you create a support ticket? Click the ticket button below to get started.";
     }
-    
+
     return "That's interesting! Let me help you with that. Could you provide more details?";
   };
 

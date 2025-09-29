@@ -13,6 +13,7 @@ import {
   setDoc,
   deleteDoc 
 } from '../firebase';
+import { generateAIResponse } from '../services/aiService';
 
 // Styled Components
 const Container = styled.div`
@@ -563,32 +564,55 @@ const ChatBot = () => {
 
       // Simulate AI response (replace with actual OpenAI call)
       setTimeout(async () => {
-        const aiResponse = generateAIResponse(txt);
-        
-        const botMessage = {
-          text: aiResponse,
-          sender: 'bot',
-          icon: 'inactive',
-          timestamp: new Date(),
-          userId: userId
-        };
+        try {
+          console.log('Calling generateAIResponse with:', { txt, userId });
+          const aiResponse = await generateAIResponse(txt, userId);
+          console.log('AI Response received:', aiResponse);
 
-        setBotTyping(false);
-        addMessage(botMessage);
+          const botMessage = {
+            text: aiResponse,
+            sender: 'bot',
+            icon: 'inactive',
+            timestamp: new Date(),
+            userId: userId
+          };
 
-        // Save bot response to Firebase
-        console.log('Saving bot response to Firebase...', { userId, text: aiResponse });
-        
-        const botMessageRef = await addDoc(collection(db, 'chats', userId, 'messages'), {
-          sender: 'bot',
-          text: aiResponse,
-          timestamp: serverTimestamp(),
-          userId: userId,
-          language: language,
-          read: true // Bot messages are automatically read
-        });
-        
-        console.log('Bot message saved successfully:', botMessageRef.id);
+          setBotTyping(false);
+          addMessage(botMessage);
+
+          try {
+            // Save bot response to Firebase
+            console.log('Saving bot response to Firebase...', { userId, text: aiResponse });
+            
+            const botMessageRef = await addDoc(collection(db, 'chats', userId, 'messages'), {
+              sender: 'bot',
+              text: aiResponse,
+              timestamp: serverTimestamp(),
+              userId: userId,
+              language: language,
+              read: true // Bot messages are automatically read
+            });
+            
+            console.log('Bot message saved successfully:', botMessageRef.id);
+
+          } catch (error) {
+            console.error('Error in AI response:', error);
+            setBotTyping(false);
+            addMessage({
+              text: t.errorMessage,
+              sender: 'bot',
+              icon: 'error',
+            });
+          }
+        } catch (error) {
+          console.error('Error generating AI response:', error);
+          setBotTyping(false);
+          addMessage({
+            text: t.errorMessage,
+            sender: 'bot',
+            icon: 'error',
+          });
+        }
 
       }, 1500);
     } catch (error) {
@@ -604,24 +628,6 @@ const ChatBot = () => {
     }
   };
 
-  // Simple AI response generator (replace with OpenAI)
-  const generateAIResponse = (message) => {
-    const msg = message.toLowerCase();
-    
-    if (msg.includes('vintra') || msg.includes('vote')) {
-      return "I can help you with information about VintraStudio and our game VOTE! VOTE is a story-driven open world game inspired by Nordic nature and culture. What would you like to know?";
-    }
-    
-    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hei')) {
-      return "Hello! I'm Vintra's AI assistant. How can I help you today?";
-    }
-    
-    if (msg.includes('help')) {
-      return "I can help you with questions about VintraStudio, our game VOTE, and our services. What specific information are you looking for?";
-    }
-    
-    return "I can only answer questions about VintraStudio and the game VOTE. Please check our FAQ for more information: https://vintra.no/faq";
-  };
 
   const lastBotIndex = messages
     .map((m, i) => (m.sender === 'bot' ? i : -1))

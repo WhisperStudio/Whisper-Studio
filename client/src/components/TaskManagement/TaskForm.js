@@ -324,7 +324,7 @@ const TaskForm = ({
     description: '',
     assignedTo: '',
     priority: 'medium',
-    status: 'pending',
+    status: 'backlog', // Changed from 'pending' to 'backlog' to match the system
     dueDate: '',
     progress: 0,
     tags: []
@@ -339,7 +339,7 @@ const TaskForm = ({
         description: task.description || '',
         assignedTo: task.assignedTo || '',
         priority: task.priority || 'medium',
-        status: task.status || 'pending',
+        status: task.status || 'backlog',
         dueDate: task.dueDate || '',
         progress: task.progress || 0,
         tags: task.tags || []
@@ -384,16 +384,35 @@ const TaskForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
-    
+    console.log('=== FORM SUBMIT STARTED ===');
+    console.log('Form data:', formData);
+    console.log('onSubmit function:', typeof onSubmit);
+
+    if (!formData.title.trim()) {
+      console.log('❌ Form validation failed: Title is empty');
+      return;
+    }
+
     const taskData = {
-      ...formData,
-      id: task?.id || Date.now().toString(),
-      createdAt: task?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      assignedTo: formData.assignedTo,
+      priority: formData.priority,
+      status: formData.status,
+      dueDate: formData.dueDate,
+      progress: formData.progress,
+      tags: formData.tags
     };
-    
-    onSubmit(taskData);
+
+    console.log('✅ Form validation passed, calling onSubmit with:', taskData);
+
+    try {
+      onSubmit(taskData);
+      console.log('✅ onSubmit called successfully');
+    } catch (error) {
+      console.error('❌ Error calling onSubmit:', error);
+    }
+
     onClose();
   };
 
@@ -488,9 +507,11 @@ const TaskForm = ({
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value)}
               >
-                <option value="pending">Venter</option>
-                <option value="in-progress">Pågår</option>
-                <option value="completed">Fullført</option>
+                <option value="backlog">Backlog</option>
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="review">In Review</option>
+                <option value="completed">Completed</option>
               </Select>
             </FormGroup>
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 // AI Service Configuration
 const AI_CONFIG = {
   openai: {
-    apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY, // Fixed to match .env file
     model: 'gpt-4',
     maxTokens: 500,
     temperature: 0.7,
@@ -63,10 +63,10 @@ export const generateAIResponse = async (message, userId, options = {}) => {
   try {
     // Add message to context
     contextManager.addMessage(userId, { role: 'user', content: message });
-    
+
     // Get conversation context
     const context = contextManager.getContext(userId);
-    
+
     // If no API key, use intelligent fallback
     if (!AI_CONFIG.openai.apiKey) {
       const response = generateIntelligentFallback(message, context);
@@ -82,9 +82,20 @@ export const generateAIResponse = async (message, userId, options = {}) => {
         messages: [
           {
             role: 'system',
-            content: `You are a helpful AI assistant for VintraStudio. You help users with questions about the company, 
-            the game VOTE, and provide general assistance. Be friendly, professional, and concise. 
-            If asked about VOTE, mention it's a story-driven open-world game inspired by Nordic nature and culture.`
+            content: `You are a helpful AI assistant for VintraStudio. You help users with questions about the company and the VOTE game.
+
+About VOTE:
+- VOTE is a story-driven open-world game inspired by Nordic nature and culture
+- Features beautiful landscapes, engaging gameplay, and rich narrative
+- Expected to cost around $20 when released
+- Currently in active development with regular updates
+
+About VintraStudio:
+- Innovative game development company focused on creating immersive experiences
+- Passionate team working on bringing unique gaming experiences to life
+- Flagship project is VOTE, showcasing dedication to quality and creativity
+
+Be friendly, professional, and concise. Always provide specific information when available, and offer to help with related topics.`
           },
           ...context
         ],
@@ -106,11 +117,11 @@ export const generateAIResponse = async (message, userId, options = {}) => {
     return aiResponse;
   } catch (error) {
     console.error('AI Service Error:', error);
-    
+
     // Use intelligent fallback on error
     const fallbackResponse = generateIntelligentFallback(message, contextManager.getContext(userId));
     contextManager.addMessage(userId, { role: 'assistant', content: fallbackResponse });
-    
+
     return fallbackResponse;
   }
 };
@@ -175,8 +186,8 @@ const generateIntelligentFallback = (message, context) => {
   }
   
   // Price questions
-  if (msg.includes('price') || msg.includes('cost') || msg.includes('free')) {
-    return "Pricing details for VOTE will be announced closer to release. We're committed to providing great value for the immersive experience we're creating.";
+  if (msg.includes('price') || msg.includes('cost') || msg.includes('buy') || msg.includes('purchase')) {
+    return "VOTE is expected to cost around $20 when it's released. This provides excellent value for the immersive gaming experience we're creating. Would you like to know more about the game's features or our development timeline?";
   }
   
   // Community and social
@@ -197,8 +208,8 @@ const generateIntelligentFallback = (message, context) => {
     }
   }
   
-  // Default response with suggestions
-  return "That's an interesting question! While I'm not sure about the specific details, I can help you with:\n• Information about VintraStudio\n• Details about the VOTE game\n• Development updates\n• General inquiries\n\nWhat would you like to explore?";
+  // Default response with specific suggestions
+  return "I'd be happy to help you with information about VintraStudio and our VOTE game! You can ask me about:\n• VOTE gameplay and features\n• Game pricing and release information\n• VintraStudio and our development process\n• Art gallery and concept art\n• How to get updates on development\n\nWhat specific aspect interests you most?";
 };
 
 // Get random response from array
