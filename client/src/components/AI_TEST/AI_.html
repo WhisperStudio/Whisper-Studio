@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Magisk Polkadot AI-Avatar – Demo (fri bane + individuell farge + sentrum)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body{
+    margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    display:grid; min-height:100svh; background: radial-gradient(1200px_600px at 10% -10%, #a0c4ff22, transparent 60%),
+                                       radial-gradient(900px_500px at 110% 120%, #cdb4db22, transparent 60%),
+                                       linear-gradient(180deg, #0b1020, #0e1222 30%, #0b1020);
+    color:#e7ecff; place-items:center; padding:24px;
+  }
+  .demo{ width:min(1000px, 100%); display:grid; gap:18px; }
+  .title{ font-size:clamp(18px, 2.6vw, 26px); font-weight:700; letter-spacing:0.2px; opacity:0.95 }
+  .wrap{ display:grid; grid-template-columns: 1.1fr 1fr; gap:18px; align-items:stretch; }
+  @media (max-width:900px){ .wrap{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: linear-gradient(180deg, #12172a, #0f1426);
+    border:1px solid #1e2647; border-radius:16px; padding:14px 14px 6px; box-shadow: 0 10px 30px #00000066;
+  }
+  .controls{ display:grid; grid-template-columns: 1fr 1fr; gap:12px 14px; align-items:end; }
+  @media (max-width:560px){ .controls{ grid-template-columns:1fr; } }
+  .control{ display:grid; gap:6px; }
+  .control label{ font-size:12px; opacity:0.85 }
+  .row{ display:flex; gap:8px; flex-wrap:wrap }
+  input[type="range"], input[type="number"], select{ width:100%; }
+  input[type="range"]{ accent-color:#89a6ff }
+  input[type="number"], select{ background:#131935; border:1px solid #263063; color:#e7ecff; border-radius:10px; padding:8px 10px }
+  button{ background:#1b2250; border:1px solid #2a3470; color:#e7ecff; border-radius:12px; padding:8px 12px; cursor:pointer }
+  button:hover{ filter:brightness(1.15) }
+
+  .stage{ display:grid; place-items:center; padding:32px; }
+  .stage-inner{ display:grid; place-items:center; gap:14px }
+
+  /* ====== Polkadot Avatar – Fri bane inni sirkel ====== */
+  .polkadot-avatar{
+    /* Globale variabler */
+    --size: 140px;              /* total avatar-størrelse */
+    --max-radius: 56px;         /* maks avstand fra senter */
+    --dot-size: 16px;           /* diameter på dots */
+    --glow-strength: 22px;      /* ytre glød */
+
+    /* Farge/glass baseline (brukes hvis dot-spesifikke ikke settes) */
+    --base-hue: 210;            /* 0..360 */
+    --sat: 95%;
+    --light: 55%;
+    --alpha: 0.75;              /* glass */
+    --bg-alpha: 0.12;           /* bakgrunnsglans */
+
+    /* State-multiplikator for fart (1 = normal) */
+    --speed-mult: 1;
+
+    position: relative; width: var(--size); aspect-ratio:1;
+    display:grid; place-items:center; border-radius:999px; overflow:visible;
+    background: radial-gradient(circle at 50% 50%,
+                hsla(var(--base-hue), var(--sat), 70%, var(--bg-alpha)) 0%,
+                hsla(var(--base-hue), var(--sat), 50%, calc(var(--bg-alpha)*0.6)) 40%,
+                transparent 70%);
+    backdrop-filter: blur(4px) saturate(120%);
+    -webkit-backdrop-filter: blur(4px) saturate(120%);
+    filter: drop-shadow(0 0 12px hsla(var(--base-hue), var(--sat), 60%, 0.45));
+  }
+
+  /* Hver dot får sin egen "orb"-container som roterer i egen fart og retning */
+  .orb{ position:absolute; inset:0; margin:auto; width:var(--size); height:var(--size);
+        transform-origin:center center; will-change: transform;
+        /* per-dot custom props:
+           --r: radius (px), --start: startvinkel (deg), --dir: 1|-1,
+           --speed: basisvarighet (s), --bob: amplitude (px), --bob-speed (s), --tilt (deg) */
+        animation: orb-rot linear infinite; animation-duration: calc(var(--speed) / var(--speed-mult));
+        transform: rotate(var(--start));
+  }
+  @keyframes orb-rot { to { transform: rotate(calc(var(--start) + var(--dir) * 360deg)); } }
+
+  /* Flytt dot langs radius-aksen og la den «vugge» opp/ned i sin bane */
+  .orb .radius{ transform: translateX(var(--r)) rotate(var(--tilt)); transform-origin:left center; will-change: transform; }
+  .orb .bob{ animation: bob ease-in-out infinite alternate; animation-duration: var(--bob-speed); will-change: transform; }
+  @keyframes bob { from { transform: translateY(calc(var(--bob) * -1)); } to { transform: translateY(var(--bob)); } }
+
+  /* Selve dotten med glass/gel-look – nå med DOT-SPESIFIKKE farger */
+  .dot{
+    display:block; pointer-events:none;
+    width:var(--dot-size); height:var(--dot-size); border-radius:999px;
+    /* Ren glassfarge uten hvit highlight */
+    background:
+      radial-gradient(circle at 50% 50%,
+        hsla(var(--dot-hue, var(--base-hue)), var(--dot-sat, var(--sat)), calc(var(--dot-light, var(--light)) + 12%), calc(var(--dot-alpha, var(--alpha)) * 0.95)) 0%,
+        hsla(var(--dot-hue, var(--base-hue)), var(--dot-sat, var(--sat)), var(--dot-light, var(--light)),       calc(var(--dot-alpha, var(--alpha)) * 0.9)) 45%,
+        hsla(var(--dot-hue, var(--base-hue)), var(--dot-sat, var(--sat)), calc(var(--dot-light, var(--light)) - 8%),  calc(var(--dot-alpha, var(--alpha)) * 0.85)) 70%,
+        hsla(var(--dot-hue, var(--base-hue)), var(--dot-sat, var(--sat)), calc(var(--dot-light, var(--light)) - 20%), calc(var(--dot-alpha, var(--alpha)) * 0.78)) 100%);
+    box-shadow:
+      inset 0 0 8px hsla(var(--dot-hue, var(--base-hue)), 40%, 85%, 0.18),
+      0 0 var(--glow-strength) hsla(var(--dot-hue, var(--base-hue)), var(--dot-sat, var(--sat)), 60%, 0.5);
+  }
+
+  /* Tilstander: justerer global fargenyans + speed-mult */
+  .ai-idle   { --base-hue: 210; --alpha: .70; --speed-mult: .8; }
+  .ai-typing { --base-hue: 285; --alpha: .82; --speed-mult: 1.6; }
+  .ai-thinking{--base-hue: 160; --alpha: .78; --speed-mult: .6; }
+
+  .help{ font-size:12px; opacity:0.85; text-wrap:pretty }
+  .log{ background:#0e1430; border:1px solid #27306a; border-radius:10px; padding:10px; white-space:pre-wrap; max-height:180px; overflow:auto; }
+</style>
+</head>
+<body>
+  <div class="demo">
+    <div class="title">Magisk Polkadot AI-Avatar – Fri bane, egen farge per dot & sentrumstetthet</div>
+    <div class="wrap">
+      <section class="panel">
+        <div class="controls">
+          <div class="control">
+            <label for="dots">Antall dots</label>
+            <input id="dots" type="range" min="6" max="120" step="1" value="24" />
+          </div>
+          <div class="control">
+            <label for="rings">Antall sirkler (ringer)</label>
+            <input id="rings" type="range" min="1" max="8" step="1" value="3" />
+          </div>
+          <div class="control">
+            <label for="size">Størrelse (px)</label>
+            <input id="size" type="range" min="80" max="260" step="2" value="140" />
+          </div>
+          <div class="control">
+            <label for="minradius">Min radius (px)</label>
+            <input id="minradius" type="range" min="0" max="80" step="1" value="0" />
+          </div>
+          <div class="control">
+            <label for="maxradius">Maks radius (px)</label>
+            <input id="maxradius" type="range" min="24" max="120" step="1" value="56" />
+          </div>
+          <div class="control">
+            <label for="dotsize">Dot-størrelse (px)</label>
+            <input id="dotsize" type="range" min="6" max="32" step="1" value="16" />
+          </div>
+          <div class="control">
+            <label for="hue">Base Hue</label>
+            <input id="hue" type="range" min="0" max="360" step="1" value="210" />
+          </div>
+          <div class="control">
+            <label for="spread">Hue-spredning (±)</label>
+            <input id="spread" type="range" min="0" max="180" step="1" value="40" />
+          </div>
+          <div class="control">
+            <label for="sat">Metning (%)</label>
+            <input id="sat" type="range" min="0" max="100" step="1" value="95" />
+          </div>
+          <div class="control">
+            <label for="light">Lyshet (%)</label>
+            <input id="light" type="range" min="20" max="80" step="1" value="55" />
+          </div>
+          <div class="control">
+            <label for="alpha">Glass (Alpha)</label>
+            <input id="alpha" type="range" min="0.3" max="1" step="0.01" value="0.75" />
+          </div>
+          <div class="control">
+            <label for="speedMin">Hastighet min (sek/rotasjon)</label>
+            <input id="speedMin" type="range" min="1" max="18" step="0.1" value="3.0" />
+          </div>
+          <div class="control">
+            <label for="speedMax">Hastighet max (sek/rotasjon)</label>
+            <input id="speedMax" type="range" min="1" max="30" step="0.1" value="10" />
+          </div>
+          <div class="control">
+            <label for="bob">Bob-amplitude (px)</label>
+            <input id="bob" type="range" min="0" max="10" step="0.5" value="3" />
+          </div>
+          <div class="control">
+            <label for="bobSpeed">Bob-fart (sek)</label>
+            <input id="bobSpeed" type="range" min="0.6" max="3.5" step="0.1" value="1.8" />
+          </div>
+          <div class="control">
+            <label for="mode">Fargemodus</label>
+            <select id="mode">
+              <option value="spread" selected>Rundt base hue (± spredning)</option>
+              <option value="spectrum">Fullt spektrum (0–360)</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="ringColor">Ring-aksentfarger</label>
+            <select id="ringColor">
+              <option value="none" selected>Ingen</option>
+              <option value="offset">Hue-offset per ring</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button data-state="ai-idle">Idle/Venter</button>
+          <button data-state="ai-typing">Skriver</button>
+          <button data-state="ai-thinking">Tenker/Laster</button>
+          <button id="regen">Regenerer layout</button>
+          <button id="copyCss">Kopier CSS-variabler</button>
+          <button id="selftestBtn">Kjør selvtest</button>
+        </div>
+        <p class="help" style="margin-top:10px">Dottene får <em>tilfeldig radius innenfor min→maks</em> (så noen havner nærmere senter), <em>individuell retning, fart og farge</em> – med glass/gel-look.</p>
+        <pre id="selftest" class="log" aria-live="polite" style="display:none"></pre>
+      </section>
+      <section class="panel stage">
+        <div class="stage-inner">
+          <div id="avatar" class="polkadot-avatar ai-idle" aria-label="AI Avatar" role="img"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+  const avatar = document.getElementById('avatar');
+  const inputs = {
+    dots: document.getElementById('dots'),
+    rings: document.getElementById('rings'),
+    size: document.getElementById('size'),
+    minradius: document.getElementById('minradius'),
+    maxradius: document.getElementById('maxradius'),
+    dotsize: document.getElementById('dotsize'),
+    hue: document.getElementById('hue'),
+    spread: document.getElementById('spread'),
+    sat: document.getElementById('sat'),
+    light: document.getElementById('light'),
+    alpha: document.getElementById('alpha'),
+    speedMin: document.getElementById('speedMin'),
+    speedMax: document.getElementById('speedMax'),
+    bob: document.getElementById('bob'),
+    bobSpeed: document.getElementById('bobSpeed'),
+    mode: document.getElementById('mode'),
+    ringColor: document.getElementById('ringColor'),
+  };
+
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+  function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+  function choice(a, b){ return Math.random() < 0.5 ? a : b; }
+
+  function randomHue(){
+    const mode = inputs.mode.value;
+    if(mode === 'spectrum') return rand(0, 360);
+    const base = +inputs.hue.value; const spread = +inputs.spread.value;
+    // velg tilfeldig offset innenfor ±spread
+    let h = base + rand(-spread, spread);
+    // normaliser 0..360
+    while(h < 0) h += 360; while(h >= 360) h -= 360;
+    return h;
+  }
+
+  function buildDots(count){
+    avatar.innerHTML = '';
+    const minR = +inputs.minradius.value;
+    const maxR = +inputs.maxradius.value;
+    const ringCount = Math.max(1, +inputs.rings.value|0);
+    const bobBase = +inputs.bob.value;
+    const bobSpeed = +inputs.bobSpeed.value;
+    const sMin = Math.min(+inputs.speedMin.value, +inputs.speedMax.value);
+    const sMax = Math.max(+inputs.speedMin.value, +inputs.speedMax.value);
+
+    // Fordel dots jevnt på ringer
+    for(let i=0;i<count;i++){
+      const orb = document.createElement('div');
+      orb.className = 'orb';
+
+      // Finn ringindeks og ringens radiusbånd
+      const ringIdx = i % ringCount; // enkel fordeling
+      const t0 = ringCount === 1 ? 0 : ringIdx / ringCount;
+      const t1 = ringCount === 1 ? 1 : (ringIdx + 1) / ringCount;
+      const rMin = minR + (maxR - minR) * t0;
+      const rMax = minR + (maxR - minR) * t1;
+
+      const r = rand(rMin, rMax);
+      const start = rand(0, 360);
+      const dir = choice(1, -1);
+      const speed = rand(sMin, sMax);
+      const bobAmp = rand(bobBase*0.5, Math.max(bobBase, 0.1));
+      const tilt = rand(-8, 8);
+
+      // Farge per dot (med ev. ring-offset)
+      let hue = randomHue();
+      if(inputs.ringColor.value === 'offset'){
+        const offset = (360 / ringCount) * ringIdx * 0.8; // litt overlapp
+        hue = (hue + offset) % 360;
+      }
+      const sat = clamp(+inputs.sat.value + rand(-6, 6), 0, 100);
+      const light = clamp(+inputs.light.value + rand(-6, 6), 20, 80);
+      const alpha = clamp(+inputs.alpha.value + rand(-0.08, 0.08), 0.3, 1);
+
+      orb.style.setProperty('--r', r + 'px');
+      orb.style.setProperty('--start', start + 'deg');
+      orb.style.setProperty('--dir', dir);
+      orb.style.setProperty('--speed', speed + 's');
+      orb.style.setProperty('--bob', bobAmp + 'px');
+      orb.style.setProperty('--bob-speed', (bobSpeed * rand(0.85,1.25)).toFixed(2) + 's');
+      orb.style.setProperty('--tilt', tilt + 'deg');
+
+      const radiusEl = document.createElement('div');
+      radiusEl.className = 'radius';
+      const bobEl = document.createElement('div');
+      bobEl.className = 'bob';
+      bobEl.style.animationDelay = (rand(0, 1.5)).toFixed(2) + 's';
+
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.setProperty('--dot-hue', hue);
+      dot.style.setProperty('--dot-sat', sat + '%');
+      dot.style.setProperty('--dot-light', light + '%');
+      dot.style.setProperty('--dot-alpha', alpha);
+
+      bobEl.appendChild(dot);
+      radiusEl.appendChild(bobEl);
+      orb.appendChild(radiusEl);
+      avatar.appendChild(orb);
+    }
+  }
+
+  function applyVars(){
+    avatar.style.setProperty('--size', inputs.size.value + 'px');
+    avatar.style.setProperty('--max-radius', inputs.maxradius.value + 'px');
+    avatar.style.setProperty('--dot-size', inputs.dotsize.value + 'px');
+    avatar.style.setProperty('--base-hue', inputs.hue.value);
+    avatar.style.setProperty('--sat', inputs.sat.value + '%');
+    avatar.style.setProperty('--light', inputs.light.value + '%');
+    avatar.style.setProperty('--alpha', inputs.alpha.value);
+    avatar.style.setProperty('--bg-alpha', 0.12);
+  }
+
+  // Event Listeners
+  Object.values(inputs).forEach(el => el.addEventListener('input', () => {
+    if(el === inputs.dots || el === inputs.rings || el === inputs.minradius || el === inputs.maxradius || el === inputs.speedMin || el === inputs.speedMax || el === inputs.bob || el === inputs.bobSpeed || el === inputs.mode || el === inputs.spread || el === inputs.hue || el === inputs.sat || el === inputs.light || el === inputs.alpha || el === inputs.ringColor){
+      buildDots(+inputs.dots.value);
+    }
+    applyVars();
+  }));
+
+  // State buttons justerer state-klasse (påvirker --speed-mult + base-hue for bakgrunnsglans)
+  document.querySelectorAll('button[data-state]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const state = btn.getAttribute('data-state');
+      avatar.className = 'polkadot-avatar ' + state;
+      applyVars();
+    });
+  });
+
+  // Regenerer layout (nye tilfeldige baner og farger)
+  document.getElementById('regen').addEventListener('click', () => buildDots(+inputs.dots.value));
+
+  // Kopier CSS-variabler
+  document.getElementById('copyCss').addEventListener('click', () => {
+    const css = `/* Lim disse inn på .polkadot-avatar i prosjektet ditt */
+.polkadot-avatar{
+  --size: ${inputs.size.value}px;
+  --max-radius: ${inputs.maxradius.value}px;
+  --dot-size: ${inputs.dotsize.value}px;
+  --base-hue: ${inputs.hue.value};
+  --sat: ${inputs.sat.value}%;
+  --light: ${inputs.light.value}%;
+  --alpha: ${inputs.alpha.value};
+  --bg-alpha: 0.12;
+}`;
+    navigator.clipboard.writeText(css).then(()=>{
+      const btn = document.getElementById('copyCss');
+      const old = btn.textContent;
+      btn.textContent = 'Kopiert!';
+      setTimeout(()=> btn.textContent = old, 1200);
+    });
+  });
+
+  // ==== Enkel selvtest for rask validering (viser resultat i boksen under kontrollene) ====
+  function runSelfTest(){
+    const logEl = document.getElementById('selftest');
+    logEl.style.display = 'block';
+    const logs = [];
+
+    // Snapshot nåværende verdier for å kunne restore UI
+    const snapshot = {};
+    for(const [k, el] of Object.entries(inputs)) snapshot[k] = el.value;
+    const prevClass = avatar.className;
+
+    try{
+      // Test 1: Riktig antall dots
+      inputs.dots.value = '10';
+      inputs.rings.value = '2';
+      inputs.minradius.value = '0';
+      inputs.maxradius.value = '50';
+      inputs.mode.value = 'spread';
+      buildDots(10);
+      let dots = avatar.querySelectorAll('.dot');
+      logs.push(`Test 1 – antall dots: ${dots.length} (forventet 10)`);
+      if(dots.length !== 10) throw new Error('Feil antall dots');
+
+      // Test 2: Radius-spenn (minst én nær senter og én nær ytre)
+      const orbs = [...avatar.querySelectorAll('.orb')];
+      const radii = orbs.map(o => parseFloat(o.style.getPropertyValue('--r')));
+      const nearInner = radii.some(r => r <= 15);
+      const nearOuter = radii.some(r => r >= 40);
+      logs.push(`Test 2 – radius variasjon: nær senter=${nearInner}, nær ytre=${nearOuter}`);
+      if(!nearInner || !nearOuter) throw new Error('Radius ikke fordelt over båndene');
+
+      // Test 3: Farge-variabler per dot
+      const hueVal = dots[0].style.getPropertyValue('--dot-hue');
+      logs.push(`Test 3 – dot-hue satt: ${hueVal ? 'ja' : 'nei'}`);
+      if(!hueVal) throw new Error('Farge-variabler ikke satt per dot');
+
+      // Test 4: Retning ±1
+      const dirVals = orbs.map(o => parseInt(o.style.getPropertyValue('--dir'),10));
+      const validDirs = dirVals.every(d => d === 1 || d === -1);
+      logs.push(`Test 4 – retninger gyldige: ${validDirs ? 'ja' : 'nei'}`);
+      if(!validDirs) throw new Error('Ugyldig retning');
+
+      logs.push('\nAlle tester: PASS ✅');
+    }catch(err){
+      logs.push(`\nFEIL ❌: ${err.message}`);
+    }finally{
+      // Restore UI
+      for(const [k, v] of Object.entries(snapshot)) inputs[k].value = v;
+      avatar.className = prevClass;
+      buildDots(+inputs.dots.value);
+      applyVars();
+      logEl.textContent = logs.join('\n');
+    }
+  }
+
+  document.getElementById('selftestBtn').addEventListener('click', runSelfTest);
+
+  // Initial render
+  buildDots(+inputs.dots.value);
+  applyVars();
+  setTimeout(() => { if(!avatar.querySelector('.dot')) buildDots(+inputs.dots.value); }, 0);
+</script>
+</body>
+</html>
