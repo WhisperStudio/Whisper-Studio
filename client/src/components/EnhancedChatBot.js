@@ -22,6 +22,7 @@ import EmojiPicker from 'emoji-picker-react';
 import { IoSparkles, IoPulse, IoAnalytics } from 'react-icons/io5';
 import TicketSystem from './TicketSystem';
 import { generateAIResponse } from '../services/aiService';
+import { createPolkadotAvatar } from './PolkadotAvatar';
 const themes = {
   light: {
     primary: '#6366f1',
@@ -262,16 +263,19 @@ const HeaderLeft = styled.div`
 `;
 
 const Avatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  
+  /* Container for polkadot avatar */
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
 `;
 
 const HeaderInfo = styled.div`
@@ -368,18 +372,33 @@ const MessageWrapper = styled(motion.div)`
   align-items: flex-end;
   gap: 8px;
   ${props => props.$isUser && 'flex-direction: row-reverse;'}
+  
+  /* Legg til margin for meldinger uten avatar */
+  ${props => !props.$hasAvatar && !props.$isUser && 'margin-left: 40px;'}
 `;
 
 const MessageAvatar = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: ${props => props.$isUser ? props.theme.primary : props.theme.border};
+  background: ${props => props.$isUser ? props.theme.primary : 'transparent'};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   flex-shrink: 0;
+  position: relative;
+  
+  /* User avatar styling */
+  ${props => props.$isUser && css`
+    color: white;
+  `}
+  
+  /* Container for polkadot avatar */
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
 `;
 
 const MessageContent = styled.div`
@@ -680,6 +699,83 @@ const QuickActionButton = styled(motion.button)`
   }
 `;
 
+// Message Avatar Component with Polkadot
+const MessageAvatarPolkadot = ({ messageId, sender, isTyping }) => {
+  const containerRef = useRef(null);
+  const apiRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (!containerRef.current || apiRef.current) return;
+
+    const config = {
+      size: 32,
+      dots: 60,
+      rings: 4,
+      minRadius: 0,
+      maxRadius: 13,
+      dotSize: 3,
+      variant: 'free',
+      baseHue: sender === 'admin' ? 280 : 210,
+      spread: 0,
+      sat: 95,
+      light: 55,
+      alpha: 0.75,
+      bgAlpha: 0.12,
+      glowStrength: 12,
+      speedMin: 3.0,
+      speedMax: 10.0,
+      bobAmp: 2.0,
+      bobSpeed: 1.8,
+      state: 'idle',
+      visible: true,
+      physics: false
+    };
+
+    apiRef.current = createPolkadotAvatar(containerRef.current, config);
+
+    return () => {
+      if (apiRef.current) {
+        apiRef.current.destroy();
+        apiRef.current = null;
+      }
+    };
+  }, [sender]);
+
+  // Handle typing animation - spread out and fade
+  useEffect(() => {
+    if (!apiRef.current) return;
+
+    if (isTyping) {
+      setIsAnimating(true);
+      // Spre ut dottene og fade ut
+      const dots = apiRef.current.root.querySelectorAll('.orb');
+      dots.forEach((orb, i) => {
+        const delay = i * 8;
+        setTimeout(() => {
+          orb.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+          orb.style.opacity = '0';
+          orb.style.transform = `scale(1.5) rotate(${Math.random() * 360}deg)`;
+        }, delay);
+      });
+    } else if (isAnimating) {
+      // Kom tilbake
+      const dots = apiRef.current.root.querySelectorAll('.orb');
+      dots.forEach((orb, i) => {
+        const delay = i * 8;
+        setTimeout(() => {
+          orb.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+          orb.style.opacity = '1';
+          orb.style.transform = 'scale(1) rotate(0deg)';
+        }, delay);
+      });
+      setIsAnimating(false);
+    }
+  }, [isTyping, isAnimating]);
+
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+};
+
 // Component
 const EnhancedChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -706,6 +802,11 @@ const EnhancedChatBot = () => {
   const inputRef = useRef(null);
   const takenOverRef = useRef(false);
   const maintenanceRef = useRef(false);
+  const headerAvatarRef = useRef(null);
+  const headerAvatarApiRef = useRef(null);
+  const messageAvatarRefs = useRef({});
+  const [gravity, setGravity] = useState('down');
+  const [, forceUpdate] = useState({});
   
   const currentTheme = themes[theme];
 
@@ -745,6 +846,75 @@ const EnhancedChatBot = () => {
     setTheme(savedTheme);
     setLanguage(savedLanguage);
   }, []);
+
+  // Initialize header avatar with physics
+  useEffect(() => {
+    if (!isOpen || !headerAvatarRef.current) return;
+    if (headerAvatarApiRef.current) return;
+    
+    // Liten forsinkelse for å sikre at DOM er klar
+    const timer = setTimeout(() => {
+      if (!headerAvatarRef.current) return;
+      
+      headerAvatarApiRef.current = createPolkadotAvatar(headerAvatarRef.current, {
+        size: 60,  // Enda større glasskule
+        dots: 60,
+        rings: 4,
+        minRadius: 0,  // Start fra sentrum
+        maxRadius: 10,  // Start i en TETT klynge i midten for fri flyt
+        dotSize: 3.5,
+        variant: 'sphere',
+        baseHue: 210,
+        spread: 0,
+        sat: 95,
+        light: 55,
+        alpha: 0.75,
+        bgAlpha: 0.12,
+        glowStrength: 12,
+        speedMin: 3.0,
+        speedMax: 10.0,
+        bobAmp: 1.0,  // Enda mindre bob
+        bobSpeed: 1.8,
+        state: 'idle',
+        visible: true,
+        physics: true,
+        gravity: 'down'
+      });
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      if (headerAvatarApiRef.current) {
+        headerAvatarApiRef.current.destroy();
+        headerAvatarApiRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Update header avatar state based on bot activity
+  useEffect(() => {
+    if (!headerAvatarApiRef.current) return;
+    
+    if (isTyping) {
+      // Bot is generating text: fast spin, red/yellow colors
+      headerAvatarApiRef.current.setState('typing');
+    } else if (input.length > 0) {
+      // User is typing: slow spin, green colors
+      headerAvatarApiRef.current.setState('listening');
+    } else {
+      // Idle state
+      headerAvatarApiRef.current.setState('idle');
+    }
+  }, [isTyping, input]);
+
+  // Handle gravity change when chat opens/closes
+  useEffect(() => {
+    if (!headerAvatarApiRef.current) return;
+    
+    const newGravity = isOpen ? 'down' : 'up';
+    setGravity(newGravity);
+    headerAvatarApiRef.current.update({ gravity: newGravity });
+  }, [isOpen]);
 
   // Persist chat across refresh: subscribe to messages and chat doc
   useEffect(() => {
@@ -1070,7 +1240,7 @@ const EnhancedChatBot = () => {
               <Header>
                 <HeaderLeft>
                   <Avatar>
-                    {takenOver ? <FiUser /> : <BsRobot />}
+                    <div ref={headerAvatarRef} />
                   </Avatar>
                   <HeaderInfo>
                     <HeaderTitle>{t.title}</HeaderTitle>
@@ -1098,31 +1268,56 @@ const EnhancedChatBot = () => {
               </Header>
 
               <MessagesContainer>
-                {messages.map((message) => (
-                  <MessageWrapper
-                    key={message.id}
-                    $isUser={message.sender === 'user'}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <MessageAvatar $isUser={message.sender === 'user'}>
-                      {message.sender === 'user' ? '👤' : (message.sender === 'admin' ? '👨‍💼' : '🤖')}
-                    </MessageAvatar>
-                    <MessageContent>
-                      <MessageBubble $isUser={message.sender === 'user'}>
-                        {message.text}
-                      </MessageBubble>
-                      <MessageTime $isUser={message.sender === 'user'}>
-                        {formatTime(message.timestamp)}
-                      </MessageTime>
-                    </MessageContent>
-                  </MessageWrapper>
-                ))}
+                {messages.map((message, index) => {
+                  // Finn siste bot-melding
+                  const isLastBotMessage = message.sender !== 'user' && 
+                    index === messages.length - 1;
+                  const hasAvatar = message.sender === 'user' || isLastBotMessage;
+                  
+                  return (
+                    <MessageWrapper
+                      key={message.id}
+                      $isUser={message.sender === 'user'}
+                      $hasAvatar={hasAvatar}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {/* Kun vis avatar på bruker-meldinger og siste bot-melding */}
+                      {hasAvatar && (
+                        <MessageAvatar $isUser={message.sender === 'user'}>
+                          {message.sender === 'user' ? (
+                            '👤'
+                          ) : (
+                            <MessageAvatarPolkadot
+                              messageId={message.id}
+                              sender={message.sender}
+                              isTyping={false}
+                            />
+                          )}
+                        </MessageAvatar>
+                      )}
+                      <MessageContent>
+                        <MessageBubble $isUser={message.sender === 'user'}>
+                          {message.text}
+                        </MessageBubble>
+                        <MessageTime $isUser={message.sender === 'user'}>
+                          {formatTime(message.timestamp)}
+                        </MessageTime>
+                      </MessageContent>
+                    </MessageWrapper>
+                  );
+                })}
                 
                 {isTyping && (
                   <MessageWrapper $isUser={false}>
-                    <MessageAvatar $isUser={false}>🤖</MessageAvatar>
+                    <MessageAvatar $isUser={false}>
+                      <MessageAvatarPolkadot
+                        messageId="typing"
+                        sender="bot"
+                        isTyping={true}
+                      />
+                    </MessageAvatar>
                     <MessageContent>
                       <MessageBubble $isUser={false} $isTyping={true}>
                         <span style={{ opacity: 0 }}>...</span>
