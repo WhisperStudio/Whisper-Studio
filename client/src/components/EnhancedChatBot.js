@@ -16,7 +16,7 @@ import {
   updateDoc,
   collectionGroup
 } from '../firebase';
-import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle, FiLifeBuoy, FiAlertCircle, FiUser } from 'react-icons/fi';
+import { FiSend, FiPaperclip, FiMic, FiSmile, FiSettings, FiX, FiMinimize2, FiMaximize2, FiMoreVertical, FiTrash2, FiVolume2, FiVolumeX, FiSun, FiMoon, FiZap, FiImage, FiFile, FiDownload, FiCheck, FiCheckCircle, FiLifeBuoy, FiAlertCircle, FiUser, FiEdit3, FiClock, FiArrowLeft } from 'react-icons/fi';
 import { BsRobot, BsTranslate, BsChatDots, BsStars, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
 import { IoSparkles, IoPulse, IoAnalytics } from 'react-icons/io5';
@@ -255,6 +255,108 @@ const Header = styled.div`
   }
 `;
 
+// Tab Navigation
+const TabNav = styled.div`
+  display: flex;
+  padding: 10px 15px;
+  gap: 8px;
+  background: ${props => props.theme.surface};
+  border-bottom: 1px solid ${props => props.theme.border};
+`;
+
+const TabButton = styled.button`
+  flex: 1;
+  padding: 10px 16px;
+  background: ${props => props.$active ? props.theme.primary : 'transparent'};
+  border: 1px solid ${props => props.$active ? props.theme.primary : props.theme.border};
+  border-radius: 10px;
+  color: ${props => props.$active ? '#fff' : props.theme.textSecondary};
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &:hover {
+    background: ${props => props.$active ? props.theme.primaryDark : props.theme.surfaceHover};
+    color: ${props => props.$active ? '#fff' : props.theme.text};
+  }
+`;
+
+// Ticket List Styles
+const TicketList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+`;
+
+const TicketCard = styled(motion.div)`
+  background: ${props => props.theme.messageBot};
+  border: 1px solid ${props => props.theme.border};
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: ${props => props.theme.surfaceHover};
+    transform: translateX(5px);
+  }
+`;
+
+const TicketCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 8px;
+`;
+
+const TicketCardTitle = styled.h4`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${props => props.theme.text};
+  margin: 0 0 4px 0;
+`;
+
+const TicketCardMeta = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: ${props => props.theme.textSecondary};
+`;
+
+const TicketStatusBadge = styled.span`
+  padding: 4px 10px;
+  background: ${props =>
+    props.$status === 'open' ? 'rgba(245, 158, 11, 0.2)' :
+    props.$status === 'in-progress' ? 'rgba(99, 102, 241, 0.2)' :
+    'rgba(34, 197, 94, 0.2)'
+  };
+  color: ${props =>
+    props.$status === 'open' ? '#f59e0b' :
+    props.$status === 'in-progress' ? '#6366f1' :
+    '#22c55e'
+  };
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+`;
+
+const TicketCardDesc = styled.p`
+  font-size: 13px;
+  color: ${props => props.theme.textSecondary};
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
 const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
@@ -270,11 +372,62 @@ const Avatar = styled.div`
   align-items: center;
   justify-content: center;
   position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  /* Glowing ring effect */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #4facfe, #667eea);
+    background-size: 300% 300%;
+    opacity: 0;
+    z-index: -1;
+    filter: blur(8px);
+    transition: opacity 0.3s ease;
+  }
+  
+  &:hover::before {
+    opacity: 0.6;
+    animation: gradientShift 3s ease infinite;
+  }
+  
+  /* Outer glow pulse */
+  &::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  &:hover::after {
+    opacity: 1;
+    animation: ${pulse} 2s ease-in-out infinite;
+  }
   
   /* Container for polkadot avatar */
   & > div {
     width: 100%;
     height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 `;
 
@@ -797,6 +950,10 @@ const EnhancedChatBot = () => {
     category: 'general',
     priority: 'medium'
   });
+  const [activeView, setActiveView] = useState('chat'); // 'chat', 'tickets', 'createTicket', 'viewTicket'
+  const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [ticketMessage, setTicketMessage] = useState('');
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -816,14 +973,14 @@ const EnhancedChatBot = () => {
       title: 'Vintra AI Assistant',
       status: 'Online',
       placeholder: 'Type your message...',
-      welcome: "👋 Hello! I'm your AI assistant. How can I help you today?",
+      welcome: '👋 Welcome to Vintra! I\'m your AI assistant. How can I help you today?',
       error: 'Sorry, something went wrong. Please try again.',
     },
     no: {
       title: 'Vintra AI Assistent',
       status: 'Pålogget',
       placeholder: 'Skriv din melding...',
-      welcome: '👋 Hei! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?',
+      welcome: '👋 Velkommen til Vintra! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?',
       error: 'Beklager, noe gikk galt. Vennligst prøv igjen.',
     }
   };
@@ -858,23 +1015,23 @@ const EnhancedChatBot = () => {
       
       headerAvatarApiRef.current = createPolkadotAvatar(headerAvatarRef.current, {
         size: 32,
-        dots: 60,
-        rings: 4,
-        minRadius: 0,  // Start fra sentrum
-        maxRadius: 10,  // Start i en TETT klynge i midten for fri flyt
+        dots: 80,  // Flere dots for mer fancy effekt
+        rings: 5,  // Flere ringer
+        minRadius: 0,
+        maxRadius: 12,  // Litt større radius
         dotSize: 3.5,
         variant: 'sphere',
         baseHue: 210,
         spread: 0,
         sat: 95,
         light: 55,
-        alpha: 0.75,
-        bgAlpha: 0.12,
-        glowStrength: 12,
-        speedMin: 3.0,
-        speedMax: 10.0,
-        bobAmp: 1.0,  // Enda mindre bob
-        bobSpeed: 1.8,
+        alpha: 0.85,  // Mer synlig
+        bgAlpha: 0.15,
+        glowStrength: 15,  // Sterkere glow
+        speedMin: 4.0,  // Raskere bevegelse
+        speedMax: 12.0,
+        bobAmp: 1.5,
+        bobSpeed: 2.0,
         state: 'idle',
         visible: true,
         physics: true,
@@ -916,6 +1073,33 @@ const EnhancedChatBot = () => {
     headerAvatarApiRef.current.update({ gravity: newGravity });
   }, [isOpen]);
 
+  // Load user's tickets from Firebase
+  useEffect(() => {
+    if (!userId) return;
+    
+    const ticketsRef = collection(db, 'tickets');
+    const q = query(ticketsRef, orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ticketsList = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(t => t.userId === userId);
+      setTickets(ticketsList);
+      
+      // Update selected ticket if it's being viewed
+      if (selectedTicket) {
+        const updated = ticketsList.find(t => t.id === selectedTicket.id);
+        if (updated) {
+          setSelectedTicket(updated);
+        }
+      }
+    }, (error) => {
+      console.error('Error loading tickets:', error);
+    });
+    
+    return () => unsubscribe();
+  }, [userId, selectedTicket?.id]);
+
   // Persist chat across refresh: subscribe to messages and chat doc
   useEffect(() => {
     if (!userId) return;
@@ -949,13 +1133,27 @@ const EnhancedChatBot = () => {
         };
       });
       setMessages(list);
+      
+      // Add welcome message if this is the first time opening and no messages exist
+      if (list.length === 0 && isOpen) {
+        const welcomeText = language === 'no'
+          ? '👋 Velkommen til Vintra! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?'
+          : '👋 Welcome to Vintra! I\'m your AI assistant. How can I help you today?';
+        
+        // Add welcome message to Firestore
+        addDoc(msgsRef, {
+          text: welcomeText,
+          sender: 'bot',
+          timestamp: serverTimestamp(),
+        }).catch(err => console.error('Error adding welcome message:', err));
+      }
     });
 
     return () => {
       unsubChat();
       unsubMsgs();
     };
-  }, [userId]);
+  }, [userId, isOpen, language]);
 
   const [maintenance, setMaintenance] = useState(false);
   const [expectedWait, setExpectedWait] = useState(null);
@@ -1167,7 +1365,8 @@ const EnhancedChatBot = () => {
   };
 
   // Handle ticket creation
-  const handleCreateTicket = async () => {
+  const handleCreateTicket = async (e) => {
+    e.preventDefault();
     if (!ticketData.title || !ticketData.description) return;
     
     try {
@@ -1182,35 +1381,58 @@ const EnhancedChatBot = () => {
       
       await addDoc(collection(db, 'tickets'), ticket);
       
-      // Add confirmation message to chat
-      const confirmationMessage = {
-        id: Date.now(),
-        text: `✅ Support ticket "${ticketData.title}" has been created successfully! Our team will respond soon.`,
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      
-      setMessages(prev => [...prev, confirmationMessage]);
-      
-      // Reset form
+      // Reset form and switch to tickets view
       setTicketData({
         title: '',
         description: '',
         category: 'general',
         priority: 'medium'
       });
-      setShowTicketForm(false);
+      setActiveView('tickets');
       
     } catch (error) {
       console.error('Error creating ticket:', error);
-      const errorMessage = {
-        id: Date.now(),
-        text: '❌ Sorry, there was an error creating your ticket. Please try again.',
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      alert('Error creating ticket. Please try again.');
     }
+  };
+  
+  // Send message in ticket
+  const handleSendTicketMessage = async () => {
+    if (!ticketMessage.trim() || !selectedTicket) return;
+    
+    try {
+      const messageData = {
+        text: ticketMessage,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        userId: userId
+      };
+      
+      const ticketRef = doc(db, 'tickets', selectedTicket.id);
+      const updatedMessages = [...(selectedTicket.messages || []), messageData];
+      
+      await updateDoc(ticketRef, {
+        messages: updatedMessages,
+        updatedAt: serverTimestamp(),
+        status: 'in-progress'
+      });
+      
+      setSelectedTicket({
+        ...selectedTicket,
+        messages: updatedMessages
+      });
+      
+      setTicketMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+  
+  // Format date/time
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString();
   };
 
   // Handle quick ticket creation
@@ -1239,7 +1461,38 @@ const EnhancedChatBot = () => {
             >
               <Header>
                 <HeaderLeft>
-                  <Avatar>
+                  <Avatar
+                    onMouseEnter={() => {
+                      if (headerAvatarApiRef.current) {
+                        // Kulere bevegelser - boblene beveger seg raskere og mer kaotisk
+                        headerAvatarApiRef.current.update({
+                          maxRadius: 18,  // Litt større spredning
+                          speedMin: 12.0,  // Mye raskere
+                          speedMax: 30.0,  // Super rask
+                          glowStrength: 30,  // Sterkere glow
+                          alpha: 1.0,  // Full synlighet
+                          bobAmp: 3.0,  // Mer bob-bevegelse
+                          bobSpeed: 3.5,  // Raskere bob
+                          dotSize: 4.5  // Større dots
+                        });
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (headerAvatarApiRef.current) {
+                        // Tilbake til normal
+                        headerAvatarApiRef.current.update({
+                          maxRadius: 12,
+                          speedMin: 4.0,
+                          speedMax: 12.0,
+                          glowStrength: 15,
+                          alpha: 0.85,
+                          bobAmp: 1.5,
+                          bobSpeed: 2.0,
+                          dotSize: 3.5
+                        });
+                      }
+                    }}
+                  >
                     <div ref={headerAvatarRef} />
                   </Avatar>
                   <HeaderInfo>
@@ -1267,8 +1520,24 @@ const EnhancedChatBot = () => {
                 </HeaderActions>
               </Header>
 
-              <MessagesContainer>
-                {messages.map((message, index) => {
+              {/* Tab Navigation */}
+              <TabNav>
+                <TabButton $active={activeView === 'chat'} onClick={() => setActiveView('chat')}>
+                  <BsChatDots /> Chat
+                </TabButton>
+                <TabButton $active={activeView === 'tickets'} onClick={() => setActiveView('tickets')}>
+                  <BsTicketPerforated /> Tickets {tickets.length > 0 && `(${tickets.length})`}
+                </TabButton>
+                <TabButton $active={activeView === 'createTicket'} onClick={() => setActiveView('createTicket')}>
+                  <FiEdit3 /> New
+                </TabButton>
+              </TabNav>
+
+              {/* Chat View */}
+              {activeView === 'chat' && (
+                <>
+                  <MessagesContainer>
+                    {messages.map((message, index) => {
                   // Finn siste bot-melding
                   const isLastBotMessage = message.sender !== 'user' && 
                     index === messages.length - 1;
@@ -1336,115 +1605,101 @@ const EnhancedChatBot = () => {
                   </MessageWrapper>
                 )}
                 
-                <div ref={messagesEndRef} />
-              </MessagesContainer>
+                    <div ref={messagesEndRef} />
+                  </MessagesContainer>
 
-              <QuickActions>
-                <QuickActionButton
-                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Bug Report', category: 'bug', priority: 'high' } } }))}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FiAlertCircle /> Report Bug
-                </QuickActionButton>
-                <QuickActionButton
-                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Options / Settings', category: 'options', priority: 'medium' } } }))}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <IoSparkles /> Options
-                </QuickActionButton>
-                <QuickActionButton
-                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'General Support', category: 'general', priority: 'medium' } } }))}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FiLifeBuoy /> Get Support
-                </QuickActionButton>
-                <QuickActionButton
-                  onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'tickets' } }))}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <BsTicketPerforated /> View Tickets
-                </QuickActionButton>
-              </QuickActions>
-
-              <InputContainer onSubmit={handleSubmit}>
-                <InputWrapper>
-                  <Input
-                    ref={inputRef}
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={(maintenance && !takenOver) ? (language === 'no' ? `Vedlikehold – vennligst vent${expectedWait ? ` ~${expectedWait} min` : ''}` : `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`) : t.placeholder}
-                    disabled={isTyping || (maintenance && !takenOver)}
-                  />
-                  <InputActions>
+                  <InputContainer onSubmit={handleSubmit}>
+                    <InputWrapper>
+                      <Input
+                        ref={inputRef}
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={(maintenance && !takenOver) ? (language === 'no' ? `Vedlikehold – vennligst vent${expectedWait ? ` ~${expectedWait} min` : ''}` : `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`) : t.placeholder}
+                        disabled={isTyping || (maintenance && !takenOver)}
+                      />
+                      <InputActions>
+                        <IconButton
+                          type="button"
+                          onClick={() => setShowEmoji(!showEmoji)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <FiSmile />
+                        </IconButton>
+                      </InputActions>
+                    </InputWrapper>
                     <IconButton
-                      type="button"
-                      onClick={() => setShowEmoji(!showEmoji)}
+                      type="submit"
+                      $primary
+                      disabled={!input.trim() || isTyping || (maintenance && !takenOver)}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <FiSmile />
+                      <FiSend />
                     </IconButton>
-                    <IconButton
-                      type="button"
-                      onClick={() => window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create' } }))}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <BsTicketPerforated />
-                    </IconButton>
-                    <IconButton
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <FiPaperclip />
-                    </IconButton>
-                  </InputActions>
-                </InputWrapper>
-                <IconButton
-                  type="submit"
-                  $primary
-                  disabled={!input.trim() || isTyping || (maintenance && !takenOver)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FiSend />
-                </IconButton>
-              </InputContainer>
+                  </InputContainer>
 
-              {showEmoji && (
-                <EmojiPickerContainer>
-                  <EmojiPicker
-                    onEmojiClick={handleEmojiClick}
-                    theme={theme === 'dark' ? 'dark' : 'light'}
-                    height={350}
-                    width={300}
-                  />
-                </EmojiPickerContainer>
+                  {showEmoji && (
+                    <EmojiPickerContainer>
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClick}
+                        theme={theme === 'dark' ? 'dark' : 'light'}
+                        height={350}
+                        width={300}
+                      />
+                    </EmojiPickerContainer>
+                  )}
+                </>
               )}
 
-              {showTicketForm && (
-                <TicketFormContainer
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                  transition={{ type: 'spring', damping: 20 }}
-                >
-                  <TicketFormHeader>
-                    <TicketFormTitle>
-                      <BsTicketPerforated /> Create Support Ticket
-                    </TicketFormTitle>
-                    <HeaderButton onClick={() => setShowTicketForm(false)}>
-                      <FiX />
-                    </HeaderButton>
-                  </TicketFormHeader>
-                  
-                  <TicketFormBody>
+              {/* Tickets View */}
+              {activeView === 'tickets' && (
+                <TicketList>
+                  {tickets.length > 0 ? (
+                    tickets.map(ticket => (
+                      <TicketCard
+                        key={ticket.id}
+                        onClick={() => {
+                          setSelectedTicket(ticket);
+                          setActiveView('viewTicket');
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <TicketCardHeader>
+                          <div>
+                            <TicketCardTitle>{ticket.title}</TicketCardTitle>
+                            <TicketCardMeta>
+                              <FiClock />
+                              {formatDate(ticket.createdAt)}
+                            </TicketCardMeta>
+                          </div>
+                          <TicketStatusBadge $status={ticket.status}>
+                            {ticket.status}
+                          </TicketStatusBadge>
+                        </TicketCardHeader>
+                        <TicketCardDesc>
+                          {ticket.description}
+                        </TicketCardDesc>
+                      </TicketCard>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '40px', color: currentTheme.textSecondary }}>
+                      <BsTicketPerforated size={48} style={{ marginBottom: '20px', opacity: 0.5 }} />
+                      <p>Ingen tickets ennå</p>
+                      <p style={{ fontSize: '14px', marginTop: '10px' }}>
+                        Opprett en ticket for å få support
+                      </p>
+                    </div>
+                  )}
+                </TicketList>
+              )}
+
+              {/* Create Ticket View */}
+              {activeView === 'createTicket' && (
+                <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+                  <form onSubmit={handleCreateTicket}>
                     <FormGroup>
                       <FormLabel>Title</FormLabel>
                       <FormInput
@@ -1452,6 +1707,7 @@ const EnhancedChatBot = () => {
                         placeholder="Brief description of your issue"
                         value={ticketData.title}
                         onChange={(e) => setTicketData(prev => ({ ...prev, title: e.target.value }))}
+                        required
                       />
                     </FormGroup>
                     
@@ -1473,7 +1729,7 @@ const EnhancedChatBot = () => {
                       <FormLabel>Priority</FormLabel>
                       <FormSelect
                         value={ticketData.priority}
-                        onChange={(e) => setTicketData(prev => ({ ...prev, priority: e.target.value }))}
+                        onChange={(e) => setTicketData(prev => ({ ...prev, category: e.target.value }))}
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -1488,31 +1744,92 @@ const EnhancedChatBot = () => {
                         placeholder="Describe your issue in detail..."
                         value={ticketData.description}
                         onChange={(e) => setTicketData(prev => ({ ...prev, description: e.target.value }))}
+                        required
                       />
                     </FormGroup>
                     
-                    <FormActions>
-                      <FormButton
-                        type="button"
-                        onClick={() => setShowTicketForm(false)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Cancel
-                      </FormButton>
-                      <FormButton
-                        type="button"
-                        $primary
-                        onClick={handleCreateTicket}
-                        disabled={!ticketData.title || !ticketData.description}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <BsTicketPerforated /> Create Ticket
-                      </FormButton>
-                    </FormActions>
-                  </TicketFormBody>
-                </TicketFormContainer>
+                    <FormButton
+                      type="submit"
+                      $primary
+                      disabled={!ticketData.title || !ticketData.description}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{ width: '100%', marginTop: '10px' }}
+                    >
+                      <BsTicketPerforated /> Create Ticket
+                    </FormButton>
+                  </form>
+                </div>
+              )}
+
+              {/* View Single Ticket */}
+              {activeView === 'viewTicket' && selectedTicket && (
+                <>
+                  <div style={{ padding: '15px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <IconButton onClick={() => setActiveView('tickets')}>
+                      <FiArrowLeft />
+                    </IconButton>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', color: currentTheme.text }}>{selectedTicket.title}</h4>
+                      <TicketStatusBadge $status={selectedTicket.status} style={{ marginTop: '5px', display: 'inline-block' }}>
+                        {selectedTicket.status}
+                      </TicketStatusBadge>
+                    </div>
+                  </div>
+                  
+                  <MessagesContainer>
+                    {/* Initial ticket description */}
+                    <MessageWrapper $isUser={true}>
+                      <MessageAvatar $isUser={true}>👤</MessageAvatar>
+                      <MessageContent>
+                        <MessageBubble $isUser={true}>
+                          {selectedTicket.description}
+                        </MessageBubble>
+                        <MessageTime $isUser={true}>
+                          {formatTime(selectedTicket.createdAt)}
+                        </MessageTime>
+                      </MessageContent>
+                    </MessageWrapper>
+
+                    {/* Ticket messages */}
+                    {selectedTicket.messages?.map((msg, index) => (
+                      <MessageWrapper key={index} $isUser={msg.sender === 'user'}>
+                        <MessageAvatar $isUser={msg.sender === 'user'}>
+                          {msg.sender === 'user' ? '👤' : '👨‍💼'}
+                        </MessageAvatar>
+                        <MessageContent>
+                          <MessageBubble $isUser={msg.sender === 'user'}>
+                            {msg.text}
+                          </MessageBubble>
+                          <MessageTime $isUser={msg.sender === 'user'}>
+                            {formatTime(msg.timestamp)}
+                          </MessageTime>
+                        </MessageContent>
+                      </MessageWrapper>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </MessagesContainer>
+
+                  <InputContainer onSubmit={(e) => { e.preventDefault(); handleSendTicketMessage(); }}>
+                    <InputWrapper>
+                      <Input
+                        type="text"
+                        value={ticketMessage}
+                        onChange={(e) => setTicketMessage(e.target.value)}
+                        placeholder="Type your message..."
+                      />
+                    </InputWrapper>
+                    <IconButton
+                      type="submit"
+                      $primary
+                      disabled={!ticketMessage.trim()}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <FiSend />
+                    </IconButton>
+                  </InputContainer>
+                </>
               )}
             </ChatWindow>
           )}

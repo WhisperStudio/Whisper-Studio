@@ -485,11 +485,12 @@ const ChatBot = () => {
   };
 
   const handleBubble = async () => {
+    const wasOpen = open;
     setOpen(v => !v);
     setOverlayVisible(false);
     
     // Load existing messages when opening chat
-    if (!open && userId) {
+    if (!wasOpen && userId) {
       try {
         const messagesRef = collection(db, 'chats', userId, 'messages');
         const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
@@ -501,7 +502,7 @@ const ChatBot = () => {
           existingMessages.push({
             text: data.text,
             sender: data.sender,
-            icon: data.sender === 'user' ? 'user' : 'inactive',
+            icon: data.sender === 'user' ? 'user' : (data.sender === 'admin' ? 'inactive' : 'inactive'),
             timestamp: data.timestamp?.toDate() || new Date()
           });
         });
@@ -509,18 +510,35 @@ const ChatBot = () => {
         if (existingMessages.length > 0) {
           setMessages(existingMessages);
         } else {
-          // Only show welcome message if no existing messages
-          addMessage({
-            text: t.initialMessage,
+          // Show welcome message if no existing messages
+          const welcomeMsg = {
+            text: language === 'no' 
+              ? '👋 Velkommen til Vintra! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?'
+              : '👋 Welcome to Vintra! I\'m your AI assistant. How can I help you today?',
             sender: 'bot',
             icon: 'inactive',
-          });
+          };
+          addMessage(welcomeMsg);
+          
+          // Save welcome message to Firebase
+          try {
+            await addDoc(messagesRef, {
+              text: welcomeMsg.text,
+              sender: 'bot',
+              timestamp: serverTimestamp(),
+              userId: userId
+            });
+          } catch (err) {
+            console.error('Error saving welcome message:', err);
+          }
         }
       } catch (error) {
         console.error('Error loading messages:', error);
         // Show welcome message on error
         addMessage({
-          text: t.initialMessage,
+          text: language === 'no' 
+            ? '👋 Velkommen til Vintra! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?'
+            : '👋 Welcome to Vintra! I\'m your AI assistant. How can I help you today?',
           sender: 'bot',
           icon: 'inactive',
         });

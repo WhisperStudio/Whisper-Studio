@@ -543,30 +543,46 @@ const TicketSystem = ({ showButton = true }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Determine current userId shared with chat
-  const currentUserId = (typeof window !== 'undefined' && (localStorage.getItem('enhancedChatUserId') || localStorage.getItem('userId'))) || 'anonymous';
+  const [currentUserId, setCurrentUserId] = useState('');
+  
+  // Initialize userId
+  useEffect(() => {
+    let id = localStorage.getItem('enhancedChatUserId') || localStorage.getItem('chatUserId') || localStorage.getItem('userId');
+    if (!id) {
+      // Generate new ID if none exists
+      id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('enhancedChatUserId', id);
+    }
+    setCurrentUserId(id);
+    console.log('TicketSystem: Using userId:', id);
+  }, []);
 
   // Load current user's tickets from Firebase
   useEffect(() => {
+    if (!currentUserId) return;
+    
+    console.log('TicketSystem: Loading tickets for user:', currentUserId);
     const ticketsRef = collection(db, 'tickets');
-    let q;
-    try {
-      q = query(ticketsRef, where('userId', '==', currentUserId), orderBy('createdAt', 'desc'));
-    } catch (e) {
-      // Fallback without index
-      q = query(ticketsRef, orderBy('createdAt', 'desc'));
-    }
+    
+    // Simple query without where clause to avoid index issues
+    const q = query(ticketsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let ticketsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Fallback client-side filter when no where clause
-      if (!ticketsList.every(t => t.userId === currentUserId)) {
-        ticketsList = ticketsList.filter(t => t.userId === currentUserId);
-      }
+      console.log('TicketSystem: Received', snapshot.docs.length, 'total tickets from Firebase');
+      
+      // Filter client-side for current user
+      let ticketsList = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(t => t.userId === currentUserId);
+      
+      console.log('TicketSystem: Filtered to', ticketsList.length, 'tickets for current user');
       setTickets(ticketsList);
 
       // Count unread tickets (open status)
       const unread = ticketsList.filter(t => t.status === 'open').length;
       setUnreadCount(unread);
+    }, (error) => {
+      console.error('TicketSystem: Error loading tickets:', error);
     });
 
     return () => unsubscribe();
@@ -604,7 +620,9 @@ const TicketSystem = ({ showButton = true }) => {
         messages: []
       };
 
+      console.log('TicketSystem: Creating ticket with data:', ticketData);
       const docRef = await addDoc(collection(db, 'tickets'), ticketData);
+      console.log('TicketSystem: Ticket created successfully with ID:', docRef.id);
 
       // Reset form
       setFormData({
@@ -616,8 +634,8 @@ const TicketSystem = ({ showButton = true }) => {
 
       // Switch to tickets tab
       setActiveTab('tickets');
-
-      console.log('Ticket created successfully:', docRef.id);
+      
+      alert('Ticket opprettet! Du kan nå se den i "My Tickets" fanen.');
     } catch (error) {
       console.error('Error creating ticket:', error);
     } finally {
@@ -779,9 +797,12 @@ const TicketSystem = ({ showButton = true }) => {
                           color: 'rgba(255,255,255,0.5)'
                         }}>
                           <BsTicketPerforated size={48} style={{ marginBottom: '20px' }} />
-                          <p>No tickets yet</p>
+                          <p>Ingen tickets ennå</p>
                           <p style={{ fontSize: '14px', marginTop: '10px' }}>
-                            Create a ticket to get support
+                            Opprett en ticket for å få support
+                          </p>
+                          <p style={{ fontSize: '12px', marginTop: '20px', color: 'rgba(255,255,255,0.3)' }}>
+                            Debug: User ID = {currentUserId}
                           </p>
                         </div>
                       )}
