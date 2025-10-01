@@ -1,9 +1,123 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import styled, { createGlobalStyle, keyframes } from 'styled-components';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
 import { Link } from 'react-router-dom';
-// Behold dine egne Header/Footer
+import { FiArrowRight, FiCheck, FiCopy, FiDollarSign, FiPackage, FiRefreshCw, FiShare2, FiSliders, FiZap, FiMessageCircle } from 'react-icons/fi';
+import { FaCcVisa, FaCcMastercard, FaPaypal } from 'react-icons/fa';
 import Header from '../components/header';
 import Footer from '../components/footer';
+
+// ---------- Global Styles & Theme ----------
+const GlobalStyle = createGlobalStyle`
+  body {
+    background-color: #0b1121;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+`;
+
+const PreviewContent = styled.div`
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+`;
+
+// Layout and actions for premium hero
+const ButtonRow = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 0.6rem;
+`;
+
+const SecondaryButton = styled.button`
+  background: transparent;
+  color: #4338ca;
+  border: 1px solid #818cf8;
+  border-radius: 8px;
+  padding: 0.7rem 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  ${({ design }) => design === 'elite' && css`
+    color: #a78bfa;
+    border-color: rgba(167, 139, 250, 0.6);
+  `}
+`;
+
+const HeroGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1.25rem;
+  align-items: center;
+`;
+
+const IllustrationBlock = styled.div`
+  height: 180px;
+  border-radius: 14px;
+  border: 1px solid rgba(99,102,241,0.25);
+  background:
+    radial-gradient(100px 60px at 20% 30%, rgba(99,102,241,0.35), transparent),
+    radial-gradient(120px 70px at 70% 60%, rgba(244,114,182,0.35), transparent),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  box-shadow: inset 0 0 40px rgba(99,102,241,0.12), 0 10px 30px rgba(0,0,0,0.08);
+  backdrop-filter: blur(2px);
+  @media (max-width: 640px) { display: none; }
+  ${({ design }) => design === 'elite' && css`
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background:
+      radial-gradient(120px 70px at 20% 30%, rgba(167,139,250,0.35), transparent),
+      radial-gradient(140px 90px at 70% 60%, rgba(244,114,182,0.35), transparent),
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    box-shadow: inset 0 0 50px rgba(167,139,250,0.18), 0 14px 40px rgba(0,0,0,0.18);
+  `}
+`;
+
+// Premium benefits list and trust indicators, Standard info strip
+const BenefitsList = styled.ul`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  list-style: none;
+`;
+
+const BenefitItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #374151;
+  font-weight: 600;
+  svg { color: #6366f1; }
+`;
+
+const TrustBar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+`;
+
+const TrustBadge = styled.div`
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  color: #1e293b;
+  background: #e0e7ff;
+  border: 1px solid #c7d2fe;
+`;
+
+const InfoStrip = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #475569;
+`;
 
 // ---------- Utils ----------
 const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
@@ -27,288 +141,801 @@ const visibleProgress = el => {
   return clamp((start - r.top) / (start - end), 0, 1);
 };
 
-// ---------- Global ----------
-const GlobalStyle = createGlobalStyle`
-  * { box-sizing: border-box; }
-  :root{
-    --bg:#0e0c0d;
-    --txt:#fff;
-    --muted:rgba(255,255,255,.86);
-    --glass:rgba(255,255,255,.08);
-    --glass-2:rgba(255,255,255,.12);
-    --stroke:rgba(255,255,255,.12);
-    --primary-from:#ff6b6b;
-    --primary-to:#ff8787;
-    --acc-from:#4a86ff;
-    --acc-to:#6c5ce7;
-    --success:#3ad29f;
-  }
-  body {
-    cursor: default;
-    margin: 0; padding: 0; overflow-x: hidden; background: var(--bg);
-    color: var(--txt); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
-  }
-  html { scroll-behavior: auto; }
-  @media (prefers-reduced-motion: reduce){
-    * { animation: none !important; transition: none !important; }
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+// ---------- Styled Components ----------
+const PageWrapper = styled.div`
+  background: radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.15), transparent),
+              radial-gradient(900px 500px at 90% 20%, rgba(236,72,153,0.12), transparent),
+              #0b1121;
+  min-height: 100vh;
+  overflow-x: hidden;
+`;
+
+const ContentContainer = styled.main`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 2rem 4rem;
+  animation: ${css`${fadeIn}`} 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+`;
+
+const HeroSection = styled.section`
+  text-align: center;
+  margin-bottom: 5rem;
+`;
+
+const HeroTitle = styled.h1`
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+`;
+
+const HeroSubtitle = styled.p`
+  font-size: 1.25rem;
+  color: #94a3b8;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+`;
+
+const EstimatorGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: flex-start;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
   }
 `;
 
-// ---------- Animations ----------
-const heroIn = keyframes`
-  0% { opacity: 0; transform: translate3d(0, 40px, 0) scale(0.96); filter: blur(6px); }
-  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1.0); filter: blur(0); }
+const GlassPanel = styled.div`
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  padding: 2rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 `;
-const floaty = keyframes`
-  0% { transform: translateY(0) }
-  50% { transform: translateY(-6px) }
-  100% { transform: translateY(0) }
+
+const CalculatorForm = styled(GlassPanel)``;
+const ResultsPanel = styled(GlassPanel)`
+  position: sticky;
+  top: 100px;
 `;
-const gradientShift = keyframes`
+
+const SectionTitle = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const ControlGroup = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ValueDisplay = styled.span`
+  font-weight: 600;
+  color: #a78bfa;
+`;
+
+const Slider = styled.input.attrs({ type: 'range' })`
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+  outline: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #a78bfa;
+    cursor: pointer;
+    border-radius: 50%;
+    border: 3px solid #0b1121;
+    transition: background 0.2s;
+
+    &:hover {
+      background: #c4b5fd;
+    }
+  }
+`;
+
+const ToggleGroup = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+`;
+
+const ToggleLabel = styled.label`
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &:hover {
+    background: rgba(148, 163, 184, 0.2);
+  }
+
+  ${({ checked }) => checked && `
+    background: rgba(167, 139, 250, 0.2);
+    border-color: rgba(167, 139, 250, 0.5);
+  `}
+`;
+
+const ToggleCheckbox = styled.input.attrs({ type: 'checkbox' })`
+  display: none;
+`;
+
+const ToggleTitle = styled.span`
+  font-weight: 600;
+  color: #fff;
+`;
+
+const ToggleDescription = styled.span`
+  font-size: 0.875rem;
+  color: #94a3b8;
+`;
+
+const TotalDisplay = styled.div`
+  text-align: center;
+  margin-bottom: 1.5rem;
+`;
+
+const PriceLabel = styled.p`
+  font-size: 1rem;
+  color: #94a3b8;
+  margin: 0 0 0.5rem;
+`;
+
+const PriceValue = styled.h3`
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+`;
+
+const PriceQualifier = styled.span`
+  font-size: 1rem;
+  font-weight: 500;
+  color: #94a3b8;
+`;
+
+const ActionButton = styled.button`
+  width: 100%;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  }
+`;
+
+const SmallActions = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+`;
+
+// Language toggle UI
+const LangSwitchWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+`;
+
+const LangToggle = styled.button`
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    border-color: transparent;
+    color: #fff;
+  }
+`;
+
+const PreviewPanel = styled(GlassPanel)`
+  height: 600px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 1024px) {
+    height: 500px;
+    margin-top: 2rem;
+  }
+`;
+
+const MockBrowserHeader = styled.div`
+  background: #1e293b;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+`;
+
+const MockBrowserButton = styled.div`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: ${props => props.color};
+`;
+
+const gradientAnimation = keyframes`
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 `;
-const auroraDrift = keyframes`
-  0% { transform: translate(-10%, -8%) rotate(0deg); }
-  50% { transform: translate(6%, 4%) rotate(10deg); }
-  100% { transform: translate(-10%, -8%) rotate(0deg); }
+
+const glowPulse = keyframes`
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
 `;
 
-// ---------- Layout ----------
-const AppContainer = styled.div`
-  min-height: 100vh; width: 100vw; display: flex; flex-direction: column; overflow-x: hidden; position: relative;
+const MockWebsite = styled.div`
+  position: relative;
+  flex-grow: 1;
+  padding: 1.5rem;
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  display: flex;
+  flex-direction: column;
+  background: #e2e8f0; /* Standard */
+
+  ${({ design }) => design === 'premium' && css`
+    /* Premium: subtil topp-grad, pattern-overlay og aksentkant for mer polert uttrykk */
+    background:
+      radial-gradient(800px 180px at 10% 0%, rgba(99,102,241,0.10), transparent 60%),
+      linear-gradient(180deg, rgba(67, 56, 202, 0.06), rgba(67, 56, 202, 0) 220px),
+      #f0f2f5;
+    border-top: 4px solid rgba(67, 56, 202, 0.2);
+    border-radius: 14px;
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    /* Elite: mørk, levende gradient med animasjon og glassfølelse */
+    background: linear-gradient(135deg, #0f172a, #1e293b, #334155);
+    background-size: 400% 400%;
+    animation: ${gradientAnimation} 15s ease-in-out infinite;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 16px;
+    position: relative;
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 16px;
+      pointer-events: none;
+      background:
+        radial-gradient(600px 200px at 80% -10%, rgba(167,139,250,0.15), transparent),
+        radial-gradient(400px 150px at 10% 110%, rgba(244,114,182,0.12), transparent);
+      animation: ${glowPulse} 8s ease-in-out infinite;
+    }
+  `}
 `;
 
-const StyledHeader = styled.header`
-  position: fixed; inset: 0 auto auto 0; right: 0; z-index: 1000; backdrop-filter: blur(10px);
+const MockHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  transition: all 0.4s ease-in-out;
+
+  ${({ design }) => design === 'premium' && css`
+    background: rgba(67, 56, 202, 0.08);
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: rgba(15, 23, 42, 0.35);
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(4px);
+  `}
 `;
 
-const FixedBackground = styled.div`
-  position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+const MockLogo = styled.div`
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: ${props => props.color || '#1e293b'};
+  ${({ design }) => design === 'premium' && css`
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  `}
 `;
 
-/** EXTREMT FANCY LAYERS **/
-const GradientLayer = styled.div`
-  position:absolute; inset:-10%;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  background-size: 400% 400%;
-  filter: saturate(1.15) brightness(0.9) contrast(1.05);
-  animation: ${gradientShift} 18s ease-in-out infinite;
-  will-change: transform, background-position, filter;
+const MockNav = styled.div`
+  display: flex;
+  gap: 1rem;
 `;
 
-const AuroraLayer = styled.div`
-  position:absolute; inset:-30%;
-  mix-blend-mode: screen;
-  background:
-    radial-gradient(40% 60% at 25% 35%, rgba(255,107,107,.28), transparent 70%),
-    radial-gradient(60% 40% at 70% 65%, rgba(74,134,255,.24), transparent 70%),
-    radial-gradient(30% 50% at 55% 50%, rgba(58,210,159,.22), transparent 72%);
-  filter: blur(30px);
-  animation: ${auroraDrift} 22s ease-in-out infinite;
+const MockNavLink = styled.div`
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: ${props => props.color || '#475569'};
+
+  ${({ design }) => design === 'premium' && css`
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    padding: 0.3rem 0.6rem;
+    border-radius: 9999px;
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    letter-spacing: 0.02em;
+    opacity: 0.95;
+    position: relative;
+    &:after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, #a78bfa, #f472b6);
+      opacity: 0.5;
+    }
+  `}
 `;
 
-const GridDots = styled.canvas`
-  position:absolute; inset:0; opacity:.16;
+const MockHero = styled.div`
+  text-align: center;
+  padding: 2rem 0;
+
+  ${({ design }) => design === 'premium' && css`
+    background: linear-gradient(180deg, rgba(67,56,202,0.07), rgba(67,56,202,0) 85%);
+    border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 14px;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 16px;
+    padding: 2.25rem 1.5rem;
+    backdrop-filter: blur(4px);
+  `}
 `;
 
-const ParticleCanvas = styled.canvas`
-  position:absolute; inset:0; opacity:.5;
+const MockTitle = styled.h2`
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  color: #1e293b; /* Standard */
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  ${({ design }) => design === 'premium' && css`
+    /* Premium: tydeligere typografi med subtil glød */
+    color: #1e293b;
+    text-shadow: 0 4px 14px rgba(67, 56, 202, 0.18);
+    letter-spacing: -0.01em;
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: linear-gradient(135deg, #c4b5fd, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+  `}
 `;
 
-const NoiseLayer = styled.div`
-  position:absolute; inset:0; opacity:.08; mix-blend-mode:soft-light;
-  background-image: url('data:image/svg+xml;utf8,\
-  <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140">\
-    <filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter>\
-    <rect width="100%" height="100%" filter="url(%23n)" opacity="0.35"/>\
-  </svg>');
-  background-size: 320px 320px;
-  pointer-events:none;
+const MockSubtitle = styled.p`
+  font-size: 1rem;
+  color: ${props => props.color || '#64748b'};
+  margin: 0 auto 1.5rem;
+  max-width: 80%;
 `;
 
-const Spotlight = styled.div`
-  position: absolute; top: 0; left: 0; width: 300px; height: 300px; border-radius: 50%;
-  pointer-events: none; mix-blend-mode: screen; opacity: .55;
-  background: radial-gradient(closest-side, rgba(255,255,255,.20), rgba(255,255,255,0) 70%);
-  transform: translate3d(var(--x, -9999px), var(--y, -9999px), 0);
-  transition: opacity .2s ease;
+const MockButton = styled.div`
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #fff;
+  background: #4f46e5; /* Standard */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  ${({ design }) => design === 'standard' && css`
+    background: transparent;
+    color: #475569;
+    border: 1px solid #94a3b8;
+    box-shadow: none;
+  `}
+
+  ${({ design }) => design === 'premium' && css`
+    /* Premium: gradient CTA med kraftigere skygge */
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    box-shadow: 0 15px 30px rgba(67, 56, 202, 0.35);
+    border: 0;
+    background-size: 200% 200%;
+    &:hover { background-position: 100% 50%; }
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    /* Elite: neon-aktig CTA med lett skalering */
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
+    box-shadow: 0 0 25px rgba(167, 139, 250, 0.5), 0 0 10px rgba(244, 114, 182, 0.3);
+    transform: scale(1.05);
+    filter: saturate(1.1);
+  `}
 `;
 
-const ScrollProgress = styled.div`
-  position: fixed; top: 0; left: 0; height: 3px; width: ${({$w}) => $w}%; z-index: 2000;
-  background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
-  box-shadow: 0 0 14px rgba(255,107,107,.6);
+// Extra tier-specific UI elements
+const FeatureChips = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 0;
 `;
 
-// ---------- Hero ----------
-const Hero = styled.section`
-  position: relative; z-index: 1; height: 100vh; width: 100vw; display: grid; align-items: center;
-  padding: 80px 5% 0; grid-template-columns: 1fr; grid-template-rows: auto;
+const Chip = styled.span`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  background: #c7d2fe;
+  border: 1px solid #a5b4fc;
+  padding: 0.35rem 0.6rem;
+  border-radius: 9999px;
+  ${({ design }) => design === 'elite' && css`
+    color: #e2e8f0;
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.5);
+  `}
 `;
 
-const Eyebrow = styled.span`
-  display: inline-block; padding: 8px 14px; border-radius: 999px; background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px); font-weight: 800; letter-spacing: 1.1px;
+const StatsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
 `;
 
-const HeroTitle = styled.h1`
-  margin: 18px 0 10px; font-size: clamp(2.8rem, 8vw, 7.2rem); font-weight: 1000; letter-spacing: 0.04em;
-  text-shadow: 0 6px 30px rgba(0,0,0,0.55); line-height: 0.94;
-  opacity: ${p => p.$opacity}; transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); animation: ${heroIn} 900ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+const Stat = styled.div`
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.08);
 `;
 
-const HeroSub = styled.p`
-  max-width: 900px; font-size: clamp(1.1rem, 2.6vw, 1.6rem); color: rgba(255,255,255,0.92); line-height: 1.6;
-  opacity: ${p => p.$opacity}; transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); animation: ${heroIn} 1050ms 80ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+const Ribbon = styled.div`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 9999px;
+  color: #0b1121;
+
+  ${({ variant }) => variant === 'premium' && css`
+    background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+    border: 1px solid #818cf8;
+  `}
+
+  ${({ variant }) => variant === 'elite' && css`
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
+    border: 1px solid rgba(244, 114, 182, 0.7);
+    color: #0b1121;
+  `}
+
+  ${({ variant }) => (!variant || variant === 'standard') && css`
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    color: #0b1121;
+  `}
 `;
 
-const HeroCTAs = styled.div`
-  margin-top: 24px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
-  opacity: ${p => p.$opacity}; transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); animation: ${heroIn} 1150ms 120ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+const MockCardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
 `;
 
-// ---------- Buttons (magnetic/tilt-ready) ----------
-const PrimaryBtn = styled.button`
-  padding: 16px 28px; font-size: 1.15rem; font-weight: 900; letter-spacing: 0.4px; border-radius: 999px; border: none; cursor: pointer;
-  color: #fff; background: linear-gradient(135deg, var(--primary-from), var(--primary-to)); box-shadow: 0 12px 36px rgba(255,107,107,0.45);
-  transition: transform .25s cubic-bezier(.25,.46,.45,.94), box-shadow .25s, filter .25s;
-  will-change: transform;
-  &:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 20px 50px rgba(255,107,107,.6); filter: saturate(1.1); }
-  &:active { transform: translateY(-1px) scale(1.01); }
+const MockCard = styled.div`
+  background: #fff; /* Standard */
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  border: 1px solid #e2e8f0;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  ${({ design }) => design === 'premium' && css`
+    border-color: #e0e7ff;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.1); /* Premium - Tydeligere skygge */
+    border-top: 3px solid #c7d2fe;
+    border-radius: 12px;
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 18px 35px rgba(67, 56, 202, 0.2);
+    }
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(6px);
+    border-radius: 14px;
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    }
+  `}
 `;
 
-const GhostBtn = styled.button`
-  padding: 16px 28px; font-size: 1.1rem; font-weight: 800; border-radius: 999px; cursor: pointer; background: rgba(255,255,255,.08);
-  color: #fff; border: 2px solid rgba(255,255,255,.8); backdrop-filter: blur(8px); transition: all .25s cubic-bezier(.25,.46,.45,.94);
-  &:hover { background:#fff; color:#000; transform: translateY(-4px) scale(1.05); box-shadow:0 18px 48px rgba(255,255,255,.35); }
+const MockSidebar = styled.div`
+  width: 200px;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 1.5rem;
+  flex-shrink: 0;
 `;
 
-// ---------- Sections ----------
-const Section = styled.section`
-  position: relative; width: 100%; padding: ${p => p.tight ? '40px 5% 40px' : '120px 5% 100px'}; box-sizing: border-box;
-  background: ${p => p.alt ? 'linear-gradient(180deg, rgba(14,12,13,0.88) 0%, rgba(14,12,13,0.94) 100%)' : 'transparent'};
+const MockMainContent = styled.div`
+  flex-grow: 1;
+  padding: 1.5rem;
 `;
 
-const SectionTitle = styled.h2`
-  font-size: clamp(2.2rem, 6vw, 4.4rem); margin: 0 0 22px; text-align: center; font-weight: 1000; letter-spacing: .02em;
-  opacity: 0; transform: translateY(40px); transition: all .6s cubic-bezier(.25,.46,.45,.94); text-shadow: 0 4px 18px rgba(0,0,0,.45);
+const MockCardContent = styled.div`
+  height: 60px;
+  background: ${props => props.color || '#e2e8f0'};
+  border-radius: 4px;
+
+  ${({ design }) => design === 'premium' && css`
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.0)), ${props => props.color || '#e2e8f0'};
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    border: 1px solid rgba(148, 163, 184, 0.18);
+  `}
 `;
 
-const FeatureGrid = styled.div`
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; max-width: 1400px; margin: 40px auto 0;
-  @media (max-width: 1100px){ grid-template-columns: repeat(2, 1fr);} 
-  @media (max-width: 720px){ grid-template-columns: 1fr;}
+const MockCookieBanner = styled.div`
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(5px);
+  animation: ${css`${fadeIn}`} 0.5s 0.5s backwards;
 `;
 
-const FeatureCard = styled.div`
-  background: linear-gradient(145deg, rgba(26,26,26,.85), rgba(40,40,40,.9));
-  color: #fff; border-radius: 22px; overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08); padding: 26px; display:flex; flex-direction:column; gap:12px;
-  opacity:0; transform: translateY(40px); transition: transform .35s cubic-bezier(.25,.46,.45,.94), box-shadow .35s, border-color .35s, opacity .6s;
-  backdrop-filter: blur(16px);
-  animation: ${floaty} 6s ease-in-out infinite;
-  will-change: transform;
-  transform-style: preserve-3d;
-  perspective: 800px;
+const MockPaymentWrapper = styled.div`
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  text-align: center;
+  animation: ${css`${fadeIn}`} 0.5s 0.7s backwards;
 
-  &:hover { transform: translateY(-10px) scale(1.015) rotateX(1deg) rotateY(-1deg);
-    box-shadow: 0 30px 80px rgba(0,0,0,.6); border-color: rgba(255,255,255,.2); }
+  ${({ design }) => design === 'premium' && css`
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 12px;
+  `}
 
-  &::after{
-    content:''; position:absolute; inset:-1px; border-radius:22px;
-    background: radial-gradient(120px 80px at var(--mx, 50%) var(--my, 20%), rgba(255,255,255,.12), transparent 60%);
-    pointer-events:none;
+  ${({ design }) => design === 'elite' && css`
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 12px;
+  `}
+`;
+
+const MockPaymentText = styled.p`
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${props => props.color || '#64748b'};
+  margin: 0 0 0.5rem;
+`;
+
+const MockPaymentIcons = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  color: ${props => props.color || '#94a3b8'};
+`;
+
+const PaymentPill = styled.span`
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+  background: #ff5b24; /* Vipps orange */
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+  line-height: 1;
+`;
+
+// Ecommerce-only helpers (used only when Nettbutikk er valgt)
+const MockFilterBar = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+
+  ${({ design }) => design === 'premium' && css`
+    justify-content: flex-start;
+  `}
+`;
+
+const CategoryBadge = styled.span`
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  padding: 0.35rem 0.6rem;
+  border-radius: 9999px;
+
+  ${({ design }) => design === 'premium' && css`
+    background: #e0e7ff;
+    border-color: #c7d2fe;
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: rgba(148, 163, 184, 0.15);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
+  `}
+`;
+
+const CartBar = styled.div`
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  color: #334155;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+
+  ${({ design }) => design === 'premium' && css`
+    background: rgba(99, 102, 241, 0.06);
+    border-color: rgba(99, 102, 241, 0.18);
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: rgba(148, 163, 184, 0.08);
+    border-color: rgba(148, 163, 184, 0.18);
+    color: #e2e8f0;
+  `}
+`;
+
+const AddToCartButton = styled.button`
+  margin-top: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 0;
+  font-weight: 800;
+  cursor: pointer;
+  background: #475569;
+  color: #fff;
+
+  ${({ design }) => design === 'premium' && css`
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+  `}
+
+  ${({ design }) => design === 'elite' && css`
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
+  `}
+`;
+
+const MockChatButton = styled.div`
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 15px rgba(167, 139, 250, 0.4);
+  animation: ${css`${fadeIn}`} 0.5s 0.5s backwards;
+`;
+
+const SmallButton = styled.button`
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #fff;
   }
 `;
-const FeatureIcon = styled.div`
-  width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,.08); display:grid; place-items:center;
-  font-weight: 900; font-size: 1.1rem; letter-spacing: .06em;
-`;
-const FeatureTitle = styled.h3` margin: 4px 0; font-size: 1.4rem; letter-spacing: .01em; `;
-const FeatureText = styled.p` margin: 0; color: rgba(255,255,255,.86); line-height: 1.6; font-size: 1.05rem; `;
 
-// ---------- Estimator ----------
-const EstimatorWrap = styled.div`
-  margin: 32px auto 0; max-width: 1200px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px;
-  @media (max-width: 1100px){ grid-template-columns: 1fr; }
-`;
-
-const Panel = styled.div`
-  background:
-    radial-gradient(120% 120% at 0% 0%, rgba(58,210,159,.12), transparent 70%),
-    radial-gradient(120% 120% at 100% 100%, rgba(74,134,255,.12), transparent 70%),
-    linear-gradient(145deg, rgba(26,26,26,.88), rgba(40,40,40,.92));
-  border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 22px 22px 10px; box-shadow: 0 16px 50px rgba(0,0,0,.35);
-`;
-
-const PanelTitle = styled.h3`
-  margin: 0 0 14px; font-size: 1.4rem; letter-spacing: .02em; display:flex; align-items:center; justify-content:space-between;
-`;
-
-const Row = styled.div`
-  display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0;
-  @media (max-width: 680px){ grid-template-columns: 1fr; }
-`;
-
-const Field = styled.label`
-  display:flex; flex-direction:column; gap: 8px; background: rgba(255,255,255,.04); padding: 14px; border-radius: 12px; border:1px solid rgba(255,255,255,.06);
-`;
-const FieldRow = styled.div` display:flex; gap: 12px; align-items:center; flex-wrap: wrap; `;
-const Input = styled.input`
-  width: 100%; padding: 12px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.35); color: #fff;
-  &:focus{ outline: none; border-color: rgba(255,255,255,.6); box-shadow: 0 0 0 4px rgba(255,255,255,.08); }
-`;
-const Select = styled.select`
-  width: 100%; padding: 12px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.35); color: #fff;
-  &:focus{ outline: none; border-color: rgba(255,255,255,.6); box-shadow: 0 0 0 4px rgba(255,255,255,.08); }
-`;
-const Range = styled.input.attrs({ type: 'range' })`
-  width: 100%; accent-color: #ff6b6b; cursor: pointer; height: 2px; background: linear-gradient(90deg, var(--primary-from), var(--primary-to)); border-radius: 999px; appearance: none;
-`;
-
-const ToggleWrap = styled.div` display:flex; align-items:center; gap: 12px; cursor: pointer; `;
-const Toggle = styled.input.attrs({ type: 'checkbox' })`
-  appearance: none; width: 52px; height: 30px; border-radius: 999px; position: relative; background: rgba(255,255,255,.2); transition: background .25s; border:1px solid rgba(255,255,255,.2);
-  &::after{ content:''; position:absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .25s; }
-  &:checked{ background: var(--success); }
-  &:checked::after{ transform: translateX(22px); }
-`;
-
-const Meta = styled.div`
-  display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-top: 10px; flex-wrap: wrap; color: rgba(255,255,255,.8);
-`;
-const TotalBox = styled.div`
-  background:
-    radial-gradient(120% 120% at 0% 0%, rgba(58,210,159,.18), transparent 70%),
-    radial-gradient(120% 120% at 100% 100%, rgba(74,134,255,.18), transparent 70%),
-    linear-gradient(145deg, rgba(26,26,26,.9), rgba(40,40,40,.9));
-  border: 1px solid rgba(255,255,255,.12); border-radius: 18px; padding: 22px; box-shadow: 0 16px 50px rgba(0,0,0,.35);
-`;
-const TotalFigure = styled.div` font-weight: 1000; font-size: clamp(2rem, 5vw, 3rem); `;
-const Small = styled.small` color: rgba(255,255,255,.7); `;
-const Actions = styled.div` display:flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; `;
-const OutlineBtn = styled.button`
-  padding: 12px 16px; border-radius: 12px; background: transparent; color:#fff; border:1px solid rgba(255,255,255,.3); cursor:pointer; font-weight:800;
-  transition: transform .2s ease;
-  &:hover{ background: rgba(255,255,255,.12); transform: translateY(-2px); }
-`;
-const Badge = styled.span`
-  display:inline-block; padding:6px 10px; border-radius:999px; font-size:.8rem; font-weight:800;
-  background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
-`;
-
-// ---------- Currency ----------
-const formatCurrency = (amount, ccy) => {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy }).format(amount);
-  } catch {
-    return `${amount.toFixed(0)} ${ccy}`;
-  }
+// ---------- Price Calculator Logic ----------
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', minimumFractionDigits: 0 }).format(amount);
 };
 
 // ---------- Tiny confetti ----------
@@ -489,50 +1116,128 @@ export default function WebDevPromoPage() {
 
   const goContact = () => { window.location.href = '/contact'; };
 
+  // Language (en/no) and translations
+  const [lang, setLang] = useState('en');
+  const translations = {
+    en: {
+      heroTitle: 'Modern websites that convert',
+      heroSubtitle: 'From idea to launch. We build custom, blazing-fast and user-friendly websites that strengthen your brand and deliver results. Try our price estimator for an instant quote.',
+      configureProject: 'Configure your project',
+      pageCount: 'Number of pages',
+      designComplexity: 'Design & complexity',
+      addons: 'Add-ons',
+      ecommerceTitle: 'E-commerce',
+      ecommerceDesc: 'Sell products or services.',
+      seoTitle: 'SEO & Analytics',
+      seoDesc: 'Be found on Google.',
+      careTitle: 'Care & Maintenance',
+      careDesc: 'Monthly follow-up.',
+      standardTitle: 'Modern website',
+      standardSubtitle: 'Affordable and easy to get started.',
+      premiumTitle: 'Premium experience',
+      premiumSubtitle: 'More polished design, better conversions and more details.',
+      eliteTitle: 'Elite performance',
+      eliteSubtitle: 'High-end animations, maximum performance and exclusive finish.',
+      ctaStart: 'Get started',
+      ctaDemo: 'See demo',
+      ctaTalk: 'Talk to us',
+      ctaExamples: 'See examples',
+      securePayments: 'Secure payments with:',
+      cookieBanner: 'This website uses cookies to ensure you get the best experience.',
+      catAll: 'All',
+      catNew: 'New',
+      catSale: 'Sale',
+      addToCart: 'Add to cart',
+      cartEmpty: 'Cart – 0 products',
+      estimateTitle: 'Your Price Estimate',
+      oneTimeLabel: 'One-time cost (ex. VAT)',
+      monthlyLabel: 'Monthly cost',
+      perMonth: '/mo',
+      timeline: 'Estimated timeline',
+      weeks: 'weeks',
+      startProject: 'Start Project',
+      copy: 'Copy',
+      reset: 'Reset',
+      ribbonStandard: 'STANDARD',
+      ribbonPremium: 'BESTSELLER',
+      ribbonElite: 'ELITE',
+      chipCustom: 'Custom design',
+      chipFastHosting: 'Fast hosting',
+      chipSEOReady: 'SEO-ready',
+      ssl: 'SSL',
+      mobileFriendly: 'Mobile-friendly',
+      googleReady: 'Google-ready',
+      ticketTitle: 'Website project request',
+      ticketDesc: 'Tell us about your project and we will get back to you quickly.'
+    },
+    no: {
+      heroTitle: 'Moderne Nettsider som Konverterer',
+      heroSubtitle: 'Fra idé til lansering. Vi bygger skreddersydde, lynraske og brukervennlige nettsider som styrker din merkevare og gir resultater. Prøv vår priskalkulator for å få et umiddelbart estimat.',
+      configureProject: 'Konfigurer ditt prosjekt',
+      pageCount: 'Antall sider',
+      designComplexity: 'Design & kompleksitet',
+      addons: 'Tilleggsfunksjoner',
+      ecommerceTitle: 'Nettbutikk',
+      ecommerceDesc: 'Selg produkter eller tjenester.',
+      seoTitle: 'SEO & Analyse',
+      seoDesc: 'Bli funnet på Google.',
+      careTitle: 'Drift & Vedlikehold',
+      careDesc: 'Månedlig oppfølging.',
+      standardTitle: 'Moderne nettside',
+      standardSubtitle: 'Rimelig og enkelt å komme i gang.',
+      premiumTitle: 'Premium opplevelse',
+      premiumSubtitle: 'Mer polert design, bedre konvertering og flere detaljer.',
+      eliteTitle: 'Elite performance',
+      eliteSubtitle: 'High-end animasjoner, maksimal ytelse og eksklusiv finish.',
+      ctaStart: 'Kom i gang',
+      ctaDemo: 'Se demo',
+      ctaTalk: 'Snakk med oss',
+      ctaExamples: 'Se eksempler',
+      securePayments: 'Sikre betalinger med:',
+      cookieBanner: 'Dette nettstedet bruker informasjonskapsler for å sikre best mulig opplevelse.',
+      catAll: 'Alle',
+      catNew: 'Nyheter',
+      catSale: 'Salg',
+      addToCart: 'Legg i handlekurv',
+      cartEmpty: 'Handlekurv – 0 produkter',
+      estimateTitle: 'Ditt Prisestimat',
+      oneTimeLabel: 'Engangskostnad (eks. mva)',
+      monthlyLabel: 'Månedlig kostnad',
+      perMonth: '/mnd',
+      timeline: 'Estimert tidslinje',
+      weeks: 'uker',
+      startProject: 'Start Prosjektet',
+      copy: 'Kopier',
+      reset: 'Nullstill',
+      ribbonStandard: 'STANDARD',
+      ribbonPremium: 'BESTSELGER',
+      ribbonElite: 'ELITE',
+      chipCustom: 'Tilpasset design',
+      chipFastHosting: 'Rask hosting',
+      chipSEOReady: 'SEO-klar',
+      ssl: 'SSL',
+      mobileFriendly: 'Mobilvennlig',
+      googleReady: 'Google-klar',
+      ticketTitle: 'Forespørsel om nettsideprosjekt',
+      ticketDesc: 'Fortell oss om prosjektet ditt, så tar vi kontakt raskt.'
+    }
+  };
+  const t = translations[lang];
+  const openSupport = () => {
+    try {
+      window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: t.ticketTitle, description: t.ticketDesc, category: 'general', priority: 'medium' } } }));
+    } catch {}
+  };
   // ---------- Estimator State ----------
   const [ccy, setCcy] = useState('NOK');
   const rates = { NOK: 1, EUR: 0.085, USD: 0.092 }; // enkle multipliers
 
-  const [inputs, setInputs] = useState(() => {
-    const url = new URL(window.location.href);
-    const share = url.searchParams.get('est');
-    try {
-      if (share) {
-        const parsed = JSON.parse(decodeURIComponent(atob(share)));
-        return { ...{
-          pages: 5, design: 'premium', cms: true, ecommerce: false, products: 20,
-          integrations: 1, seo: 'standard', copy: 1000, hosting: 'standard',
-          maintenance: 'standard', animations: true, multilingual: 0,
-          accessibility: 'aa', analytics: true, migration: 10, revisions: 2,
-          qa: 'enhanced', rush: false, discount: ''
-        }, ...parsed };
-      }
-    } catch {}
-    try {
-      const cached = localStorage.getItem('estimator_v3');
-      if (cached) return JSON.parse(cached);
-    } catch {}
-    return {
-      pages: 5,
-      design: 'premium',
-      cms: true,
-      ecommerce: false,
-      products: 20,
-      integrations: 1,
-      seo: 'standard',
-      copy: 1000,
-      hosting: 'standard',
-      maintenance: 'standard',
-      animations: true,
-      multilingual: 0,
-      accessibility: 'aa',
-      analytics: true,
-      migration: 10,
-      revisions: 2,
-      qa: 'enhanced',
-      rush: false,
-      discount: '',
-    };
+  const [inputs, setInputs] = useState({
+    pages: 5,
+    design: 'premium',
+    ecommerce: false,
+    seo: true,
+    carePlan: false,
   });
 
   const [vatEnabled, setVatEnabled] = useState(true);
@@ -544,520 +1249,299 @@ export default function WebDevPromoPage() {
   }, [inputs]);
 
   const priceMap = {
-    basePerPage: { basic: 2500, standard: 4500, premium: 7000, elite: 12000 },
-    cms: 8000,
-    ecommerceBase: 15000,
-    productPerItem: 300,
-    integrationUnit: 4000,
-    seo: { none: 0, basic: 3500, standard: 8000, advanced: 16000 },
-    copyPerWord: 3,
-    hosting: { basic: 150, standard: 300, pro: 600 },
-    maintenance: { none: 0, basic: 1200, standard: 2800, pro: 6000 },
-    animations: 6000,
-    multilingualPerLang: 9000,
-    accessibility: { none: 0, a: 4000, aa: 9000, aaa: 18000 },
-    analytics: 1500,
-    migrationPerPage: 800,
-    revisionRound: 2000,
-    qa: { basic: 0, enhanced: 5000 },
-    rushMultiplier: 1.25,
-  };
+  base: 2200,
+  perPage: 1300,
+  design: { standard: 1, premium: 1.3, elite: 2.0 },
+  ecommerce: 9000,
+  seo: 4500,
+  carePlan: 1000, // per month
+};
+
 
   const discountCodes = { LAUNCH10: 0.1, FRIENDS15: 0.15, VIP20: 0.2 };
 
   const breakdown = useMemo(() => {
-    const r = rates[ccy] || 1;
-    const pp = priceMap;
-    const bpp = pp.basePerPage[inputs.design] || 0;
+    const { pages, design, ecommerce, seo, carePlan } = inputs;
 
-    const oneTime = {};
-    oneTime['Pages & Design'] = inputs.pages * bpp * r;
-    if (inputs.cms) oneTime['CMS Setup'] = pp.cms * r;
+    const designMultiplier = priceMap.design[design] || 1;
 
-    if (inputs.ecommerce) {
-      oneTime['E-commerce Base'] = pp.ecommerceBase * r;
-      if (inputs.products > 0) oneTime['Products Setup'] = inputs.products * pp.productPerItem * r;
-    }
+    let oneTimeCost = priceMap.base;
+    oneTimeCost += pages * priceMap.perPage * designMultiplier;
+    if (ecommerce) oneTimeCost += priceMap.ecommerce;
+    if (seo) oneTimeCost += priceMap.seo;
 
-    if (inputs.integrations > 0) oneTime['3rd-party Integrations'] = inputs.integrations * pp.integrationUnit * r;
+    const monthlyCost = carePlan ? priceMap.carePlan : 0;
 
-    oneTime['SEO'] = (pp.seo[inputs.seo] || 0) * r;
-
-    if (inputs.copy > 0) oneTime['Copywriting'] = inputs.copy * pp.copyPerWord * r;
-
-    if (inputs.animations) oneTime['Custom Animations / Micro-interactions'] = pp.animations * r;
-
-    if (inputs.multilingual > 0) oneTime['Additional Languages'] = inputs.multilingual * pp.multilingualPerLang * r;
-
-    oneTime['Accessibility'] = (pp.accessibility[inputs.accessibility] || 0) * r;
-
-    if (inputs.analytics) oneTime['Analytics & Tag Manager'] = pp.analytics * r;
-
-    if (inputs.migration > 0) oneTime['Content Migration'] = inputs.migration * pp.migrationPerPage * r;
-
-    if (inputs.revisions > 0) oneTime['Revision Rounds'] = inputs.revisions * pp.revisionRound * r;
-
-    oneTime['QA & Testing'] = (pp.qa[inputs.qa] || 0) * r;
-
-    let oneTimeTotal = Object.values(oneTime).reduce((a, b) => a + b, 0);
-
-    // Discount
-    let discountPct = 0;
-    const code = (inputs.discount || '').toUpperCase().trim();
-    if (code && discountCodes[code]) discountPct = discountCodes[code];
-    const discountAmt = oneTimeTotal * discountPct;
-    oneTimeTotal -= discountAmt;
-
-    // Rush
-    if (inputs.rush) oneTimeTotal *= pp.rushMultiplier;
-
-    // VAT
-    const vatAmount = vatEnabled ? (oneTimeTotal * (vatRate / 100)) : 0;
-    const oneTimeWithVat = oneTimeTotal + vatAmount;
-
-    // Monthlies
-    const monthly = {};
-    monthly['Hosting'] = (pp.hosting[inputs.hosting] || 0) * r;
-    monthly['Care Plan'] = (pp.maintenance[inputs.maintenance] || 0) * r;
-
-    const monthlyTotal = Object.values(monthly).reduce((a, b) => a + b, 0);
-
-    // Timeline (weeks)
-    const designFactor = { basic: 0.6, standard: 1, premium: 1.3, elite: 1.6 }[inputs.design] || 1;
-    let weeks = 2 + inputs.pages * 0.5 * designFactor + inputs.integrations * 1.2;
-    if (inputs.ecommerce) weeks += 2 + Math.min(6, inputs.products/50);
-    if (inputs.multilingual > 0) weeks += inputs.multilingual * 0.8;
-    if (inputs.rush) weeks *= 0.8;
-    weeks = Math.max(2, Math.round(weeks));
-
-    // Milestones 40/40/20
-    const m1 = oneTimeWithVat * 0.4;
-    const m2 = oneTimeWithVat * 0.4;
-    const m3 = oneTimeWithVat * 0.2;
+    const weeks = Math.round(2 + (pages / 4) + (ecommerce ? 3 : 0) + (seo ? 1 : 0));
 
     return {
-      oneTime,
-      monthly,
-      discountAmt,
-      discountPct,
-      oneTimeTotal,
-      vatAmount,
-      oneTimeWithVat,
-      monthlyTotal,
+      oneTimeCost,
+      monthlyCost,
       weeks,
-      milestones: { m1, m2, m3 },
     };
-  }, [inputs, ccy, vatEnabled, vatRate]);
+  }, [inputs]);
 
-  const copyBreakdown = () => {
-    const lines = [];
-    lines.push(`Currency: ${ccy}`);
-    lines.push('One-time:');
-    Object.entries(breakdown.oneTime).forEach(([k, v]) => lines.push(` • ${k}: ${formatCurrency(v, ccy)}`));
-    if (breakdown.discountAmt > 0) lines.push(`Discount: -${formatCurrency(breakdown.discountAmt, ccy)} (${Math.round(breakdown.discountPct*100)}%)`);
-    lines.push(`One-time Total${inputs.rush ? ' (rush incl.)' : ''}: ${formatCurrency(breakdown.oneTimeTotal, ccy)}`);
-    if (vatEnabled) {
-      lines.push(`VAT (${vatRate}%): ${formatCurrency(breakdown.vatAmount, ccy)}`);
-      lines.push(`One-time incl. VAT: ${formatCurrency(breakdown.oneTimeWithVat, ccy)}`);
-    }
-    lines.push('Monthly:');
-    Object.entries(breakdown.monthly).forEach(([k, v]) => lines.push(` • ${k}: ${formatCurrency(v, ccy)}/mo`));
-    lines.push(`Monthly Total: ${formatCurrency(breakdown.monthlyTotal, ccy)}/mo`);
-    lines.push('');
-    lines.push(`Estimated timeline: ~${breakdown.weeks} weeks`);
-    lines.push(`Milestones: 40% ${formatCurrency(breakdown.milestones.m1, ccy)} • 40% ${formatCurrency(breakdown.milestones.m2, ccy)} • 20% ${formatCurrency(breakdown.milestones.m3, ccy)}`);
-    navigator.clipboard.writeText(lines.join('\n')).then(() => burstConfetti(confettiRef.current)).catch(()=>{});
-    alert('Breakdown copied to clipboard.');
+  const copyEstimate = () => {
+    const text = `
+      Estimat for nettsideprosjekt:
+      -----------------------------
+      Engangskostnad: ${formatCurrency(breakdown.oneTimeCost)}
+      Månedlig kostnad: ${formatCurrency(breakdown.monthlyCost)}/mnd
+      Estimert tidslinje: ~${breakdown.weeks} uker
+      
+      Konfigurasjon:
+      - Sider: ${inputs.pages}
+      - Design: ${inputs.design}
+      - Nettbutikk: ${inputs.ecommerce ? 'Ja' : 'Nei'}
+      - SEO & Analyse: ${inputs.seo ? 'Ja' : 'Nei'}
+      - Drift & Vedlikehold: ${inputs.carePlan ? 'Ja' : 'Nei'}
+    `;
+    navigator.clipboard.writeText(text.trim());
+    alert('Estimat kopiert til utklippstavlen!');
   };
 
-  const applyDiscount = () => {
-    const code = (inputs.discount || '').toUpperCase().trim();
-    if (code && (code in discountCodes)) { burstConfetti(confettiRef.current); }
-    else { alert('Discount code not valid.'); }
-  };
-
-  const savePreset = () => {
-    try { localStorage.setItem('estimator_v3', JSON.stringify(inputs)); alert('Preset saved on this device.'); }
-    catch { alert('Could not save locally.'); }
-  };
-  const loadPreset = () => {
-    try { const cached = localStorage.getItem('estimator_v3'); if (!cached) return alert('No preset found.'); setInputs(JSON.parse(cached)); }
-    catch { alert('Could not load preset.'); }
-  };
-  const sharePreset = () => {
-    try {
-      const s = btoa(encodeURIComponent(JSON.stringify(inputs)));
-      const url = new URL(window.location.href);
-      url.searchParams.set('est', s);
-      navigator.clipboard.writeText(url.toString()).then(() => { alert('Shareable link copied.'); });
-    } catch { alert('Could not create share link.'); }
-  };
-
-  // Fancy hover (tilt highlight) for feature cards
-  useEffect(() => {
-    const cards = Array.from(document.querySelectorAll('[data-tilt-card]'));
-    const onMove = (e) => {
-      const t = e.currentTarget;
-      const r = t.getBoundingClientRect();
-      const mx = ((e.clientX - r.left) / r.width) * 100;
-      const my = ((e.clientY - r.top) / r.height) * 100;
-      t.style.setProperty('--mx', `${mx}%`);
-      t.style.setProperty('--my', `${my}%`);
-    };
-    cards.forEach(c => {
-      c.addEventListener('mousemove', onMove);
+  const resetCalculator = () => {
+    setInputs({
+      pages: 5,
+      design: 'premium',
+      ecommerce: false,
+      seo: true,
+      carePlan: false,
     });
-    return () => cards.forEach(c => c.removeEventListener('mousemove', onMove));
-  }, []);
+  };
+
+  const updateInput = (key, value) => {
+    setInputs(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <>
       <GlobalStyle />
+      <Header />
+      <PageWrapper>
+        <ContentContainer>
+          <LangSwitchWrapper>
+            <LangToggle className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</LangToggle>
+            <LangToggle className={lang === 'no' ? 'active' : ''} onClick={() => setLang('no')}>NO</LangToggle>
+          </LangSwitchWrapper>
+          <HeroSection>
+            <HeroTitle>{t.heroTitle}</HeroTitle>
+            <HeroSubtitle>
+              {t.heroSubtitle}
+            </HeroSubtitle>
+          </HeroSection>
 
-      {/* Scroll progress */}
-      <ScrollProgress $w={scrollW} />
+          <EstimatorGrid>
+            <CalculatorForm>
+              <SectionTitle><FiSliders />{t.configureProject}</SectionTitle>
+              
+              <ControlGroup>
+                <Label htmlFor="pages">
+                  {t.pageCount}
+                  <ValueDisplay>{inputs.pages}</ValueDisplay>
+                </Label>
+                <Slider 
+                  id="pages" 
+                  min="1" 
+                  max="20" 
+                  value={inputs.pages} 
+                  onChange={(e) => updateInput('pages', parseInt(e.target.value))}
+                />
+              </ControlGroup>
 
-      {/* EXTREMT FANCY BACKGROUND */}
-      <FixedBackground aria-hidden>
-        <GradientLayer />
-        <AuroraLayer />
-        <GridDots ref={gridRef} />
-        <ParticleCanvas ref={particleRef} />
-        <NoiseLayer />
-        <Spotlight ref={spotlightRef} />
-      </FixedBackground>
+              <ControlGroup>
+                <Label>{t.designComplexity}</Label>
+                <ToggleGroup>
+                  {Object.keys(priceMap.design).map(level => (
+                    <ToggleLabel key={level} checked={inputs.design === level}>
+                      <ToggleCheckbox 
+                        name="design" 
+                        checked={inputs.design === level} 
+                        onChange={() => updateInput('design', level)} 
+                      />
+                      <ToggleTitle style={{textTransform: 'capitalize'}}>{level}</ToggleTitle>
+                    </ToggleLabel>
+                  ))}
+                </ToggleGroup>
 
-      <StyledHeader>
-        <Header />
-      </StyledHeader>
+                              </ControlGroup>
 
-      <AppContainer ref={confettiRef}>
-        <Hero>
-          <div>
-            <Eyebrow>We build beautiful, blazing-fast websites</Eyebrow>
-            <HeroTitle $opacity={heroOpacity} $shift={heroShift} $scale={heroScale}>
-              Bespoke Websites that Convert.
-            </HeroTitle>
-            <HeroSub $opacity={heroOpacity} $shift={heroShift} $scale={heroScale}>
-              From idea to launch: design, development, copy, SEO, and care plans — all crafted to elevate your brand. Try our instant price estimator below to plan your project with confidence.
-            </HeroSub>
-            <HeroCTAs $opacity={heroOpacity} $shift={heroShift} $scale={heroScale}>
-              <PrimaryBtn onClick={goContact}>Get a Proposal</PrimaryBtn>
-              <a href="#estimator" style={{ textDecoration: 'none' }}>
-                <GhostBtn>Estimate Your Project</GhostBtn>
-              </a>
-            </HeroCTAs>
-          </div>
-        </Hero>
+              <ControlGroup>
+                <Label>{t.addons}</Label>
+                <ToggleGroup>
+                  <ToggleLabel checked={inputs.ecommerce}>
+                    <ToggleCheckbox 
+                      checked={inputs.ecommerce} 
+                      onChange={(e) => updateInput('ecommerce', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.ecommerceTitle} <FiPackage /></ToggleTitle>
+                    <ToggleDescription>{t.ecommerceDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.seo}>
+                    <ToggleCheckbox 
+                      checked={inputs.seo} 
+                      onChange={(e) => updateInput('seo', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.seoTitle} <FiZap /></ToggleTitle>
+                    <ToggleDescription>{t.seoDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.carePlan}>
+                    <ToggleCheckbox 
+                      checked={inputs.carePlan} 
+                      onChange={(e) => updateInput('carePlan', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.careTitle} <FiCheck /></ToggleTitle>
+                    <ToggleDescription>{t.careDesc}</ToggleDescription>
+                  </ToggleLabel>
+                </ToggleGroup>
+              </ControlGroup>
+            </CalculatorForm>
 
-        {/* Feature highlights */}
-        <Section ref={el => (sectionRefs.current[0] = el)}>
-          <SectionTitle ref={titleRef}>Why Choose Us</SectionTitle>
-          <FeatureGrid>
-            {[{ t: 'Strategy-first', d: 'We align design and development with your business goals to deliver measurable results.' },
-              { t: 'Design that Sells', d: 'Premium visual identity, motion, and UX patterns that turn visitors into customers.' },
-              { t: 'Performance Obsessed', d: 'We ship Core Web Vitals-friendly sites with lightning load times.' },
-              { t: 'Editable by You', d: 'Modern CMS setups so your team can update content without breaking a sweat.' },
-              { t: 'Secure & Scalable', d: 'Best-practice security, accessibility, and future-proof architecture.' },
-              { t: 'Ongoing Care', d: 'Hosting, monitoring, analytics, and proactive improvements every month.' }].map((f, i) => (
-              <FeatureCard key={i} data-tilt-card ref={el => (sectionRefs.current[1 + i] = el)}>
-                <FeatureIcon>{String.fromCharCode(65 + i)}</FeatureIcon>
-                <FeatureTitle>{f.t}</FeatureTitle>
-                <FeatureText>{f.d}</FeatureText>
-              </FeatureCard>
-            ))}
-          </FeatureGrid>
-        </Section>
-
-        {/* ----- Estimator ----- */}
-        <Section id="estimator">
-          <SectionTitle>Instant Price Estimator <Badge>Beta</Badge></SectionTitle>
-          <EstimatorWrap>
-            <Panel>
-              <PanelTitle>
-                Configure Your Project
-                <FieldRow>
-                  <Small>Currency</Small>
-                  <Select value={ccy} onChange={e => setCcy(e.target.value)}>
-                    <option value="NOK">NOK</option>
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
-                  </Select>
-                </FieldRow>
-              </PanelTitle>
-
-              <Row>
-                <Field>
-                  <Small>Number of pages: {inputs.pages}</Small>
-                  <Range min={1} max={40} value={inputs.pages} onChange={e => update({ pages: Number(e.target.value) })} />
-                </Field>
-                <Field>
-                  <Small>Design tier</Small>
-                  <Select value={inputs.design} onChange={e => update({ design: e.target.value })}>
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                    <option value="elite">Elite</option>
-                  </Select>
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <ToggleWrap onClick={() => update({ cms: !inputs.cms })}>
-                    <Toggle checked={inputs.cms} onChange={() => {}} />
-                    <div>
-                      <strong>Include CMS</strong>
-                      <Small style={{ display: 'block' }}>Edit content yourself with ease</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-                <Field>
-                  <ToggleWrap onClick={() => update({ ecommerce: !inputs.ecommerce })}>
-                    <Toggle checked={inputs.ecommerce} onChange={() => {}} />
-                    <div>
-                      <strong>E-commerce</strong>
-                      <Small style={{ display: 'block' }}>Sell products online</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-              </Row>
-
-              {inputs.ecommerce && (
-                <Row>
-                  <Field>
-                    <Small>Estimated number of products: {inputs.products}</Small>
-                    <Range min={0} max={1000} step={10} value={inputs.products} onChange={e => update({ products: Number(e.target.value) })} />
-                  </Field>
-                  <Field>
-                    <Small>3rd-party integrations: {inputs.integrations}</Small>
-                    <Range min={0} max={5} value={inputs.integrations} onChange={e => update({ integrations: Number(e.target.value) })} />
-                  </Field>
-                </Row>
-              )}
-
-              {!inputs.ecommerce && (
-                <Row>
-                  <Field>
-                    <Small>3rd-party integrations: {inputs.integrations}</Small>
-                    <Range min={0} max={5} value={inputs.integrations} onChange={e => update({ integrations: Number(e.target.value) })} />
-                  </Field>
-                  <Field>
-                    <Small>SEO package</Small>
-                    <Select value={inputs.seo} onChange={e => update({ seo: e.target.value })}>
-                      <option value="none">None</option>
-                      <option value="basic">Basic</option>
-                      <option value="standard">Standard</option>
-                      <option value="advanced">Advanced</option>
-                    </Select>
-                  </Field>
-                </Row>
-              )}
-
-              <Row>
-                <Field>
-                  <Small>Copywriting words: {inputs.copy.toLocaleString()}</Small>
-                  <Range min={0} max={8000} step={100} value={inputs.copy} onChange={e => update({ copy: Number(e.target.value) })} />
-                </Field>
-                <Field>
-                  <Small>Content migration pages: {inputs.migration}</Small>
-                  <Range min={0} max={200} value={inputs.migration} onChange={e => update({ migration: Number(e.target.value) })} />
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <Small>Accessibility target</Small>
-                  <Select value={inputs.accessibility} onChange={e => update({ accessibility: e.target.value })}>
-                    <option value="none">None</option>
-                    <option value="a">WCAG A</option>
-                    <option value="aa">WCAG AA</option>
-                    <option value="aaa">WCAG AAA</option>
-                  </Select>
-                </Field>
-                <Field>
-                  <Small>Extra languages: {inputs.multilingual}</Small>
-                  <Range min={0} max={10} value={inputs.multilingual} onChange={e => update({ multilingual: Number(e.target.value) })} />
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <ToggleWrap onClick={() => update({ animations: !inputs.animations })}>
-                    <Toggle checked={inputs.animations} onChange={() => {}} />
-                    <div>
-                      <strong>Custom animations</strong>
-                      <Small style={{ display: 'block' }}>Delightful motion & micro-interactions</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-                <Field>
-                  <ToggleWrap onClick={() => update({ analytics: !inputs.analytics })}>
-                    <Toggle checked={inputs.analytics} onChange={() => {}} />
-                    <div>
-                      <strong>Analytics & tracking</strong>
-                      <Small style={{ display: 'block' }}>GA4 + Tag Manager setup</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <Small>Revision rounds: {inputs.revisions}</Small>
-                  <Range min={0} max={6} value={inputs.revisions} onChange={e => update({ revisions: Number(e.target.value) })} />
-                </Field>
-                <Field>
-                  <Small>QA & testing level</Small>
-                  <Select value={inputs.qa} onChange={e => update({ qa: e.target.value })}>
-                    <option value="basic">Basic</option>
-                    <option value="enhanced">Enhanced</option>
-                  </Select>
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <Small>Discount code</Small>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <Input placeholder="Enter code (e.g. TEST10)" value={inputs.discount} onChange={e => update({ discount: e.target.value })} />
-                    <OutlineBtn type="button" onClick={applyDiscount}>Apply</OutlineBtn>
-                  </div>
-                </Field>
-                <Field>
-                  <Small>Rush delivery</Small>
-                  <ToggleWrap onClick={() => update({ rush: !inputs.rush })}>
-                    <Toggle checked={inputs.rush} onChange={() => {}} />
-                    <div>
-                      <strong>Prioritize timeline</strong>
-                      <Small style={{ display: 'block' }}>~20% faster (+25% one-time)</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <Small>Hosting tier (monthly)</Small>
-                  <Select value={inputs.hosting} onChange={e => update({ hosting: e.target.value })}>
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="pro">Pro</option>
-                  </Select>
-                </Field>
-                <Field>
-                  <Small>Care plan (monthly)</Small>
-                  <Select value={inputs.maintenance} onChange={e => update({ maintenance: e.target.value })}>
-                    <option value="none">None</option>
-                    <option value="basic">Basic</option>
-                    <option value="standard">Standard</option>
-                    <option value="pro">Pro</option>
-                  </Select>
-                </Field>
-              </Row>
-
-              <Row>
-                <Field>
-                  <Small>VAT enabled</Small>
-                  <ToggleWrap onClick={() => setVatEnabled(v => !v)}>
-                    <Toggle checked={vatEnabled} onChange={() => {}} />
-                    <div>
-                      <strong>Include VAT</strong>
-                      <Small style={{ display:'block' }}>{vatEnabled ? `Rate: ${vatRate}%` : 'Excluded'}</Small>
-                    </div>
-                  </ToggleWrap>
-                </Field>
-                <Field>
-                  <Small>VAT rate: {vatRate}%</Small>
-                  <Range min={0} max={30} value={vatRate} onChange={e => setVatRate(Number(e.target.value))} />
-                </Field>
-              </Row>
-
-              <Actions>
-                <OutlineBtn type="button" onClick={savePreset}>Save Preset</OutlineBtn>
-                <OutlineBtn type="button" onClick={loadPreset}>Load Preset</OutlineBtn>
-                <OutlineBtn type="button" onClick={sharePreset}>Share Preset</OutlineBtn>
-              </Actions>
-            </Panel>
-
-            <div>
-              <TotalBox>
-                <PanelTitle>Estimated Investment</PanelTitle>
-                <Meta>
-                  <div>
-                    <Small>One-time total{inputs.rush ? ' (rush incl.)' : ''}</Small>
-                    <TotalFigure>{formatCurrency(breakdown.oneTimeTotal, ccy)}</TotalFigure>
-                    {vatEnabled && (
-                      <div style={{ marginTop: 6 }}>
-                        <Small>VAT ({vatRate}%): {formatCurrency(breakdown.vatAmount, ccy)}</Small><br/>
-                        <strong>Incl. VAT: {formatCurrency(breakdown.oneTimeWithVat, ccy)}</strong>
+            <>
+            <PreviewPanel>
+              <MockBrowserHeader>
+                <MockBrowserButton color="#f87171" />
+                <MockBrowserButton color="#fbbf24" />
+                <MockBrowserButton color="#34d399" />
+              </MockBrowserHeader>
+              <MockWebsite design={inputs.design}>
+                <Ribbon variant={inputs.design}>
+                  {inputs.design === 'standard' ? t.ribbonStandard : inputs.design === 'premium' ? t.ribbonPremium : t.ribbonElite}
+                </Ribbon>
+                <PreviewContent>
+                  <MockHeader design={inputs.design}>
+                    <MockLogo design={inputs.design} color={inputs.design === 'elite' ? '#fff' : '#1e293b'}>Logo</MockLogo>
+                    <MockNav>
+                      {[...Array(5)].map((_, i) => (
+                        <MockNavLink key={i} design={inputs.design} color={inputs.design === 'elite' ? '#94a3b8' : (inputs.design === 'premium' ? '#475569' : '#64748b')}>Link</MockNavLink>
+                      ))}
+                    </MockNav>
+                  </MockHeader>
+                  <MockHero design={inputs.design}>
+                  {inputs.design === 'elite' ? (
+                    <HeroGrid>
+                      <div style={{ textAlign: 'center' }}>
+                        <MockTitle design={inputs.design}>{t.eliteTitle}</MockTitle>
+                        <MockSubtitle color="#94a3b8">{t.eliteSubtitle}</MockSubtitle>
+                        <ButtonRow design={inputs.design}>
+                          <MockButton design={inputs.design}>{t.ctaTalk}</MockButton>
+                          <SecondaryButton design={inputs.design}>{t.ctaDemo}</SecondaryButton>
+                        </ButtonRow>
+                        <FeatureChips>
+                          <Chip design={inputs.design}>Headless CMS</Chip>
+                          <Chip design={inputs.design}>Custom animations</Chip>
+                          <Chip design={inputs.design}>Enterprise SEO</Chip>
+                          <Chip design={inputs.design}>Priority support</Chip>
+                        </FeatureChips>
+                        <StatsRow>
+                          <Stat>0.8s LCP</Stat>
+                          <Stat>99.99% SLA</Stat>
+                          <Stat>A+ SEO</Stat>
+                        </StatsRow>
+                        <TrustBar>
+                          <TrustBadge>GDPR</TrustBadge>
+                          <TrustBadge>SSL</TrustBadge>
+                          <TrustBadge>Analytics</TrustBadge>
+                        </TrustBar>
                       </div>
-                    )}
-                  </div>
-                  <div>
-                    <Small>Monthly total</Small>
-                    <TotalFigure>{formatCurrency(breakdown.monthlyTotal, ccy)}/mo</TotalFigure>
-                  </div>
-                </Meta>
-                {breakdown.discountAmt > 0 && (
-                  <p style={{ marginTop: 8, color: 'var(--success)', fontWeight: 800 }}>
-                    Discount applied: −{formatCurrency(breakdown.discountAmt, ccy)} ({Math.round(breakdown.discountPct * 100)}%)
-                  </p>
-                )}
-                <div style={{ marginTop: 12 }}>
-                  <Small>Estimated timeline</Small>
-                  <div style={{ fontWeight: 900, fontSize: '1.2rem' }}>~{breakdown.weeks} weeks</div>
-                  <Small>Milestones: 40% / 40% / 20%</Small>
-                  <Meta>
-                    <span>Deposit (40%)</span><strong>{formatCurrency(breakdown.milestones.m1, ccy)}</strong>
-                  </Meta>
-                  <Meta>
-                    <span>Design/Build (40%)</span><strong>{formatCurrency(breakdown.milestones.m2, ccy)}</strong>
-                  </Meta>
-                  <Meta>
-                    <span>Launch (20%)</span><strong>{formatCurrency(breakdown.milestones.m3, ccy)}</strong>
-                  </Meta>
-                </div>
-                <Actions>
-                  <PrimaryBtn onClick={copyBreakdown}>Copy Breakdown</PrimaryBtn>
-                  <GhostBtn onClick={goContact}>Request Exact Quote</GhostBtn>
-                  <OutlineBtn onClick={() => window.print()}>Print</OutlineBtn>
-                </Actions>
-              </TotalBox>
+                      <IllustrationBlock design={inputs.design} />
+                    </HeroGrid>
+                  ) : inputs.design === 'premium' ? (
+                    <>
+                      <MockTitle design={inputs.design}>{t.premiumTitle}</MockTitle>
+                      <MockSubtitle color="#475569">{t.premiumSubtitle}</MockSubtitle>
+                      <MockButton design={inputs.design}>{t.ctaStart}</MockButton>
+                      <FeatureChips>
+                        <Chip>{t.chipCustom}</Chip>
+                        <Chip>{t.chipFastHosting}</Chip>
+                        <Chip>{t.chipSEOReady}</Chip>
+                      </FeatureChips>
+                    </>
+                  ) : (
+                    <>
+                      <MockTitle design={inputs.design}>{t.standardTitle}</MockTitle>
+                      <MockSubtitle color="#64748b">{t.standardSubtitle}</MockSubtitle>
+                      <MockButton design={inputs.design}>{t.ctaExamples}</MockButton>
+                      <InfoStrip>
+                        <span>{t.ssl}</span>
+                        <span>{t.mobileFriendly}</span>
+                        <span>{t.googleReady}</span>
+                      </InfoStrip>
+                    </>
+                  )}
+                  </MockHero>
 
-              <Panel style={{ marginTop: 18 }}>
-                <PanelTitle>Itemized One-time Costs</PanelTitle>
-                <div>
-                  {Object.entries(breakdown.oneTime).map(([k, v]) => (
-                    <Meta key={k}>
-                      <span>{k}</span>
-                      <strong>{formatCurrency(v, ccy)}</strong>
-                    </Meta>
-                  ))}
-                </div>
-              </Panel>
-
-              <Panel style={{ marginTop: 18 }}>
-                <PanelTitle>Monthly Costs</PanelTitle>
-                <div>
-                  {Object.entries(breakdown.monthly).map(([k, v]) => (
-                    <Meta key={k}>
-                      <span>{k}</span>
-                      <strong>{formatCurrency(v, ccy)}/mo</strong>
-                    </Meta>
-                  ))}
-                </div>
-              </Panel>
-
-              <Small style={{ display: 'block', marginTop: 12 }}>
-                This is a non-binding estimate. Final pricing depends on detailed scope, timeline, and technical complexity.
-              </Small>
-            </div>
-          </EstimatorWrap>
-        </Section>
-
-        <Footer />
-      </AppContainer>
+                  {!inputs.ecommerce && (
+                    <MockCardGrid design={inputs.design}>
+                      {[...Array(inputs.design === 'standard' ? 3 : 4)].map((_, i) => (
+                        <MockCard key={i} design={inputs.design}>
+                          <MockCardContent design={inputs.design} color={inputs.design === 'elite' ? 'rgba(255,255,255,0.08)' : (inputs.design === 'premium' ? '#e0e7ff' : '#e2e8f0')} />
+                        </MockCard>
+                      ))}
+                    </MockCardGrid>
+                  )}
+                  {inputs.ecommerce && (
+                    <>
+                      <MockFilterBar design={inputs.design}>
+                        <CategoryBadge design={inputs.design}>{t.catAll}</CategoryBadge>
+                        <CategoryBadge design={inputs.design}>{t.catNew}</CategoryBadge>
+                        <CategoryBadge design={inputs.design}>{t.catSale}</CategoryBadge>
+                      </MockFilterBar>
+                      <MockCardGrid design={inputs.design}>
+                        {[...Array(3)].map((_, i) => (
+                          <MockCard key={i} design={inputs.design}>
+                            <MockCardContent design={inputs.design} color={inputs.design === 'elite' ? 'rgba(255,255,255,0.1)' : (inputs.design === 'premium' ? '#e2e8f0' : '#cbd5e1')} />
+                            <AddToCartButton design={inputs.design}>{t.addToCart}</AddToCartButton>
+                          </MockCard>
+                        ))}
+                      </MockCardGrid>
+                      <CartBar design={inputs.design}>{t.cartEmpty}</CartBar>
+                      {(inputs.design === 'premium' || inputs.design === 'elite') && (
+                        <MockPaymentWrapper design={inputs.design}>
+                          <MockPaymentText color={inputs.design === 'elite' ? '#94a3b8' : '#475569'}>{t.securePayments}</MockPaymentText>
+                          <MockPaymentIcons color={inputs.design === 'elite' ? '#cbd5e1' : '#334155'}>
+                            <FaCcVisa />
+                            <FaCcMastercard />
+                            <PaymentPill>Vipps</PaymentPill>
+                            {inputs.design === 'elite' && <FaPaypal />}
+                          </MockPaymentIcons>
+                        </MockPaymentWrapper>
+                      )}
+                    </>
+                  )}
+                </PreviewContent>
+                {inputs.design === 'premium' && <MockCookieBanner>{t.cookieBanner}</MockCookieBanner>}
+                {inputs.design === 'elite' && <MockChatButton><FiMessageCircle color="#fff" size={24} /></MockChatButton>}
+              </MockWebsite>
+            </PreviewPanel>
+            <ResultsPanel>
+              <SectionTitle><FiDollarSign />{t.estimateTitle}</SectionTitle>
+              <TotalDisplay>
+                <PriceLabel>{t.oneTimeLabel}</PriceLabel>
+                <PriceValue>{formatCurrency(breakdown.oneTimeCost)}</PriceValue>
+              </TotalDisplay>
+              <TotalDisplay>
+                <PriceLabel>{t.monthlyLabel}</PriceLabel>
+                <PriceValue>
+                  {formatCurrency(breakdown.monthlyCost)}
+                  <PriceQualifier>{t.perMonth}</PriceQualifier>
+                </PriceValue>
+              </TotalDisplay>
+              <hr style={{ border: 'none', height: '1px', background: 'rgba(148,163,184,0.12)', margin: '2rem 0' }} />
+              <p style={{textAlign: 'center', color: '#94a3b8'}}>{t.timeline}: <strong>~{breakdown.weeks} {t.weeks}</strong></p>
+              <ActionButton onClick={openSupport}>
+                {t.startProject} <FiArrowRight />
+              </ActionButton>
+              <SmallActions>
+                <SmallButton onClick={copyEstimate}><FiCopy />{t.copy}</SmallButton>
+                <SmallButton onClick={resetCalculator}><FiRefreshCw />{t.reset}</SmallButton>
+              </SmallActions>
+            </ResultsPanel>
+          </>
+          </EstimatorGrid>
+        </ContentContainer>
+      </PageWrapper>
+      <Footer />
     </>
   );
 }
