@@ -1,5 +1,9 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import ProfileCard from '../components/ProfileCard';
+import imgMartin from '../bilder/SeckerrNo.png';
+import imgSebastian from '../bilder/cactus2r.png';
+import imgOscar from '../bilder/perrr.png';
 
 const fadeIn = keyframes`
   from {
@@ -63,6 +67,45 @@ const Paragraph = styled.p`
   margin-bottom: 24px;
 `;
 
+const TeamSection = styled.div`
+  margin: 120px auto 100px;
+  max-width: 1100px;
+`;
+
+const TeamGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 80px 80px;
+  align-items: stretch;
+  justify-items: center;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+`;
+
+const TeamItem = styled.div`
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Constrain the profile card so three fit nicely with clear gaps */
+  & .pc-card {
+    width: 100%;
+    max-width: 320px;
+    height: 460px; /* ensure visible height since inner content is absolutely positioned */
+    min-height: 420px;
+  }
+
+  @media (max-width: 900px) {
+    & .pc-card {
+      max-width: 360px;
+    }
+  }
+`;
+
 const AboutUs = () => {
   return (
     <AboutContainer>
@@ -80,6 +123,66 @@ const AboutUs = () => {
           We envision a digital world that is more intuitive, efficient, and beautiful. Through our work, we aim to set new standards for user experience and digital craftsmanship, creating platforms and tools that empower users and drive meaningful change. Our goal is to be at the forefront of the next wave of digital innovation.
         </Paragraph>
       </ContentSection>
+
+      {/* Team section placed at the very bottom */}
+      <TeamSection>
+        <TeamGrid>
+          <TeamItem>
+          <ProfileCard
+            name="Martin"
+            title="Founder"
+            handle="martin"
+            status="Online"
+            contactText="Contact"
+            avatarUrl={imgMartin}
+            miniAvatarUrl={imgMartin}
+            enableTilt={true}
+            enableMobileTilt={false}
+            onContactClick={() => {
+              try {
+                window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Contact: Martin', description: 'Hei! Jeg vil gjerne komme i kontakt med Martin om et prosjekt.', category: 'general', priority: 'medium' } } }));
+              } catch {}
+            }}
+          />
+          </TeamItem>
+          <TeamItem>
+          <ProfileCard
+            name="Sebastian"
+            title="Co-Founder"
+            handle="sebastian"
+            status="Online"
+            contactText="Contact"
+            avatarUrl={imgSebastian}
+            miniAvatarUrl={imgSebastian}
+            enableTilt={true}
+            enableMobileTilt={false}
+            onContactClick={() => {
+              try {
+                window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Contact: Sebastian', description: 'Hei! Jeg vil gjerne komme i kontakt med Sebastian om et prosjekt.', category: 'general', priority: 'medium' } } }));
+              } catch {}
+            }}
+          />
+          </TeamItem>
+          <TeamItem>
+          <ProfileCard
+            name="Oscar"
+            title="Co-Founder"
+            handle="oscar"
+            status="Online"
+            contactText="Contact"
+            avatarUrl={imgOscar}
+            miniAvatarUrl={imgOscar}
+            enableTilt={true}
+            enableMobileTilt={false}
+            onContactClick={() => {
+              try {
+                window.dispatchEvent(new CustomEvent('openTickets', { detail: { tab: 'create', formData: { title: 'Contact: Oscar', description: 'Hei! Jeg vil gjerne komme i kontakt med Oscar om et prosjekt.', category: 'general', priority: 'medium' } } }));
+              } catch {}
+            }}
+          />
+          </TeamItem>
+        </TeamGrid>
+      </TeamSection>
     </AboutContainer>
   );
 };
