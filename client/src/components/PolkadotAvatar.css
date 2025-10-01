@@ -1,0 +1,68 @@
+.polka{ position:relative; width:var(--size,64px); aspect-ratio:1; border-radius:999px; display:grid; place-items:center; overflow:visible; }
+.polka.is-hidden{ opacity:0; transform:scale(1.12); filter:blur(1px); transition: opacity .28s ease, transform .28s ease, filter .28s ease; pointer-events:none; }
+.polka.is-visible{ opacity:1; transform:scale(1); transition: opacity .28s ease, transform .28s ease; }
+
+/* Free avatar (uten ramme) */
+.polka.free{ 
+  background: radial-gradient(circle at 50% 50%,
+    hsla(var(--base-hue,220), var(--sat,95%), 70%, var(--bg-alpha,0.12)) 0%,
+    hsla(var(--base-hue,220), var(--sat,95%), 50%, calc(var(--bg-alpha,0.12)*0.6)) 40%,
+    transparent 70%);
+  backdrop-filter: blur(4px) saturate(120%);
+  -webkit-backdrop-filter: blur(4px) saturate(120%);
+  filter: drop-shadow(0 0 12px hsla(var(--base-hue,220), var(--sat,95%), 60%, 0.45));
+}
+
+/* Glasskule-variant - TEST MED 'FREE' BAKGRUNN */
+.polka.sphere{
+    margin-top: -6px;
+    margin-bottom: auto;
+    margin-right: auto;
+    margin-left: -10px;
+    height: 70px;
+    width: 70px;
+
+  /* Bakgrunn fra .free for glød-effekt */
+  background: radial-gradient(circle at 50% 50%,
+    hsla(var(--base-hue,220), var(--sat,95%), 70%, var(--bg-alpha,0.12)) 0%,
+    hsla(var(--base-hue,220), var(--sat,95%), 50%, calc(var(--bg-alpha,0.12)*0.6)) 40%,
+    transparent 70%);
+  
+  /* Beholder skygge og border fra sphere for ramme-effekt */
+  box-shadow: 
+    inset 0 0 10px #ffffff22, 
+    inset 0 -2px 6px #ffffff15,
+    0 6px 24px #00000033;
+  backdrop-filter: blur(4px) saturate(120%);
+  -webkit-backdrop-filter: blur(4px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden; /* Legger til overflow hidden for å unngå at dotter vises utenfor */
+}
+
+.polka .orb{ 
+  position:absolute; inset:0; margin:auto; width:var(--size); height:var(--size); 
+  transform-origin:center center; will-change: transform;
+  animation: orb-rot linear infinite; 
+  animation-duration: calc(var(--speed) / var(--speed-mult, 1));
+  transform: rotate(var(--start));
+}
+@keyframes orb-rot { to { transform: rotate(calc(var(--start) + var(--dir) * 360deg)); } }
+
+.polka .radius{ transform-origin:left center; transform: translateX(var(--r)) rotate(var(--tilt)); will-change: transform; }
+.polka .bob{ will-change: transform; animation: bob ease-in-out infinite alternate; animation-duration: var(--bob-speed); }
+@keyframes bob{ from{ transform: translateY(calc(var(--bob) * -1)); } to{ transform: translateY(var(--bob)); } }
+
+/* Glass/gel dot med glow */
+.polka .dot{ 
+  width:var(--dot-size,8px); height:var(--dot-size,8px); border-radius:999px; 
+  display:block; pointer-events:none;
+  background: radial-gradient(circle at 50% 50%,
+    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) + 12%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.95)) 0%,
+    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), var(--dot-light, var(--light,55%)), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.9)) 45%,
+    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) - 8%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.85)) 70%,
+    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) - 20%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.78)) 100%);
+  box-shadow: 
+    inset 0 0 8px hsla(var(--dot-hue, var(--base-hue,220)), 40%, 85%, 0.18),
+    0 0 var(--glow-strength, 18px) hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), 60%, 0.5);
+  transition: background 0.6s ease, box-shadow 0.6s ease;
+}

@@ -1,78 +1,15 @@
 // src/components/PolkadotAvatar.js
+import './PolkadotAvatar.css';
+
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const rand = (a, b) => Math.random() * (b - a) + a;
 const choice = (a, b) => (Math.random() < 0.5 ? a : b);
 
-const BASE_CSS = `
-.polka{ position:relative; width:var(--size,64px); aspect-ratio:1; border-radius:999px; display:grid; place-items:center; overflow:visible; }
-.polka.is-hidden{ opacity:0; transform:scale(1.12); filter:blur(1px); transition: opacity .28s ease, transform .28s ease, filter .28s ease; pointer-events:none; }
-.polka.is-visible{ opacity:1; transform:scale(1); transition: opacity .28s ease, transform .28s ease; }
-
-/* Free avatar (uten ramme) */
-.polka.free{ 
-  background: radial-gradient(circle at 50% 50%,
-    hsla(var(--base-hue,220), var(--sat,95%), 70%, var(--bg-alpha,0.12)) 0%,
-    hsla(var(--base-hue,220), var(--sat,95%), 50%, calc(var(--bg-alpha,0.12)*0.6)) 40%,
-    transparent 70%);
-  backdrop-filter: blur(4px) saturate(120%);
-  -webkit-backdrop-filter: blur(4px) saturate(120%);
-  filter: drop-shadow(0 0 12px hsla(var(--base-hue,220), var(--sat,95%), 60%, 0.45));
-}
-
-/* Glasskule-variant - mer gjennomsiktig */
-.polka.sphere{ 
-  background:
-    radial-gradient(circle at 35% 30%, #ffffff25 0%, #ffffff08 35%, #00000015 75%),
-    radial-gradient(circle at 50% 50%,
-      hsla(var(--base-hue,220), var(--sat,95%), 70%, 0.06) 0%,
-      hsla(var(--base-hue,220), var(--sat,95%), 50%, 0.04) 40%,
-      transparent 70%);
-  box-shadow: 
-    inset 0 0 10px #ffffff22, 
-    inset 0 -2px 6px #ffffff15,
-    0 6px 24px #00000033;
-  backdrop-filter: blur(4px) saturate(120%);
-  -webkit-backdrop-filter: blur(4px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.polka .orb{ 
-  position:absolute; inset:0; margin:auto; width:var(--size); height:var(--size); 
-  transform-origin:center center; will-change: transform;
-  animation: orb-rot linear infinite; 
-  animation-duration: calc(var(--speed) / var(--speed-mult, 1));
-  transform: rotate(var(--start));
-}
-@keyframes orb-rot { to { transform: rotate(calc(var(--start) + var(--dir) * 360deg)); } }
-
-.polka .radius{ transform-origin:left center; transform: translateX(var(--r)) rotate(var(--tilt)); will-change: transform; }
-.polka .bob{ will-change: transform; animation: bob ease-in-out infinite alternate; animation-duration: var(--bob-speed); }
-@keyframes bob{ from{ transform: translateY(calc(var(--bob) * -1)); } to{ transform: translateY(var(--bob)); } }
-
-/* Glass/gel dot med glow */
-.polka .dot{ 
-  width:var(--dot-size,8px); height:var(--dot-size,8px); border-radius:999px; 
-  display:block; pointer-events:none;
-  background: radial-gradient(circle at 50% 50%,
-    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) + 12%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.95)) 0%,
-    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), var(--dot-light, var(--light,55%)), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.9)) 45%,
-    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) - 8%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.85)) 70%,
-    hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), calc(var(--dot-light, var(--light,55%)) - 20%), calc(var(--dot-alpha, var(--alpha,0.75)) * 0.78)) 100%);
-  box-shadow: 
-    inset 0 0 8px hsla(var(--dot-hue, var(--base-hue,220)), 40%, 85%, 0.18),
-    0 0 var(--glow-strength, 18px) hsla(var(--dot-hue, var(--base-hue,220)), var(--dot-sat, var(--sat,95%)), 60%, 0.5);
-  transition: background 0.6s ease, box-shadow 0.6s ease;
-}
-`;
-
 let stylesInjected = false;
 export function injectPolkadotStyles() {
+  // Stiler er nå importert via CSS-fil, så denne funksjonen er ikke lenger nødvendig
+  // for å injisere stiler, men beholdes for kompatibilitet.
   if (stylesInjected) return;
-  const tag = document.createElement('style');
-  tag.id = 'polkadot-avatar-css';
-  tag.textContent = BASE_CSS;
-  document.head.appendChild(tag);
   stylesInjected = true;
 }
 
@@ -117,7 +54,7 @@ export function createPolkadotAvatar(container, options = {}) {
 
   const opts = {
     // visuals
-    size: 140, dots: 60, rings: 4, minRadius: 0, maxRadius: 56, dotSize: 5,
+    size: 32, dots: 120, rings: 4, minRadius: 0, maxRadius: 56, dotSize: 5,
     variant: 'free', // 'free' | 'sphere'
     // color
     mode: 'spread', baseHue: 210, spread: 0, sat: 95, light: 55, alpha: 0.75,
@@ -127,7 +64,7 @@ export function createPolkadotAvatar(container, options = {}) {
     // state/visibility
     state: 'idle', visible: true,
     // physics
-    physics: false, gravity: 'down', // 'down'|'up'|'none'
+    physics: false, gravity: 'none', // 'down'|'up'|'none'
     ...options
   };
 
@@ -219,9 +156,11 @@ function rebuild(api) {
     root.appendChild(orb);
 
     const angle = d.start * (Math.PI / 180);
-    const x = opts.size / 2 + Math.cos(angle) * d.r;
-    const y = opts.size / 2 + Math.sin(angle) * d.r;
-    return { orb, dot, x, y, vx: 0, vy: 0 };
+    const size = opts.variant === 'sphere' ? 70 : opts.size;
+    const x = size / 2 + Math.cos(angle) * d.r;
+    const y = size / 2 + Math.sin(angle) * d.r;
+
+    return { orb, dot, x, y, dir: d.dir, r: d.r, baseAngle: angle, currentAngle: angle };
   });
 
   startLoop(api);
@@ -231,99 +170,89 @@ function startLoop(api) {
   stopLoop(api);
   if (api.opts.variant !== 'sphere' || !api.opts.physics) return;
 
-  // Større område - gi dottene mer plass
-  const R = api.opts.size * 0.45;  // Enklere beregning, mer plass
-  const center = { x: api.opts.size / 2, y: api.opts.size / 2 };
-  let last = performance.now();
+  // Juster for faktisk størrelse
+  const size = api.opts.variant === 'sphere' ? 70 : api.opts.size;
+  const center = { x: size / 2, y: size / 2 }; // Senter
+  
+  // Initialiser angles hvis ikke allerede satt
+  api.list.forEach((item, i) => {
+    if (!item.baseAngle) {
+      item.baseAngle = (Math.PI * 2 * i) / api.list.length;
+      item.currentAngle = item.baseAngle;
+      item.radius = item.r || 15;
+      item.rotationSpeed = 0.5 + Math.random() * 0.5; // Variabel hastighet
+      item.explosionVx = 0;
+      item.explosionVy = 0;
+      item.explosionActive = false;
+      item.originalHue = api.opts.baseHue;
+    }
+  });
 
   const step = (t) => {
-    const dt = Math.min(0.04, (t - last) / 1000);
-    last = t;
-
     const sp = stateParams(api.opts.state, api.opts.baseHue);
     const { x: mx, y: my, inside } = api.mouse;
     
-    // Sjekk om musen er nær (innen 20px fra glasskulen)
     const mouseDistFromCenter = Math.hypot(mx - center.x, my - center.y);
-    const nearGlass = !inside && mouseDistFromCenter < R + 20;
+    const nearGlass = !inside && mouseDistFromCenter < size / 2 + 20;
 
     for (const item of api.list) {
-      // Start med null kraft
-      let ax = 0, ay = 0;
+      // Oppdater vinkel for sirkulær bevegelse
+      item.currentAngle += 0.02 * item.rotationSpeed * item.dir * sp.spinMult;
       
-      // Svak sentripetalkraft for å holde dottene i en løs klynge
-      const centripetalForce = -0.2 * sp.spinMult;
-      const dxToCenter = center.x - item.x;
-      const dyToCenter = center.y - item.y;
-      const distToCenter = Math.hypot(dxToCenter, dyToCenter) || 1;
-      ax += (dxToCenter / distToCenter) * centripetalForce;
-      ay += (dyToCenter / distToCenter) * centripetalForce;
+      let targetX, targetY;
       
-      // Hvis musen er NÆR glasskulen (men ikke inni)
-      if (nearGlass) {
-        const dx = mx - item.x, dy = my - item.y;
-        const dist = Math.hypot(dx, dy) || 1;
+      // Håndter eksplosjon
+      if (item.explosionActive) {
+        item.explosionVx *= 0.92; // Damping
+        item.explosionVy *= 0.92;
+        item.x += item.explosionVx;
+        item.y += item.explosionVy;
         
-        // Bølgeeffekt - trekk dotter mot kanten nærmest musen
-        if (dist < R * 1.5) {
-          const influence = Math.max(0, 1 - (dist / (R * 1.5)));
-          const pullStrength = 40 * influence;
-          
-          // Trekk mot kanten, ikke direkte mot musen
-          const angleToMouse = Math.atan2(my - center.y, mx - center.x);
-          const edgeX = center.x + Math.cos(angleToMouse) * R * 0.9;
-          const edgeY = center.y + Math.sin(angleToMouse) * R * 0.9;
-          
-          const edx = edgeX - item.x, edy = edgeY - item.y;
-          const edist = Math.hypot(edx, edy) || 1;
-          ax += (edx / edist) * pullStrength;
-          ay += (edy / edist) * pullStrength;
+        // Sjekk om eksplosjonen er ferdig
+        if (Math.abs(item.explosionVx) < 0.5 && Math.abs(item.explosionVy) < 0.5) {
+          item.explosionActive = false;
+          // Tilbakestill farge
+          item.dot.style.setProperty('--dot-hue', item.originalHue);
         }
-      } else if (inside) {
-        // Musen er INNI glasskulen - samle dotter rundt musen
-        const dx = mx - item.x, dy = my - item.y;
-        const dist = Math.hypot(dx, dy) || 1;
-        
-        // Sterk attraksjon mot musen
-        const magnetPull = 180;
-        ax += (dx / dist) * magnetPull;
-        ay += (dy / dist) * magnetPull;
-        
-        // Orbital kraft rundt musen når nær
-        if (dist < 15) {
-          const orbitalForce = 100;
-          ax += dy * orbitalForce / dist;  // Reversert for korrekt retning
-          ay += -dx * orbitalForce / dist; // Reversert for korrekt retning
+      } else {
+        if (inside) {
+          // Når musen er over, sentrer rundt musen med tettere orbit
+          const orbitRadius = 8 + item.radius * 0.2;
+          targetX = mx + Math.cos(item.currentAngle * 2) * orbitRadius; // Dobbel hastighet
+          targetY = my + Math.sin(item.currentAngle * 2) * orbitRadius;
+        } else {
+          // Normal sirkulær bane rundt senter
+          targetX = center.x + Math.cos(item.currentAngle) * item.radius;
+          targetY = center.y + Math.sin(item.currentAngle) * item.radius;
+          
+          // Forbedret magnetisme når musen er nær men utenfor
+          if (nearGlass) {
+            const dx = mx - targetX;
+            const dy = my - targetY;
+            const dist = Math.hypot(dx, dy);
+            
+            // Sjekk om dotten er på samme side som musen
+            const dotAngle = Math.atan2(targetY - center.y, targetX - center.x);
+            const mouseAngle = Math.atan2(my - center.y, mx - center.x);
+            let angleDiff = Math.abs(dotAngle - mouseAngle);
+            if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+            
+            // Påvirk kun dotter på samme side (innen 90 grader)
+            if (angleDiff < Math.PI / 2 && dist < 40) {
+              const pull = (1 - dist / 40) * 8 * (1 - angleDiff / (Math.PI / 2));
+              targetX += dx * pull / dist;
+              targetY += dy * pull / dist;
+            }
+          }
         }
-      }
-      
-      // Mild gravitasjon
-      if (api.opts.gravity !== 'none' && !inside) {
-        const g = 4;
-        ay += api.opts.gravity === 'down' ? g : -g;
-      }
-
-      // Oppdater hastighet med høyere damping når musen er inni
-      const damping = inside ? 0.88 : 0.95;
-      item.vx = (item.vx + ax * dt) * damping;
-      item.vy = (item.vy + ay * dt) * damping;
-      item.x += item.vx * dt;
-      item.y += item.vy * dt;
-
-      // Soft border constraint
-      const dx = item.x - center.x, dy = item.y - center.y;
-      const d = Math.hypot(dx, dy);
-      if (d > R) {
-        const nx = dx / d, ny = dy / d;
-        item.x = center.x + nx * R;
-        item.y = center.y + ny * R;
-        // Veldig myk bounce
-        const dotv = item.vx * nx + item.vy * ny;
-        item.vx -= 1.1 * dotv * nx;
-        item.vy -= 1.1 * dotv * ny;
+        
+        // Smooth interpolering til målposisjon
+        const lerpFactor = inside ? 0.2 : 0.1;
+        item.x = item.x + (targetX - item.x) * lerpFactor;
+        item.y = item.y + (targetY - item.y) * lerpFactor;
       }
 
-      // Oppdater DOM
+      // Posisjonering relativt til senter
       item.orb.style.transform = `translate(${item.x - center.x}px, ${item.y - center.y}px)`;
     }
 
@@ -353,19 +282,23 @@ function attachInteractions(api) {
     if (api.opts.variant !== 'sphere') return;
     const rect = root.getBoundingClientRect();
     const px = e.clientX - rect.left, py = e.clientY - rect.top;
-    const cx = rect.width / 2, cy = rect.height / 2;
     
-    // Eksplosjon fra klikk-punktet
-    api.list.forEach((d) => {
-      const orbRect = d.orb.getBoundingClientRect();
-      const dotX = orbRect.left + orbRect.width / 2 - rect.left;
-      const dotY = orbRect.top + orbRect.height / 2 - rect.top;
-      const dx = dotX - px;
-      const dy = dotY - py;
+    // Eksplosjon fra klikk-punktet med fargevariasjon
+    api.list.forEach((d, i) => {
+      const dx = d.x - px;
+      const dy = d.y - py;
       const dist = Math.hypot(dx, dy) || 1;
-      const force = 300 / Math.max(dist, 20);
-      d.vx += (dx / dist) * force;
-      d.vy += (dy / dist) * force;
+      const force = 15 + Math.random() * 10;
+      
+      // Sett eksplosjonsvektor
+      d.explosionVx = (dx / dist) * force;
+      d.explosionVy = (dy / dist) * force;
+      d.explosionActive = true;
+      
+      // Gi forskjellige farger under eksplosjon
+      const hueShift = Math.random() * 120 - 60; // -60 til +60 grader
+      const newHue = (d.originalHue + hueShift + 360) % 360;
+      d.dot.style.setProperty('--dot-hue', newHue);
     });
   };
 

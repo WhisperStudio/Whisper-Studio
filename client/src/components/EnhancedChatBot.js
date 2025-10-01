@@ -857,7 +857,7 @@ const EnhancedChatBot = () => {
       if (!headerAvatarRef.current) return;
       
       headerAvatarApiRef.current = createPolkadotAvatar(headerAvatarRef.current, {
-        size: 60,  // Enda større glasskule
+        size: 32,
         dots: 60,
         rings: 4,
         minRadius: 0,  // Start fra sentrum
@@ -878,7 +878,7 @@ const EnhancedChatBot = () => {
         state: 'idle',
         visible: true,
         physics: true,
-        gravity: 'down'
+        gravity: 'none'
       });
     }, 100);
     
