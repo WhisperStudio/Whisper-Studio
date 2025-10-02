@@ -2,7 +2,7 @@ import React from 'react';
 import styled, { keyframes } from 'styled-components';
 import ProfileCard from '../components/ProfileCard';
 import imgMartin from '../bilder/SeckerrNo.png';
-import imgSebastian from '../bilder/cactus2r.png';
+import imgSebastian from '../bilder/kuktus.png';
 import imgOscar from '../bilder/perrr.png';
 
 const fadeIn = keyframes`
@@ -99,6 +99,17 @@ const TeamItem = styled.div`
     min-height: 420px;
   }
 
+  /* Make avatars a bit smaller on About Us */
+  & .pc-avatar-content .avatar {
+    width: 86% !important;
+  }
+
+  /* Make Sebastian (kaktus) image a bit smaller than others */
+  & .is-sebastian .pc-avatar-content .avatar {
+    width: 60% !important;
+    bottom: 90px !important; /* move a bit lower (default is 100px) */
+  }
+
   @media (max-width: 900px) {
     & .pc-card {
       max-width: 360px;
@@ -154,6 +165,7 @@ const AboutUs = () => {
             contactText="Contact"
             avatarUrl={imgSebastian}
             miniAvatarUrl={imgSebastian}
+            className="is-sebastian"
             enableTilt={true}
             enableMobileTilt={false}
             onContactClick={() => {
