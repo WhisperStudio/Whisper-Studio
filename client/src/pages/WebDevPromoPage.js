@@ -39,6 +39,17 @@ const glowPulse = keyframes`
   50% { opacity: 0.85; }
 `;
 
+const twinkle = keyframes`
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+`;
+
+const waveMove = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
 // ---------- Styled Components ----------
 const PageWrapper = styled.div`
   background: radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.15), transparent),
@@ -481,6 +492,7 @@ const MockWebsite = styled.div`
   display: flex;
   flex-direction: column;
   background: #e2e8f0;
+  overflow: hidden;
 
   ${({ design }) => design === 'premium' && css`
     background:
@@ -711,11 +723,297 @@ const TableCard = styled.div`
   }
 `;
 
+// Feature Navigation
+const FeatureNav = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  overflow-x: auto;
+  flex-wrap: wrap;
+`;
+
+const FeatureNavButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: ${props => props.active ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'rgba(148, 163, 184, 0.1)'};
+  border: 1px solid ${props => props.active ? 'transparent' : 'rgba(148, 163, 184, 0.2)'};
+  border-radius: 8px;
+  color: ${props => props.active ? '#fff' : '#94a3b8'};
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  
+  &:hover {
+    background: ${props => props.active ? 'linear-gradient(135deg, #7c3aed, #db2777)' : 'rgba(148, 163, 184, 0.2)'};
+    color: ${props => props.active ? '#fff' : '#cbd5e1'};
+  }
+  
+  ${props => props.active && css`
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  `}
+`;
+
+// Gallery Components
+const GalleryGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+`;
+
+const GalleryImage = styled.div`
+  aspect-ratio: 1;
+  background: ${props => props.color || 'linear-gradient(135deg, #ddd6fe, #e0e7ff)'};
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '🔍';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-size: 2rem;
+  }
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    
+    &::after {
+      opacity: 1;
+    }
+  }
+  
+  ${({ design }) => design === 'elite' && css`
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    box-shadow: 0 0 15px rgba(167, 139, 250, 0.2);
+    
+    &:hover {
+      box-shadow: 0 0 25px rgba(167, 139, 250, 0.4);
+    }
+  `}
+`;
+
+// 3D Viewer Components
+const Viewer3DContainer = styled.div`
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const Viewer3DCanvas = styled.div`
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(244, 114, 182, 0.15));
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 4rem;
+  animation: ${glowPulse} 3s ease-in-out infinite;
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  box-shadow: 0 0 30px rgba(167, 139, 250, 0.3);
+  position: relative;
+  
+  &::before {
+    content: '360°';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    color: #a78bfa;
+    font-weight: 700;
+  }
+`;
+
+const Viewer3DControls = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const Viewer3DButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: rgba(167, 139, 250, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(167, 139, 250, 0.3);
+    box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+  }
+`;
+
+const Viewer3DInfo = styled.p`
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-align: center;
+  max-width: 300px;
+`;
+
+// Custom Design Showcase
+const CustomDesignShowcase = styled.div`
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const CustomDesignTitle = styled.h3`
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  text-align: center;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+`;
+
+const CustomDesignOptions = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+`;
+
+const CustomDesignOption = styled.div`
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    background: rgba(167, 139, 250, 0.1);
+    border-color: rgba(167, 139, 250, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin: 0 0 0.5rem;
+  }
+  
+  p {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+`;
+
+const CustomDesignNote = styled.p`
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  margin: 0;
+`;
+
+// Background Effect Buttons
+const BackgroundEffectButton = styled.button`
+  padding: 0.75rem 1rem;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background: rgba(167, 139, 250, 0.2);
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  ${props => props.active && css`
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  `}
+`;
+
+// Starry Background
+const starryBackground = keyframes`
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+`;
+
+const StarsBackground = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  overflow: hidden;
+  
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    box-shadow: 
+      ${Array.from({ length: 100 }, () => 
+        `${Math.random() * 2000}px ${Math.random() * 2000}px #fff`
+      ).join(',')};
+    animation: ${starryBackground} 3s ease-in-out infinite;
+  }
+  
+  &::after {
+    animation-delay: 1.5s;
+  }
+`;
+
+// Gradient Wave Background
+const waveAnimation = keyframes`
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-25%) translateY(-10%); }
+  100% { transform: translateX(0) translateY(0); }
+`;
+
+const WaveBackground = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 400% 400%;
+  animation: ${waveAnimation} 15s ease infinite;
+`;
+
 // Enhanced Results Panel components
 const BreakdownSection = styled.div`
   margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
   padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 `;
 
 const BreakdownHeader = styled.button`
@@ -728,7 +1026,7 @@ const BreakdownHeader = styled.button`
   color: #cbd5e1;
   cursor: pointer;
   padding: 0.75rem;
-  margin-bottom: 0.5rem;
+  
   border-radius: 8px;
   transition: background 0.2s;
   
@@ -1630,7 +1928,18 @@ export default function WebDevPromoPage() {
     database: false,
     databaseLevel: 5, // 1-10 scale
     ai: false,
+    gallery: false,
+    galleryLevel: 5,
+    viewer3D: false,
+    viewer3DLevel: 5,
+    customDesign: false,
+    contactForm: false,
+    blog: false,
+    booking: false,
   });
+  
+  const [activeFeature, setActiveFeature] = useState('home');
+  const [previewBackgroundEffect, setPreviewBackgroundEffect] = useState('default');
   
   // Translations
   const translations = {
@@ -1656,6 +1965,20 @@ export default function WebDevPromoPage() {
       databaseComplexity: 'Database kompleksitet',
       aiTitle: 'AI Assistent',
       aiDesc: 'Smart chatbot og automatisering',
+      galleryTitle: 'Galleri',
+      galleryDesc: 'Bildegalleri med zoom og kategorier',
+      galleryComplexity: 'Galleri kompleksitet',
+      viewer3DTitle: '3D Visning',
+      viewer3DDesc: 'Interaktiv 3D produktvisning',
+      viewer3DComplexity: '3D Visning kompleksitet',
+      customDesignTitle: 'Egendefinert Design',
+      customDesignDesc: 'Skreddersydd design etter dine ønsker',
+      contactFormTitle: 'Kontaktskjema',
+      contactFormDesc: 'Profesjonelt kontaktskjema',
+      blogTitle: 'Blogg',
+      blogDesc: 'Bloggfunksjonalitet med CMS',
+      bookingTitle: 'Booking System',
+      bookingDesc: 'Timebestilling og kalender',
       ecommerceComplexity: 'Nettbutikk kompleksitet',
       adminComplexity: 'Admin panel kompleksitet',
       basic: 'Grunnleggende',
@@ -1702,6 +2025,20 @@ export default function WebDevPromoPage() {
       databaseComplexity: 'Database complexity',
       aiTitle: 'AI Assistant',
       aiDesc: 'Smart chatbot and automation',
+      galleryTitle: 'Gallery',
+      galleryDesc: 'Image gallery with zoom and categories',
+      galleryComplexity: 'Gallery complexity',
+      viewer3DTitle: '3D Viewer',
+      viewer3DDesc: 'Interactive 3D product display',
+      viewer3DComplexity: '3D Viewer complexity',
+      customDesignTitle: 'Custom Design',
+      customDesignDesc: 'Tailored design to your wishes',
+      contactFormTitle: 'Contact Form',
+      contactFormDesc: 'Professional contact form',
+      blogTitle: 'Blog',
+      blogDesc: 'Blog functionality with CMS',
+      bookingTitle: 'Booking System',
+      bookingDesc: 'Appointment booking and calendar',
       ecommerceComplexity: 'E-commerce complexity',
       adminComplexity: 'Admin panel complexity',
       basic: 'Basic',
@@ -1754,6 +2091,12 @@ export default function WebDevPromoPage() {
     admin: { min: 2500, max: 9999 },
     database: { min: 2000, max: 9999 },
     ai: 6500,
+    gallery: { min: 1500, max: 5500 },
+    viewer3D: { min: 3000, max: 12000 },
+    customDesign: 8500,
+    contactForm: 800,
+    blog: 3500,
+    booking: 4500,
   };
   
   // Calculate dynamic price based on level (1-10)
@@ -1763,7 +2106,7 @@ export default function WebDevPromoPage() {
   
   // Calculate breakdown
   const breakdown = useMemo(() => {
-    const { pages, design, ecommerce, ecommerceLevel, seo, carePlan, admin, adminLevel, database, databaseLevel, ai } = inputs;
+    const { pages, design, ecommerce, ecommerceLevel, seo, carePlan, admin, adminLevel, database, databaseLevel, ai, gallery, galleryLevel, viewer3D, viewer3DLevel, customDesign, contactForm, blog, booking } = inputs;
     const designMultiplier = priceMap.design[design] || 1;
     
     let oneTimeCost = priceMap.base;
@@ -1772,16 +2115,24 @@ export default function WebDevPromoPage() {
     const ecommerceCost = ecommerce ? calculateDynamicPrice(priceMap.ecommerce.min, priceMap.ecommerce.max, ecommerceLevel) : 0;
     const adminCost = admin ? calculateDynamicPrice(priceMap.admin.min, priceMap.admin.max, adminLevel) : 0;
     const databaseCost = database ? calculateDynamicPrice(priceMap.database.min, priceMap.database.max, databaseLevel) : 0;
+    const galleryCost = gallery ? calculateDynamicPrice(priceMap.gallery.min, priceMap.gallery.max, galleryLevel) : 0;
+    const viewer3DCost = viewer3D ? calculateDynamicPrice(priceMap.viewer3D.min, priceMap.viewer3D.max, viewer3DLevel) : 0;
     
     if (ecommerce) oneTimeCost += ecommerceCost;
     if (seo) oneTimeCost += priceMap.seo;
     if (admin) oneTimeCost += adminCost;
     if (database) oneTimeCost += databaseCost;
     if (ai) oneTimeCost += priceMap.ai;
+    if (gallery) oneTimeCost += galleryCost;
+    if (viewer3D) oneTimeCost += viewer3DCost;
+    if (customDesign) oneTimeCost += priceMap.customDesign;
+    if (contactForm) oneTimeCost += priceMap.contactForm;
+    if (blog) oneTimeCost += priceMap.blog;
+    if (booking) oneTimeCost += priceMap.booking;
     
     const monthlyCost = carePlan ? priceMap.carePlan : 0;
     
-    const weeks = Math.round(2 + (pages / 4) + (ecommerce ? 3 : 0) + (seo ? 1 : 0) + (admin ? 2 : 0) + (database ? 1 : 0) + (ai ? 2 : 0));
+    const weeks = Math.round(2 + (pages / 4) + (ecommerce ? 3 : 0) + (seo ? 1 : 0) + (admin ? 2 : 0) + (database ? 1 : 0) + (ai ? 2 : 0) + (gallery ? 1 : 0) + (viewer3D ? 2 : 0) + (customDesign ? 3 : 0) + (blog ? 2 : 0) + (booking ? 1 : 0));
     
     // Calculate individual costs for breakdown
     const items = [
@@ -1793,6 +2144,12 @@ export default function WebDevPromoPage() {
     if (admin) items.push({ name: 'Admin Panel', cost: adminCost });
     if (database) items.push({ name: 'Database', cost: databaseCost });
     if (ai) items.push({ name: 'AI Assistent', cost: priceMap.ai });
+    if (gallery) items.push({ name: 'Galleri', cost: galleryCost });
+    if (viewer3D) items.push({ name: '3D Visning', cost: viewer3DCost });
+    if (customDesign) items.push({ name: 'Egendefinert Design', cost: priceMap.customDesign });
+    if (contactForm) items.push({ name: 'Kontaktskjema', cost: priceMap.contactForm });
+    if (blog) items.push({ name: 'Blogg', cost: priceMap.blog });
+    if (booking) items.push({ name: 'Booking System', cost: priceMap.booking });
     
     const vatAmount = oneTimeCost * (vatRate / 100);
     const totalWithVat = oneTimeCost + vatAmount;
@@ -1816,11 +2173,28 @@ export default function WebDevPromoPage() {
       // If e-commerce is selected, database must be selected
       if (key === 'ecommerce' && value === true) {
         newInputs.database = true;
+        setActiveFeature('ecommerce');
       }
       
       // If database is deselected and e-commerce is on, turn off e-commerce
       if (key === 'database' && value === false && prev.ecommerce) {
         newInputs.ecommerce = false;
+      }
+      
+      // Auto-switch to feature when enabled
+      if (key === 'gallery' && value === true) {
+        setActiveFeature('gallery');
+      }
+      if (key === 'viewer3D' && value === true) {
+        setActiveFeature('viewer3D');
+      }
+      if (key === 'customDesign' && value === true) {
+        setActiveFeature('customDesign');
+      }
+      
+      // Reset to home if feature is disabled and currently active
+      if (value === false && activeFeature === key) {
+        setActiveFeature('home');
       }
       
       return newInputs;
@@ -1861,11 +2235,21 @@ Konfigurasjon:
       database: false,
       databaseLevel: 5,
       ai: false,
+      gallery: false,
+      galleryLevel: 5,
+      viewer3D: false,
+      viewer3DLevel: 5,
+      customDesign: false,
+      contactForm: false,
+      blog: false,
+      booking: false,
     });
     setShowBreakdown(false);
     setPreviewMode('webside');
     setMenuOpen(false);
     setExpandedCategory(null);
+    setActiveFeature('home');
+    setPreviewBackgroundEffect('default');
   };
   
   // Generate menu items based on page count (excluding home page)
@@ -1909,6 +2293,19 @@ Konfigurasjon:
   
   const toggleCategory = (categoryId) => {
     setExpandedCategory(prev => prev === categoryId ? null : categoryId);
+  };
+  
+  // Generate feature-based nav items
+  const getFeatureNavItems = () => {
+    const features = [];
+    if (inputs.ecommerce) features.push({ id: 'ecommerce', label: '🛒 Nettbutikk' });
+    if (inputs.gallery) features.push({ id: 'gallery', label: '🖼️ Galleri' });
+    if (inputs.viewer3D) features.push({ id: 'viewer3D', label: '🎮 3D Visning' });
+    if (inputs.customDesign) features.push({ id: 'customDesign', label: '✨ Custom Design' });
+    if (inputs.blog) features.push({ id: 'blog', label: '📝 Blogg' });
+    if (inputs.contactForm) features.push({ id: 'contactForm', label: '📧 Kontakt' });
+    if (inputs.booking) features.push({ id: 'booking', label: '📅 Booking' });
+    return features;
   };
   
   return (
@@ -2022,7 +2419,61 @@ Konfigurasjon:
                 </ToggleGroup>
               </ControlGroup>
               
-              {(inputs.ecommerce || inputs.admin || inputs.database) && (
+              <ControlGroup>
+                <Label>Ekstra Funksjoner</Label>
+                <ToggleGroup>
+                  <ToggleLabel checked={inputs.gallery}>
+                    <ToggleCheckbox 
+                      checked={inputs.gallery} 
+                      onChange={(e) => updateInput('gallery', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.galleryTitle} 🖼️</ToggleTitle>
+                    <ToggleDescription>{t.galleryDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.viewer3D}>
+                    <ToggleCheckbox 
+                      checked={inputs.viewer3D} 
+                      onChange={(e) => updateInput('viewer3D', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.viewer3DTitle} 🎮</ToggleTitle>
+                    <ToggleDescription>{t.viewer3DDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.customDesign}>
+                    <ToggleCheckbox 
+                      checked={inputs.customDesign} 
+                      onChange={(e) => updateInput('customDesign', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.customDesignTitle} ✨</ToggleTitle>
+                    <ToggleDescription>{t.customDesignDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.contactForm}>
+                    <ToggleCheckbox 
+                      checked={inputs.contactForm} 
+                      onChange={(e) => updateInput('contactForm', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.contactFormTitle} 📧</ToggleTitle>
+                    <ToggleDescription>{t.contactFormDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.blog}>
+                    <ToggleCheckbox 
+                      checked={inputs.blog} 
+                      onChange={(e) => updateInput('blog', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.blogTitle} 📝</ToggleTitle>
+                    <ToggleDescription>{t.blogDesc}</ToggleDescription>
+                  </ToggleLabel>
+                  <ToggleLabel checked={inputs.booking}>
+                    <ToggleCheckbox 
+                      checked={inputs.booking} 
+                      onChange={(e) => updateInput('booking', e.target.checked)} 
+                    />
+                    <ToggleTitle>{t.bookingTitle} 📅</ToggleTitle>
+                    <ToggleDescription>{t.bookingDesc}</ToggleDescription>
+                  </ToggleLabel>
+                </ToggleGroup>
+              </ControlGroup>
+              
+              {(inputs.ecommerce || inputs.admin || inputs.database || inputs.gallery || inputs.viewer3D) && (
                 <ControlGroup>
                   {inputs.ecommerce && (
                     <div style={{ marginBottom: '1.5rem' }}>
@@ -2074,6 +2525,44 @@ Konfigurasjon:
                         max="10" 
                         value={inputs.databaseLevel} 
                         onChange={(e) => updateInput('databaseLevel', parseInt(e.target.value))}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                        <span>{t.basic}</span>
+                        <span>{t.advanced}</span>
+                      </div>
+                    </div>
+                  )}
+                  {inputs.gallery && (
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Label htmlFor="galleryLevel">
+                        {t.galleryComplexity}
+                        <ValueDisplay>{formatCurrency(calculateDynamicPrice(priceMap.gallery.min, priceMap.gallery.max, inputs.galleryLevel))}</ValueDisplay>
+                      </Label>
+                      <Slider 
+                        id="galleryLevel" 
+                        min="1" 
+                        max="10" 
+                        value={inputs.galleryLevel} 
+                        onChange={(e) => updateInput('galleryLevel', parseInt(e.target.value))}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                        <span>{t.basic}</span>
+                        <span>{t.advanced}</span>
+                      </div>
+                    </div>
+                  )}
+                  {inputs.viewer3D && (
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Label htmlFor="viewer3DLevel">
+                        {t.viewer3DComplexity}
+                        <ValueDisplay>{formatCurrency(calculateDynamicPrice(priceMap.viewer3D.min, priceMap.viewer3D.max, inputs.viewer3DLevel))}</ValueDisplay>
+                      </Label>
+                      <Slider 
+                        id="viewer3DLevel" 
+                        min="1" 
+                        max="10" 
+                        value={inputs.viewer3DLevel} 
+                        onChange={(e) => updateInput('viewer3DLevel', parseInt(e.target.value))}
                       />
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
                         <span>{t.basic}</span>
@@ -2152,89 +2641,121 @@ Konfigurasjon:
                   </AdminPanel>
                 ) : (
                   <MockWebsite design={inputs.design}>
+                    {/* Background Effects Layer */}
+                    {previewBackgroundEffect === 'stars' && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 0,
+                        background: 'radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          width: '2px',
+                          height: '2px',
+                          background: 'white',
+                          boxShadow: Array.from({ length: 100 }, () => 
+                            `${Math.random() * 100}% ${Math.random() * 100}% #fff`
+                          ).join(','),
+                          animation: 'twinkle 3s ease-in-out infinite'
+                        }} />
+                      </div>
+                    )}
+                    {previewBackgroundEffect === 'wave' && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 0,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+                        backgroundSize: '400% 400%',
+                        animation: 'waveMove 15s ease infinite'
+                      }} />
+                    )}
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                     <MockHeader>
-                      <MockLogo color={inputs.design === 'elite' ? '#fff' : '#1e293b'}>Logo</MockLogo>
+                      <MockLogo color={previewBackgroundEffect !== 'default' ? '#fff' : (inputs.design === 'elite' ? '#fff' : '#1e293b')}>Logo</MockLogo>
                       <MockNav>
-                        {inputs.pages === 1 ? (
-                          // No nav for single page
-                          null
-                        ) : inputs.pages >= 2 && inputs.pages <= 5 ? (
-                          // Show individual nav links for 2-5 pages (minus home page)
-                          [...Array(inputs.pages - 1)].map((_, i) => (
-                            <MockNavLink 
-                              key={i} 
-                              design={inputs.design}
-                              color={inputs.design === 'elite' ? '#94a3b8' : '#475569'}
-                            >
-                              Side {i + 2}
-                            </MockNavLink>
-                          ))
-                        ) : (
-                          // Show hamburger menu for 6+ pages
-                          <div style={{ position: 'relative' }}>
-                            <HamburgerButton 
-                              design={inputs.design}
-                              onClick={() => setMenuOpen(!menuOpen)}
-                            >
-                              <HamburgerLine 
-                                color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
-                                isOpen={menuOpen}
+                        {(() => {
+                          const featureItems = getFeatureNavItems();
+                          const remainingPages = Math.max(0, inputs.pages - 1 - featureItems.length);
+                          
+                          if (inputs.pages === 1 && featureItems.length === 0) {
+                            return null;
+                          }
+                          
+                          // Show feature nav items first, then remaining pages
+                          const navItems = [
+                            ...featureItems.map((feature, i) => (
+                              <MockNavLink 
+                                key={feature.id}
                                 design={inputs.design}
-                                lineNumber={1}
-                              />
-                              <HamburgerLine 
-                                color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
-                                isOpen={menuOpen}
+                                color={previewBackgroundEffect !== 'default' ? '#fff' : (inputs.design === 'elite' ? '#94a3b8' : '#475569')}
+                                onClick={() => setActiveFeature(feature.id)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                {feature.label}
+                              </MockNavLink>
+                            )),
+                            ...Array.from({ length: remainingPages }, (_, i) => (
+                              <MockNavLink 
+                                key={`page-${i}`}
                                 design={inputs.design}
-                                lineNumber={2}
-                              />
-                              <HamburgerLine 
-                                color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
-                                isOpen={menuOpen}
-                                design={inputs.design}
-                                lineNumber={3}
-                              />
-                            </HamburgerButton>
-                            
-                            {menuOpen && (
-                              <DropdownMenu design={inputs.design}>
-                                {generateMenuItems(inputs.pages).map((item) => (
-                                  <div key={item.id}>
-                                    {item.type === 'category' ? (
-                                      <>
-                                        <MenuItem 
-                                          design={inputs.design}
-                                          onClick={() => toggleCategory(item.id)}
-                                        >
-                                          {item.label}
-                                          <span style={{ fontSize: '0.7rem' }}>
-                                            {expandedCategory === item.id ? '▼' : '▶'}
-                                          </span>
-                                        </MenuItem>
-                                        {expandedCategory === item.id && (
-                                          <SubMenu design={inputs.design}>
-                                            {item.subPages.map((subPage) => (
-                                              <SubMenuItem 
-                                                key={subPage.id}
-                                                design={inputs.design}
-                                              >
-                                                {subPage.label}
-                                              </SubMenuItem>
-                                            ))}
-                                          </SubMenu>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <MenuItem design={inputs.design}>
-                                        {item.label}
+                                color={previewBackgroundEffect !== 'default' ? '#fff' : (inputs.design === 'elite' ? '#94a3b8' : '#475569')}
+                              >
+                                Side {featureItems.length + i + 2}
+                              </MockNavLink>
+                            ))
+                          ];
+                          
+                          // If total items > 5, show hamburger menu
+                          if (navItems.length > 5) {
+                            return (
+                              <div style={{ position: 'relative' }}>
+                                <HamburgerButton 
+                                  design={inputs.design}
+                                  onClick={() => setMenuOpen(!menuOpen)}
+                                >
+                                  <HamburgerLine 
+                                    color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
+                                    isOpen={menuOpen}
+                                    design={inputs.design}
+                                    lineNumber={1}
+                                  />
+                                  <HamburgerLine 
+                                    color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
+                                    isOpen={menuOpen}
+                                    design={inputs.design}
+                                    lineNumber={2}
+                                  />
+                                  <HamburgerLine 
+                                    color={inputs.design === 'elite' ? '#cbd5e1' : '#475569'} 
+                                    isOpen={menuOpen}
+                                    design={inputs.design}
+                                    lineNumber={3}
+                                  />
+                                </HamburgerButton>
+                                
+                                {menuOpen && (
+                                  <DropdownMenu design={inputs.design}>
+                                    {navItems.map((item, idx) => (
+                                      <MenuItem 
+                                        key={idx}
+                                        design={inputs.design}
+                                        onClick={() => item.props?.onClick?.()}
+                                      >
+                                        {item.props.children}
                                       </MenuItem>
-                                    )}
-                                  </div>
-                                ))}
-                              </DropdownMenu>
-                            )}
-                          </div>
-                        )}
+                                    ))}
+                                  </DropdownMenu>
+                                )}
+                              </div>
+                            );
+                          }
+                          
+                          // Otherwise show nav items directly
+                          return navItems;
+                        })()}
                         
                         {inputs.ecommerce && (
                           <ShoppingCart design={inputs.design}>
@@ -2250,24 +2771,113 @@ Konfigurasjon:
                       </MockNav>
                     </MockHeader>
                     
-                    <MockHero>
-                      <MockTitle design={inputs.design}>
-                        {inputs.ecommerce ? 'Nettbutikk' :
-                         inputs.design === 'standard' ? 'Moderne Nettside' : 
-                         inputs.design === 'premium' ? 'Premium Opplevelse' : 
-                         'Elite Performance'}
-                      </MockTitle>
-                      <MockSubtitle color={inputs.design === 'elite' ? '#94a3b8' : '#64748b'}>
-                        {inputs.ecommerce ? 'Handle trygt og enkelt online' : 'Profesjonell nettside for din bedrift'}
-                      </MockSubtitle>
-                      <MockButton design={inputs.design}>
-                        {inputs.ecommerce ? 'Se produkter' : 'Kom i gang'}
-                      </MockButton>
-                    </MockHero>
-                    
-                    {inputs.ecommerce ? (
+                    {/* Conditional content based on activeFeature */}
+                    {activeFeature === 'gallery' && inputs.gallery ? (
+                      <GalleryGrid>
+                        {[
+                          'linear-gradient(135deg, #ddd6fe, #e0e7ff)',
+                          'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+                          'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+                          'linear-gradient(135deg, #fef3c7, #fde68a)',
+                          'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+                          'linear-gradient(135deg, #fecaca, #fca5a5)',
+                        ].map((color, i) => (
+                          <GalleryImage key={i} color={color} design={inputs.design} />
+                        ))}
+                      </GalleryGrid>
+                    ) : activeFeature === 'viewer3D' && inputs.viewer3D ? (
+                      <Viewer3DContainer>
+                        <Viewer3DCanvas>
+                          🎮
+                        </Viewer3DCanvas>
+                        <Viewer3DControls>
+                          <Viewer3DButton>↻ Roter</Viewer3DButton>
+                          <Viewer3DButton>🔍 Zoom</Viewer3DButton>
+                          <Viewer3DButton>⚙️ Innstillinger</Viewer3DButton>
+                        </Viewer3DControls>
+                        <Viewer3DInfo>
+                          Interaktiv 3D-visning lar kundene dine utforske produkter fra alle vinkler. 
+                          Perfekt for møbler, smykker, elektronikk og mer!
+                        </Viewer3DInfo>
+                      </Viewer3DContainer>
+                    ) : activeFeature === 'customDesign' && inputs.customDesign ? (
+                      <CustomDesignShowcase>
+                        <CustomDesignTitle>Egendefinert Design</CustomDesignTitle>
+                        <CustomDesignNote>
+                          Vi lager dine ønsker så vidt det er oppnåelig! Her er noen eksempler på hva vi kan tilby:
+                        </CustomDesignNote>
+                        <CustomDesignOptions>
+                          <CustomDesignOption>
+                            <h4>🎨 Unike Fargepaletter</h4>
+                            <p>Skreddersydde farger som matcher din merkevare perfekt</p>
+                          </CustomDesignOption>
+                          <CustomDesignOption>
+                            <h4>🖼️ Custom Layouts</h4>
+                            <p>Helt unike sidestrukturer designet for ditt innhold</p>
+                          </CustomDesignOption>
+                          <CustomDesignOption>
+                            <h4>✨ Spesialeffekter</h4>
+                            <p>Parallax, partikler, og andre wow-effekter</p>
+                          </CustomDesignOption>
+                          <CustomDesignOption>
+                            <h4>🎭 Interaktive Elementer</h4>
+                            <p>Hover-effekter, animasjoner og mikro-interaksjoner</p>
+                          </CustomDesignOption>
+                          <CustomDesignOption>
+                            <h4>📱 Responsivt Design</h4>
+                            <p>Perfekt tilpasset alle skjermstørrelser</p>
+                          </CustomDesignOption>
+                          <CustomDesignOption>
+                            <h4>🎯 Konverteringsoptimalisering</h4>
+                            <p>Design som driver resultater og salg</p>
+                          </CustomDesignOption>
+                        </CustomDesignOptions>
+                        
+                        <CustomDesignNote style={{ marginTop: '1.5rem' }}>
+                          <strong>Prøv bakgrunnseffekter:</strong> Klikk på knappene under for å se eksempler på custom design
+                        </CustomDesignNote>
+                        
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
+                          <BackgroundEffectButton 
+                            active={previewBackgroundEffect === 'default'}
+                            onClick={() => setPreviewBackgroundEffect('default')}
+                          >
+                            🌐 Standard
+                          </BackgroundEffectButton>
+                          <BackgroundEffectButton 
+                            active={previewBackgroundEffect === 'stars'}
+                            onClick={() => setPreviewBackgroundEffect('stars')}
+                          >
+                            ⭐ Stjerner
+                          </BackgroundEffectButton>
+                          <BackgroundEffectButton 
+                            active={previewBackgroundEffect === 'wave'}
+                            onClick={() => setPreviewBackgroundEffect('wave')}
+                          >
+                            🌊 Gradient Wave
+                          </BackgroundEffectButton>
+                        </div>
+                      </CustomDesignShowcase>
+                    ) : (
                       <>
-                        <MockCardGrid>
+                        <MockHero>
+                          <MockTitle design={inputs.design} style={{ color: previewBackgroundEffect !== 'default' ? '#fff' : undefined }}>
+                            {activeFeature === 'ecommerce' && inputs.ecommerce ? 'Nettbutikk' :
+                             inputs.design === 'standard' ? 'Moderne Nettside' : 
+                             inputs.design === 'premium' ? 'Premium Opplevelse' : 
+                             'Elite Performance'}
+                          </MockTitle>
+                          <MockSubtitle color={previewBackgroundEffect !== 'default' ? '#e2e8f0' : (inputs.design === 'elite' ? '#94a3b8' : '#64748b')}>
+                            {activeFeature === 'ecommerce' && inputs.ecommerce ? 'Handle trygt og enkelt online' : 'Profesjonell nettside for din bedrift'}
+                          </MockSubtitle>
+                          <MockButton design={inputs.design}>
+                            {activeFeature === 'ecommerce' && inputs.ecommerce ? 'Se produkter' : 'Kom i gang'}
+                          </MockButton>
+                        </MockHero>
+                    
+                        {activeFeature === 'ecommerce' && inputs.ecommerce ? (
+                          <>
+                            <MockCardGrid>
                           {[
                             { name: 'Produkt 1', price: 'kr 799', color: '#ddd6fe', color2: '#e0e7ff' },
                             { name: 'Produkt 2', price: 'kr 899', color: '#fce7f3', color2: '#fbcfe8' },
@@ -2294,37 +2904,39 @@ Konfigurasjon:
                           ))}
                         </MockCardGrid>
                         
-                        <PaymentMethods design={inputs.design}>
-                          <PaymentLabel color={inputs.design === 'elite' ? '#94a3b8' : '#64748b'}>
-                            Sikre betalingsmetoder
-                          </PaymentLabel>
-                          <PaymentIcons>
-                            <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#1e3a8a'}>
-                              <FaCcVisa />
-                            </PaymentIcon>
-                            <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#eb001b'}>
-                              <FaCcMastercard />
-                            </PaymentIcon>
-                            <VippsLogo design={inputs.design}>Vipps</VippsLogo>
-                            {(inputs.design === 'premium' || inputs.design === 'elite') && (
-                              <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#003087'}>
-                                <FaPaypal />
-                              </PaymentIcon>
-                            )}
-                          </PaymentIcons>
-                        </PaymentMethods>
+                            <PaymentMethods design={inputs.design}>
+                              <PaymentLabel color={inputs.design === 'elite' ? '#94a3b8' : '#64748b'}>
+                                Sikre betalingsmetoder
+                              </PaymentLabel>
+                              <PaymentIcons>
+                                <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#1e3a8a'}>
+                                  <FaCcVisa />
+                                </PaymentIcon>
+                                <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#eb001b'}>
+                                  <FaCcMastercard />
+                                </PaymentIcon>
+                                <VippsLogo design={inputs.design}>Vipps</VippsLogo>
+                                {(inputs.design === 'premium' || inputs.design === 'elite') && (
+                                  <PaymentIcon design={inputs.design} color={inputs.design === 'elite' ? '#cbd5e1' : '#003087'}>
+                                    <FaPaypal />
+                                  </PaymentIcon>
+                                )}
+                              </PaymentIcons>
+                            </PaymentMethods>
+                          </>
+                        ) : (
+                          <MockCardGrid>
+                            {[...Array(3)].map((_, i) => (
+                              <MockCard key={i} design={inputs.design}>
+                                <MockCardContent 
+                                  design={inputs.design} 
+                                  color={inputs.design === 'elite' ? 'rgba(255,255,255,0.08)' : '#e2e8f0'} 
+                                />
+                              </MockCard>
+                            ))}
+                          </MockCardGrid>
+                        )}
                       </>
-                    ) : (
-                      <MockCardGrid>
-                        {[...Array(3)].map((_, i) => (
-                          <MockCard key={i} design={inputs.design}>
-                            <MockCardContent 
-                              design={inputs.design} 
-                              color={inputs.design === 'elite' ? 'rgba(255,255,255,0.08)' : '#e2e8f0'} 
-                            />
-                          </MockCard>
-                        ))}
-                      </MockCardGrid>
                     )}
                     {inputs.ai ? (
                       <AIChatButton design={inputs.design}>
@@ -2335,6 +2947,7 @@ Konfigurasjon:
                         <FiMessageCircle color="#fff" size={24} />
                       </MockChatButton>
                     )}
+                    </div>
                   </MockWebsite>
                 )}
               </PreviewPanel>
