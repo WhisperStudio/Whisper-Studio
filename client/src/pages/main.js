@@ -181,18 +181,20 @@ const PlayButton = styled.button`
   padding: 16px 32px; 
   font-size: 1.3rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #ff6b6b, #ff8787);
-  color: white;
-  border: none; 
+  background: white;
+  color: #333;
+  border: 2px solid white;
   border-radius: 50px;
   cursor: pointer; 
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
   
   &:hover { 
+    background: #666;
+    color: white;
+    border-color: white;
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.6);
-    background: linear-gradient(135deg, #ff5252, #ff6b6b);
+    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
   }
   
   &:active {
@@ -208,6 +210,7 @@ const PlayButton = styled.button`
 const WatchTrailerButton = styled.button`
   padding: 16px 32px; 
   font-size: 1.3rem;
+{{ ... }}
   font-weight: 600;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -414,22 +417,20 @@ function App() {
   const getMaxScroll = () =>
     Math.max(0, (document.documentElement?.scrollHeight || 0) - window.innerHeight);
 
-  /* Video setup */
+  /* Video setup - Modified for continuous loop playback */
   useEffect(() => {
     const v = vidRef.current;
     if (!v) return;
-    
+
     const onLoaded = () => {
-      setVidDur(v.duration || 0);
-      v.pause();
-      v.currentTime = 0;
-      // Preload video for smoother playback
+      v.loop = true; // Enable looping
+      v.play().catch(e => console.log('Autoplay was prevented:', e));
       v.preload = 'auto';
     };
-    
+
     v.addEventListener('loadedmetadata', onLoaded);
     v.addEventListener('loadeddata', onLoaded);
-    
+
     return () => {
       v.removeEventListener('loadedmetadata', onLoaded);
       v.removeEventListener('loadeddata', onLoaded);
@@ -442,39 +443,22 @@ function App() {
       const maxScroll = getMaxScroll();
       const scrollY = window.scrollY || 0;
       const progress = maxScroll > 0 ? clamp(scrollY / maxScroll, 0, 1) : 0;
-      
+
       setScrollProgress(progress);
-      
+
       // Smooth easing for better visual effect
       const easedProgress = ease(progress);
-      
+
       // Hero animations
       setHeroOpacity(Math.max(0, 1 - progress * 1.5));
       setHeroShift(progress * 60);
       setHeroScale(Math.max(0.9, 1 - progress * 0.1));
-      
-      // Video effects
+
+      // Video effects (parallax and scale only, no time control)
       setParallax(easedProgress * 40);
       setVideoScale(1.05 + easedProgress * 0.08);
-      
-      // Update video time smoothly
-      const v = vidRef.current;
-      if (v && vidDur > 0) {
-        const targetTime = easedProgress * vidDur;
-        const currentTime = v.currentTime || 0;
-        const timeDiff = Math.abs(targetTime - currentTime);
-        
-        // Only update if there's a significant difference to avoid jitter
-        if (timeDiff > 0.1) {
-          try {
-            v.currentTime = targetTime;
-          } catch (e) {
-            // Ignore seek errors
-          }
-        }
-        
-        if (!v.paused) v.pause();
-      }
+
+      // Removed video time control - video now loops continuously
     }, 16); // ~60fps throttling
 
     // Animate scroll-linked elements
