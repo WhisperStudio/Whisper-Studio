@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+import Vintra from '../images/VINTRA.png';
+import Studio from '../images/STUDIO.png';
+import VOTE_V from '../images/Vote_V.png';
+
+/* ===================== Header Shell ===================== */
 
 const HeaderContainer = styled.header`
   position: fixed;
@@ -19,13 +24,31 @@ const HeaderContainer = styled.header`
 
 const Logo = styled.a`
   margin-top: ${({ isScrolled }) => (isScrolled ? '-10px' : '0')};
-  font-size: 2rem;
-  font-weight: 700;
   color: ${({ textColor }) => textColor};
-  text-decoration: none;
-  letter-spacing: 2px;
   transition: margin-top 0.1s ease-in-out;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 1;
+  cursor: pointer;
+  text-decoration: none;
 `;
+
+const Logodiv = styled.div`
+  display: flex;
+  align-items: center;
+  z-index: 0;
+`;
+
+/* A liten scene slik at V-en kan ligge absolutti forhold til logoen */
+const LogoStage = styled.div`
+  position: relative;
+  height: 55px;            /* høyeste av de tre elementene */
+  display: flex;
+  align-items: flex-end;
+`;
+
+/* ===================== Nav Menu ===================== */
 
 const NavMenu = styled.nav`
   margin-top: ${({ isScrolled }) => (isScrolled ? '-10px' : '0')};
@@ -80,6 +103,8 @@ const NavItem = styled.a`
   }
 `;
 
+/* ===================== Hamburger ===================== */
+
 const HamburgerButton = styled.button`
   display: none;
   background: none;
@@ -104,6 +129,8 @@ const HamburgerButton = styled.button`
   span:nth-child(3){ top: ${({ isOpen }) => (isOpen ? '9px' : '18px')};
     transform: ${({ isOpen }) => (isOpen ? 'rotate(-45deg)' : 'none')}; }
 `;
+
+/* ===================== Mobile Menu ===================== */
 
 const fadeIn = keyframes`from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}`;
 const fadeOut = keyframes`from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}`;
@@ -143,6 +170,8 @@ const MobileIndicator = styled.div`
   box-shadow: 0 0 0.5px currentColor, 0 0 6px rgba(0,0,0,.15);
 `;
 
+/* ===================== Scroll to top ===================== */
+
 const ScrollTopButton = styled.button`
   position: absolute;
   top: 100%;
@@ -156,6 +185,63 @@ const ScrollTopButton = styled.button`
   &:hover { transform: translateY(-2px); }
   svg { width: 3.4rem; height: 3.4rem; fill: #fff; }
 `;
+
+/* ===================== VINTRA/STUDIO <-> V overgang ===================== */
+
+/* timings og posisjon kan du finjustere */
+const V_DURATION = 800;       // ms
+const LOGO_FADE = 950;        // ms
+const LOGO_DELAY_BACK = 590;   // ms
+
+/* Justér så V-en treffer nøyaktig V-en i VINTRA */
+const V_OFFSET_X = -8;        // px
+const V_OFFSET_Y = -2;        // px
+
+const spinGrow = keyframes`
+  from { opacity: 0; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
+  to   { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
+`;
+
+const spinShrink = keyframes`
+  from { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
+  to   { opacity: 0; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
+`;
+
+const VintraImg = styled.img`
+  height: 50px;
+  margin-bottom: 10px;
+  opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
+  transition:
+    opacity ${LOGO_FADE}ms ease-in-out
+    ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
+  pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+`;
+
+const StudioImg = styled.img`
+  height: 45px;
+  opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
+  transition:
+    opacity ${LOGO_FADE}ms ease-in-out
+    ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
+  pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+`;
+
+/* V-en som spinner og skaleres */
+const VoteVImg = styled.img`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 55px;
+  pointer-events: none;
+  transform-origin: center;
+
+  ${({ isScrolled }) =>
+    isScrolled
+      ? css`animation: ${spinGrow} ${V_DURATION}ms ease-out forwards;`
+      : css`animation: ${spinShrink} ${V_DURATION}ms ease-in forwards;`}
+`;
+
+/* ===================== Component ===================== */
 
 const Header = () => {
   const [menuState, setMenuState] = useState({ isOpen: false, isVisible: false });
@@ -195,7 +281,7 @@ const Header = () => {
   const textColor = 'white';
   const items = [
     { href: '/vote',                label: 'Vote' },
-    { href: '/services/websites',   label: 'Websites' }, // <-- NEW menu item
+    { href: '/services/websites',   label: 'Websites' },
     { href: '/about-us',            label: 'About Us' },
     { href: '/careers',             label: 'Careers' },
     { href: '/contact',             label: 'Support' },
@@ -230,8 +316,14 @@ const Header = () => {
 
   return (
     <HeaderContainer isScrolled={isScrolled}>
-      <Logo href="/" textColor={textColor} isScrolled={isScrolled}>
-        Vintra Studios
+      <Logo href="/" textColor={textColor} isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
+        <Logodiv isScrolled={isScrolled}>
+          <LogoStage>
+            <VintraImg src={Vintra} alt="Vintra" isScrolled={isScrolled} />
+            <StudioImg src={Studio} alt="Studio" isScrolled={isScrolled} />
+            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} />
+          </LogoStage>
+        </Logodiv>
       </Logo>
 
       {/* DESKTOP NAV */}
