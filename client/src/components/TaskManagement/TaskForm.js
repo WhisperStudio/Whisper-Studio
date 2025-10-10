@@ -13,17 +13,22 @@ import {
 
 const FormOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 8, 20, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease-out;
+  z-index: 7800;
+  padding: clamp(16px, 5vw, 48px);
+  box-sizing: border-box;
+  overflow-y: auto;
   cursor: default;
+  animation: fadeIn 0.25s ease-out;
+
+  @supports (backdrop-filter: blur(20px)) {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(20px);
+  }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -32,41 +37,35 @@ const FormOverlay = styled.div`
 `;
 
 const FormContainer = styled.div`
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 32px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  position: relative;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 96px);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 28px 60px rgba(7, 11, 21, 0.65);
+  padding: clamp(26px, 4vw, 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
   animation: slideUp 0.3s ease-out;
-  cursor: default;
-  
+
   @keyframes slideUp {
-    from { 
-      opacity: 0; 
-      transform: translateY(30px) scale(0.95); 
+    from {
+      opacity: 0;
+      transform: translateY(32px) scale(0.96);
     }
-    to { 
-      opacity: 1; 
-      transform: translateY(0) scale(1); 
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
   }
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #60a5fa, #a78bfa);
-    border-radius: 3px;
+
+  @media (max-width: 600px) {
+    border-radius: 20px;
+    padding: 24px;
+    max-height: calc(100vh - 48px);
   }
 `;
 
@@ -74,16 +73,15 @@ const FormHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
   padding-bottom: 16px;
+  margin-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
 const FormTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
   margin: 0;
+  font-size: clamp(22px, 2.5vw, 26px);
+  font-weight: 700;
   background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -92,30 +90,50 @@ const FormTitle = styled.h2`
 const CloseButton = styled.button`
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s;
-  font-size: 18px;
+  transition: all 0.25s ease;
 
   &:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.16);
     color: #ef4444;
-    transform: scale(1.1);
+    transform: scale(1.08);
+  }
+`;
+
+const FormContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  padding-right: 6px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    border-radius: 4px;
   }
 `;
 
 const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
-  margin-bottom: 24px;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
@@ -125,7 +143,7 @@ const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  
+
   &.full-width {
     grid-column: 1 / -1;
   }
@@ -134,11 +152,11 @@ const FormGroup = styled.div`
 const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.82);
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   svg {
     font-size: 16px;
     color: #60a5fa;
@@ -152,17 +170,17 @@ const Input = styled.input`
   border-radius: 12px;
   color: #fff;
   font-size: 14px;
-  transition: all 0.3s;
-  
+  transition: all 0.25s ease;
+
   &:focus {
     outline: none;
     border-color: #60a5fa;
     background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
   }
-  
+
   &::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.38);
   }
 `;
 
@@ -173,20 +191,20 @@ const TextArea = styled.textarea`
   border-radius: 12px;
   color: #fff;
   font-size: 14px;
-  min-height: 100px;
+  min-height: 110px;
   resize: vertical;
   font-family: inherit;
-  transition: all 0.3s;
-  
+  transition: all 0.25s ease;
+
   &:focus {
     outline: none;
     border-color: #60a5fa;
     background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
   }
-  
+
   &::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.38);
   }
 `;
 
@@ -198,16 +216,16 @@ const Select = styled.select`
   color: #fff;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
-  
+  transition: all 0.25s ease;
+
   &:focus {
     outline: none;
     border-color: #60a5fa;
     background: rgba(255, 255, 255, 0.08);
   }
-  
+
   option {
-    background: #1e293b;
+    background: #1f2937;
     color: #fff;
   }
 `;
@@ -221,23 +239,24 @@ const TagsContainer = styled.div`
 
 const Tag = styled.span`
   padding: 4px 12px;
-  background: rgba(96, 165, 250, 0.2);
+  background: rgba(96, 165, 250, 0.24);
   color: #60a5fa;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
-  
+
   button {
     background: none;
     border: none;
     color: inherit;
     cursor: pointer;
     padding: 0;
-    font-size: 14px;
-    
+    display: flex;
+    align-items: center;
+
     &:hover {
       color: #ef4444;
     }
@@ -248,35 +267,38 @@ const TagInput = styled.div`
   display: flex;
   gap: 8px;
   margin-top: 8px;
-  
+
   input {
     flex: 1;
   }
-  
+
   button {
-    padding: 12px 16px;
+    padding: 0 16px;
     background: linear-gradient(135deg, #60a5fa, #a78bfa);
     border: none;
     border-radius: 12px;
     color: #fff;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s;
-    
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
     &:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+      transform: translateY(-1px) scale(1.05);
+      box-shadow: 0 6px 18px rgba(96, 165, 250, 0.35);
     }
   }
 `;
 
 const FormActions = styled.div`
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  margin-top: 32px;
-  padding-top: 24px;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
@@ -286,34 +308,53 @@ const Button = styled.button`
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   &.primary {
     background: linear-gradient(135deg, #60a5fa, #a78bfa);
     border: none;
     color: #fff;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(96, 165, 250, 0.3);
-    }
-  }
-  
-  &.secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(96, 165, 250, 0.35);
+    }
+  }
+
+  &.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.75);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
       color: #fff;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 18px rgba(148, 163, 184, 0.18);
     }
-  }`;
+  }
+
+  &.danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border: none;
+    color: #fff;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(239, 68, 68, 0.35);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+`;
 
 const TaskForm = ({ 
   isOpen, 
