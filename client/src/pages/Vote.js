@@ -133,7 +133,7 @@ export default function VotePage() {
             </div>
 
             <div className={`top-overlay ${showWhisper ? 'show' : ''}`}>
-              <h2 className="top-text">Whisper Studio</h2>
+              <h2 className="top-text">Vintra Studio</h2>
             </div>
 
             <div className={`under-overlay ${showUnder ? 'show' : ''}`}>
