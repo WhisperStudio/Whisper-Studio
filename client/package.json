@@ -33,6 +33,7 @@
     "express": "^4.21.2",
     "firebase": "^11.9.1",
     "framer-motion": "^11.3.29",
+    "gsap": "^3.13.0",
     "image-average-color": "^1.0.0",
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",

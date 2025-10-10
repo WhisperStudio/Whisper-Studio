@@ -1,0 +1,277 @@
+/* Root wrapper / bakgrunn */
+.component-wrapper {
+    --accent: #29e1ff;
+    position: relative;
+    width: 100%;
+    color: #fff;
+    background:
+      radial-gradient(120vmax 90vmax at 50% 110%, rgba(0,0,0,.55), transparent 65%),
+      linear-gradient(135deg,
+        color-mix(in oklab, var(--accent) 18%, transparent) 0%,
+        color-mix(in oklab, var(--accent) 8%, transparent) 28%,
+        rgba(0,0,0,0) 60%),
+      #0b0c13;
+    transition: background .35s ease;
+  }
+  .component-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+    opacity: .30;
+    filter: contrast(120%);
+  }
+  
+  /* Scroll container */
+  .scroll-container {
+    position: relative;
+    height: var(--total-height, 800vh);
+  }
+  
+  /* Hero */
+  .hero {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+    opacity: var(--hero-opacity, 1);
+    transform: scale(var(--hero-scale, 1)) translateZ(0);
+    transition: none;
+    visibility: visible;
+  }
+  .hero .kicker {
+    color:#a3f1ff;
+    font-weight:800;
+    letter-spacing:.18em;
+    font-size:12px;
+    text-transform:uppercase;
+    position: relative;
+    animation: glitchShift 2.2s infinite steps(2, end);
+  }
+  .hero .kicker::after {
+    content: attr(data-text);
+    position:absolute; inset:0; transform: translateX(1px);
+    color:#fff; opacity:.8; mix-blend-mode:screen;
+    clip-path: var(--glitch-clip, inset(0 0 50% 0));
+    animation: glitchClip 1.8s infinite;
+  }
+  .hero h1 {
+    --glitch-color: #a3f1ff;
+    font-size: clamp(48px, 8vw, 132px);
+    line-height:.9; margin:.15em 0 .2em; letter-spacing:.01em;
+    position: relative; animation: glitchShift 2.5s infinite steps(2, end);
+  }
+  .hero h1::after {
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1.5px);
+    color: var(--glitch-color); opacity:.9; mix-blend-mode:screen;
+    clip-path: var(--glitch-clip, inset(0 0 50% 0)); animation: glitchClip 1.6s infinite;
+  }
+  .hero p { max-width: 82ch; margin:0 auto; color:rgba(255,255,255,.85); line-height:1.8; }
+  
+  /* Stage */
+  .zoom-stage {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 15;
+    opacity: var(--stage-opacity, 0);
+    pointer-events: none;
+  }
+  .zoom-stage::after{
+    content:"";
+    position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(120vmax 90vmax at 30% 50%,
+        color-mix(in oklab, var(--accent) 12%, transparent) 0%,
+        transparent 55%),
+      radial-gradient(80vmax 70vmax at 82% 50%,
+        rgba(0,0,0,.45) 0%,
+        transparent 70%);
+    mix-blend-mode: soft-light;
+    opacity:.45; /* mild vignette */
+  }
+  
+  /* Creature image – SUBTIL kant-fade på begge sider */
+  .creature-image {
+    position: absolute;
+    top: 50%;
+    left: 30%;
+    z-index: 2;
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 140vw;
+    max-height: 140vh;
+    object-fit: cover;
+    transform: translate(-50%, -50%) scale(var(--zoom, 0.1)) translateZ(0);
+    opacity: var(--opacity, 0);
+    border-radius: 20px;
+    will-change: transform, opacity;
+    pointer-events: none;
+  
+    /* Svært mild glød – ikke overstyr bildet */
+    filter:
+      brightness(0.98) contrast(1.03) saturate(1.03)
+      drop-shadow(0 3px 12px color-mix(in oklab, var(--accent) 10%, rgba(0,0,0,.35)))
+      drop-shadow(0 0 28px  color-mix(in oklab, var(--accent) 12%, rgba(0,0,0,.28)));
+  
+    /* ---- Feather-variabler (små overganger) ---- */
+    /* venstre: fade 6% -> 12%, høyre: 74% -> 96%  */
+    --left-keep: 60%;
+    --left-soft: 100%;
+    --right-keep: 60%;
+    --right-soft: 100%;
+  
+    /* lett radial for å runde hjørner – nesten usynlig */
+    --feather-x: 45%;
+    --feather-y: 50%;
+    --feather-hard: 86%;
+    --feather-soft: 98%;
+  
+    /* masker: mild radial ∩ venstre ∩ høyre */
+    -webkit-mask-image:
+      radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
+        #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)
+      ),
+      linear-gradient(to left,
+        #000 0%, #000 var(--left-keep), rgba(0,0,0,0) var(--left-soft)
+      ),
+      linear-gradient(to right,
+        #000 0%, #000 var(--right-keep), rgba(0,0,0,0) var(--right-soft)
+      );
+    mask-image:
+      radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
+        #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)
+      ),
+      linear-gradient(to left,
+        #000 0%, #000 var(--left-keep), rgba(0,0,0,0) var(--left-soft)
+      ),
+      linear-gradient(to right,
+        #000 0%, #000 var(--right-keep), rgba(0,0,0,0) var(--right-soft)
+      );
+  
+    /* Intersect alle masker */
+    -webkit-mask-composite: source-in, source-in;
+            mask-composite: intersect;
+  }
+  
+  /* Små justeringer for smal skjerm */
+  @media (max-width: 900px){
+    .creature-image{
+      --left-keep: 8%;
+      --left-soft: 16%;
+      --right-keep: 72%;
+      --right-soft: 96%;
+      --feather-hard: 88%;
+      --feather-soft: 99%;
+    }
+  }
+  
+  /* Text overlay */
+  .text-overlay {
+    position: absolute; right: 5vw; top: 50%;
+    transform: translateY(-50%);
+    z-index: 30; max-width: 460px;
+    opacity: var(--text-opacity, 0);
+  }
+  .text-overlay .header { margin: 0 0 12px; }
+  .text-overlay .eyebrow {
+    position: relative; color:#a3f1ff; font-weight:800; letter-spacing:.18em;
+    font-size:12px; text-transform:uppercase; margin-bottom: 8px;
+    animation: glitchShift 2.2s infinite steps(2,end);
+  }
+  .text-overlay .eyebrow::after{
+    content: attr(data-text); position:absolute; inset:0; transform: translateX(1px);
+    color:#fff; opacity:.9; mix-blend-mode:screen;
+    clip-path: var(--glitch-clip, inset(0 0 50% 0)); animation: glitchClip 1.4s infinite;
+  }
+  
+  /* Scroll area under header */
+  .text-overlay .scrollWrap{
+    position: relative;
+    height: clamp(260px, 40vh, 520px);
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom,
+      transparent 0%, black 10%, black 90%, transparent 100%);
+  }
+  .text-overlay .body{
+    transform: translateY(var(--content-offset, 0px));
+    will-change: transform;
+  }
+  .text-overlay p{
+    color:rgba(255,255,255,.86); line-height:1.85; margin:0 0 16px; font-size:16px;
+  }
+  .text-overlay .tags{
+    opacity:.8; font-size:13px; letter-spacing:.02em; color: rgba(255,255,255, 0.7);
+  }
+  .text-overlay .details{
+    margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1);
+    font-size: 14px; line-height: 1.6; color: rgba(255,255,255,.8);
+  }
+  
+  /* Halo */
+  .halo{
+    position: absolute; width: 80vmin; height: 80vmin; border-radius: 50%;
+    z-index: 1; pointer-events: none; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(var(--halo-scale, 0));
+    filter: blur(40px) saturate(1.2);
+    mix-blend-mode: screen;
+    opacity: var(--halo-opacity, 0);
+    background: radial-gradient(closest-side, var(--halo-color) 0%, transparent 70%);
+    will-change: transform, opacity;
+  }
+  
+  /* Glitch keyframes */
+  @keyframes glitchClip {
+    0%{clip-path: inset(0 0 52% 0)} 20%{clip-path: inset(0 0 10% 0)}
+    40%{clip-path: inset(0 0 64% 0)} 60%{clip-path: inset(0 0 28% 0)}
+    80%{clip-path: inset(0 0 80% 0)} 100%{clip-path: inset(0 0 50% 0)}
+  }
+  @keyframes glitchShift {
+    0%,100%{transform:none} 25%{transform:translateX(.2px)}
+    50%{transform:translateX(.6px)} 75%{transform:translateX(.1px)}
+  }
+  
+  /* ============== ScrollFloat (overskrift-effekt) ============== */
+  .scroll-float { overflow: hidden; }
+  .scroll-float-text {
+    display: inline-block;
+    font-size: clamp(28px, 4vw, 56px);
+    font-weight: 900;
+    text-align: left;
+    line-height: 1.1;
+  }
+  .char { display: inline-block; }
+  
+  /* ============== ScrollReveal (brødtekst-effekt) ============== */
+  .scroll-reveal { margin: 20px 0; }
+  .scroll-reveal-text {
+    font-size: clamp(1.6rem, 4vw, 3rem);
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .word { display: inline-block; }
+  
+  /* Typografi-overstyringer */
+  .text-overlay .scroll-reveal .scroll-reveal-text.details {
+    font-size: 14px;
+    line-height: 1.6;
+    font-weight: 600;
+    color: rgba(255,255,255,.8);
+  }
+  .text-overlay .scroll-reveal .scroll-reveal-text.tags {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  

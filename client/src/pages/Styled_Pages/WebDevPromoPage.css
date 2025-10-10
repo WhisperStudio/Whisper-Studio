@@ -1,0 +1,556 @@
+/* WebDevPromoPage.css */
+
+/* Global Styles */
+body {
+  background-color: #0b1121;
+  color: #e2e8f0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes gradientAnimation {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes waveMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Root variables for design themes */
+:root {
+  --design-standard: #475569;
+  --design-premium: #7c3aed;
+  --design-elite: #1e293b;
+
+  --text-light: #e2e8f0;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --text-elite: #94a3b8;
+  --text-elite-light: #cbd5e1;
+
+  --bg-elite-placeholder: rgba(255, 255, 255, 0.08);
+  --bg-standard-placeholder: #e2e8f0;
+
+  --color-visa-standard: #1e3a8a;
+  --color-visa-elite: #cbd5e1;
+  --color-mastercard-standard: #eb001b;
+  --color-mastercard-elite: #cbd5e1;
+  --color-paypal-standard: #003087;
+  --color-paypal-elite: #cbd5e1;
+
+  --bg-effect-stars: #000;
+  --bg-effect-wave: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Browser dots */
+.dot:nth-child(1) {
+  background: #f87171 !important;
+}
+
+.dot:nth-child(2) {
+  background: #fbbf24 !important;
+}
+
+.dot:nth-child(3) {
+  background: #34d399 !important;
+}
+
+/* Logo colors */
+.logo.design-default {
+  color: var(--text-dark);
+}
+
+.logo.design-elite {
+  color: #fff;
+}
+
+.logo.effect-stars,
+.logo.effect-wave {
+  color: #fff;
+}
+
+/* Navigation link colors */
+.wp-nav-link.design-default {
+  color: var(--text-muted);
+}
+
+.wp-nav-link.design-elite {
+  color: var(--text-elite);
+}
+
+.wp-nav-link.effect-stars,
+.wp-nav-link.effect-wave {
+  color: #fff;
+}
+
+/* Cart icon colors */
+.wp-cart .icon.design-standard,
+.wp-cart .icon.design-premium {
+  color: var(--design-standard);
+}
+
+.wp-cart .icon.design-elite {
+  color: var(--text-elite-light);
+}
+
+/* Cart text colors */
+.wp-cart .text.design-standard,
+.wp-cart .text.design-premium {
+  color: var(--text-dark);
+}
+
+.wp-cart .text.design-elite {
+  color: var(--text-elite-light);
+}
+
+/* Gallery image backgrounds - handled dynamically in JSX, keeping for consistency */
+
+/* Hero title colors */
+.wp-hero-mock-title.effect-stars,
+.wp-hero-mock-title.effect-wave {
+  color: #fff;
+}
+
+/* Hero subtitle colors */
+.wp-hero-mock-sub.design-standard,
+.wp-hero-mock-sub.design-premium {
+  color: var(--text-muted);
+}
+
+.wp-hero-mock-sub.design-elite {
+  color: var(--text-elite);
+}
+
+.wp-hero-mock-sub.effect-stars,
+.wp-hero-mock-sub.effect-wave {
+  color: var(--text-light);
+}
+
+/* Card image backgrounds - complex, keeping dynamic but adding classes for consistency */
+
+/* Card name colors */
+.wp-card-name.design-standard,
+.wp-card-name.design-premium {
+  color: var(--text-dark);
+}
+
+.wp-card-name.design-elite {
+  color: var(--text-elite-light);
+}
+
+/* Payment label colors */
+.wp-pay-label.design-standard,
+.wp-pay-label.design-premium {
+  color: var(--text-muted);
+}
+
+.wp-pay-label.design-elite {
+  color: var(--text-elite);
+}
+
+/* Payment icon colors */
+.wp-pay-ic.design-standard.visa {
+  color: var(--color-visa-standard);
+}
+
+.wp-pay-ic.design-elite.visa {
+  color: var(--color-visa-elite);
+}
+
+.wp-pay-ic.design-standard.mastercard {
+  color: var(--color-mastercard-standard);
+}
+
+.wp-pay-ic.design-elite.mastercard {
+  color: var(--color-mastercard-elite);
+}
+
+.wp-pay-ic.design-standard.paypal {
+  color: var(--color-paypal-standard);
+}
+
+.wp-pay-ic.design-elite.paypal {
+  color: var(--color-paypal-elite);
+}
+
+/* Card placeholder backgrounds */
+.wp-card-placeholder.design-standard,
+.wp-card-placeholder.design-premium {
+  background: var(--bg-standard-placeholder);
+}
+
+.wp-card-placeholder.design-elite {
+  background: var(--bg-elite-placeholder);
+}
+
+/* VAT label margin */
+.wp-label.vat-margin {
+  margin-bottom: 8px;
+}
+
+@keyframes starryBackground {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes eliteDropdownEntry {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) rotateX(-90deg);
+  }
+  50% {
+    transform: translateY(5px) rotateX(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Page Layout */
+.wp-page-wrapper {
+  background: radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.15), transparent),
+              radial-gradient(900px 500px at 90% 20%, rgba(236,72,153,0.12), transparent),
+              #0b1121;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.wp-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 2rem 4rem;
+  animation: fadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hero Section */
+.wp-hero {
+  text-align: center;
+  margin-bottom: 5rem;
+}
+
+.wp-hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wp-hero-sub {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+/* Grid Layout */
+.wp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+@media (max-width: 1024px) {
+  .wp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Glass Panel */
+.glass {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  padding: 2rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.wp-results {
+  position: sticky;
+  top: 100px;
+}
+
+@media (max-width: 1024px) {
+  .wp-preview {
+    margin-top: 2rem;
+  }
+}
+
+/* Section Title */
+.wp-section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Disclaimer */
+.wp-disclaimer {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  background: rgba(148, 163, 184, 0.1);
+  border-left: 3px solid #a78bfa;
+  border-radius: 4px;
+}
+
+/* Control Groups */
+.wp-control {
+  margin-bottom: 2rem;
+}
+
+.wp-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wp-value {
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+/* Slider */
+.wp-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+  outline: none;
+}
+
+.wp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #a78bfa;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid #0b1121;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #c4b5fd;
+  }
+}
+
+/* Toggle Groups */
+.wp-toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.wp-toggle {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &:hover {
+    background: rgba(148, 163, 184, 0.2);
+  }
+
+  &.checked {
+    background: rgba(167, 139, 250, 0.2);
+    border-color: rgba(167, 139, 250, 0.5);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.wp-toggle-title {
+  font-weight: 600;
+  color: #fff;
+}
+
+.wp-toggle-desc {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.wp-toggle input[type="checkbox"] {
+  display: none;
+}
+
+/* Scale indicator */
+.wp-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.wp-subcontrol {
+  margin-bottom: 1rem;
+}
+
+/* Total Display */
+.wp-total {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.wp-price-label {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin: 0 0 0.5rem;
+}
+
+.wp-price {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wp-price-qual {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+/* Primary Button */
+.wp-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  }
+}
+
+/* Small Actions */
+.wp-small-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.wp-small {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+/* Language Switch */
+.wp-lang-switch {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wp-lang {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+    border-color: transparent;
+    color: #fff;
+  }
+}
