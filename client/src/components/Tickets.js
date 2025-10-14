@@ -77,7 +77,7 @@ export default function Tickets() {
       .then(res => {
         const data = res.data;
         // FIX: Robustly find the array in the response. The API might return the array
-        // directly, or nested under a "data" or "tickets" key.
+        // directly, or nested under a "data" or "tickets" key. test
         const ticketsArray = Array.isArray(data)
           ? data
           : (data && (Array.isArray(data.data) ? data.data : Array.isArray(data.tickets) ? data.tickets : null));
