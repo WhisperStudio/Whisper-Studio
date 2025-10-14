@@ -272,7 +272,7 @@ const CardContainer = styled.div`
 `;
 
 const Card = styled.div`
-  background: linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(40, 40, 40, 0.9));
+  background: linear-gradient(145deg, rgba(155, 59, 59, 0.9), rgba(40, 40, 40, 0.9));
   color: white;
   border-radius: 25px; 
   overflow: hidden;
