@@ -17,6 +17,7 @@ import AdminManagement from '../components/AdminManagement';
 import RoleManagement from '../components/RoleManagement/RoleManagement';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
+import AdminTeamChat from '../components/AdminTeamChat';
 import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard';
 import { 
   ServerStatus, DatabaseManager, SecurityCenter,
@@ -177,10 +178,40 @@ const Sidebar = styled.nav`
   @media (max-width: 1024px) {
     width: 80px;
   }
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    padding: 0.75rem 0;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    
+    &::-webkit-scrollbar {
+      height: 2px;
+    }
+  }
 `;
 
 const Sections = styled.div`
   flex: 1;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+  }
 `;
 
 const SectionTitle = styled.h4`
@@ -202,16 +233,31 @@ const SectionTitle = styled.h4`
     background: linear-gradient(90deg, #60a5fa, #a78bfa);
     border-radius: 1px;
   }
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const NavList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
 `;
 
 const NavItem = styled.li`
   margin: 0.5rem 0;
+  
+  @media (max-width: 768px) {
+    margin: 0;
+    flex-shrink: 0;
+  }
 `;
 
 const NavButton = styled.button`
@@ -282,6 +328,38 @@ const NavButton = styled.button`
       transform: translateX(0);
     }
   }
+  
+  @media (max-width: 768px) {
+    margin: 0;
+    width: auto;
+    min-width: 56px;
+    height: 56px;
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    border-radius: 14px;
+    
+    svg {
+      font-size: 22px;
+      margin: 0;
+    }
+    
+    span {
+      display: block;
+      font-size: 0.65rem;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    
+    &:hover {
+      transform: translateY(-2px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
 `;
 
 const Highlight = styled.div`
@@ -349,7 +427,13 @@ const Content = styled.main`
   background: rgba(255, 255, 255, 0.01);
   
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    margin-top: 60px;
+    margin-bottom: 80px;
+    padding: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
   }
   
   &::-webkit-scrollbar {
@@ -392,11 +476,11 @@ export default function AdminPanel() {
     const loadPermissions = async () => {
       if (currentUserRole === 'owner') {
         // Owner har tilgang til alt
-        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings']);
+        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings']);
         setPermissionsLoaded(true);
       } else if (currentUserRole === 'admin') {
         // Admin har tilgang til alt unntatt owner-spesifikke seksjoner
-        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings']);
+        setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings']);
         setPermissionsLoaded(true);
       } else if (currentUserRole === 'support' || currentUserRole === 'user') {
         // Support og vanlige brukere må ha eksplisitte permissions fra databasen
@@ -610,6 +694,7 @@ export default function AdminPanel() {
       ]},
       { section: "💬 Communication", items: [
         { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare />, permission: 'chat' },
+        { key: "teamChat", label: "Admin Team Chat", icon: <FiMessageCircle />, permission: 'teamChat' },
         { key: "aiBot", label: "AI Assistant", icon: <BsRobot />, permission: 'aiBot' },
         { key: "tickets", label: "Support Tickets", icon: <FiFileText />, permission: 'tickets' }
       ]},
@@ -663,9 +748,9 @@ export default function AdminPanel() {
   const getDefaultPermissions = (role) => {
     switch (role) {
       case 'owner':
-        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
       case 'admin':
-        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings'];
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings'];
       case 'support':
         return []; // Support får INGEN tilgang som standard - admin må eksplisitt gi tilgang
       case 'user':
@@ -682,6 +767,7 @@ export default function AdminPanel() {
     realtime: <RealtimeMonitor />,
     analytics: <AdvancedAnalytics />,
     chat: <ChatDashboard />,
+    teamChat: <AdminTeamChat currentUser={currentUser} role={currentUserRole} />,
     aiBot: <AIBotConfig />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,

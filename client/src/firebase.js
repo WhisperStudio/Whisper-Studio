@@ -16,7 +16,10 @@ import {
   limit, 
   onSnapshot, 
   serverTimestamp,
-  collectionGroup
+  collectionGroup,
+  arrayUnion,
+  arrayRemove,
+  deleteField
 } from 'firebase/firestore';
 import { 
   getAuth, 
@@ -80,5 +83,8 @@ export {
   getDoc,
   setDoc,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  deleteField
 };
