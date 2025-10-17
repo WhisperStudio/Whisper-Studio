@@ -22,7 +22,7 @@ import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard
 import { 
   ServerStatus, DatabaseManager, SecurityCenter,
   UserManagement, SystemSettings, AdvancedAnalytics,
-  AIBotConfig, TicketsView 
+  TicketsView 
 } from '../components/AdminComponents';
 import { AdminLoadingScreen } from '../components/LoadingComponent';
 import TaskManagement from '../components/TaskManagement/TaskManagement';
@@ -695,7 +695,6 @@ export default function AdminPanel() {
       { section: "💬 Communication", items: [
         { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare />, permission: 'chat' },
         { key: "teamChat", label: "Admin Team Chat", icon: <FiMessageCircle />, permission: 'teamChat' },
-        { key: "aiBot", label: "AI Assistant", icon: <BsRobot />, permission: 'aiBot' },
         { key: "tickets", label: "Support Tickets", icon: <FiFileText />, permission: 'tickets' }
       ]},
       { section: "📊 Statistics", items: [
@@ -768,7 +767,6 @@ export default function AdminPanel() {
     analytics: <AdvancedAnalytics />,
     chat: <ChatDashboard />,
     teamChat: <AdminTeamChat currentUser={currentUser} role={currentUserRole} />,
-    aiBot: <AIBotConfig />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,
     pieChart: <ChatPieChart />,

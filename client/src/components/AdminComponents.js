@@ -440,71 +440,6 @@ export const AdvancedAnalytics = () => {
   );
 };
 
-// AI Bot Configuration Component
-export const AIBotConfig = () => {
-  const [config, setConfig] = useState({
-    enabled: true,
-    model: 'gpt-4',
-    temperature: 0.7,
-    maxTokens: 2000,
-    personality: 'professional'
-  });
-
-  return (
-    <Container>
-      <Header>
-        <Title><BsRobot /> AI Bot Configuration</Title>
-        <Button primary><FiSave /> Save Configuration</Button>
-      </Header>
-      
-      <Card>
-        <h3>Model Settings</h3>
-        <Grid>
-          <div>
-            <label style={{ display: 'block', marginBottom: '10px' }}>AI Model</label>
-            <Select value={config.model} onChange={(e) => setConfig({...config, model: e.target.value})}>
-              <option value="gpt-4">GPT-4</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              <option value="claude">Claude</option>
-            </Select>
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '10px' }}>Temperature</label>
-            <Input 
-              type="number" 
-              value={config.temperature} 
-              onChange={(e) => setConfig({...config, temperature: e.target.value})}
-              min="0" 
-              max="1" 
-              step="0.1"
-            />
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '10px' }}>Max Tokens</label>
-            <Input 
-              type="number" 
-              value={config.maxTokens} 
-              onChange={(e) => setConfig({...config, maxTokens: e.target.value})}
-            />
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '10px' }}>Personality</label>
-            <Select value={config.personality} onChange={(e) => setConfig({...config, personality: e.target.value})}>
-              <option value="professional">Professional</option>
-              <option value="friendly">Friendly</option>
-              <option value="casual">Casual</option>
-              <option value="technical">Technical</option>
-            </Select>
-          </div>
-        </Grid>
-      </Card>
-    </Container>
-  );
-};
-
 // Ticket Dashboard Component
 export const TicketDashboard = () => {
   const [tickets, setTickets] = useState([
@@ -1511,7 +1446,13 @@ export const SystemSettings = () => {
     autoBackup: true,
     backupFrequency: 'daily',
     maxUploadSize: '10',
-    sessionTimeout: '30'
+    sessionTimeout: '30',
+    // AI Bot Settings
+    aiEnabled: true,
+    aiModel: 'gpt-4',
+    aiTemperature: 0.7,
+    aiMaxTokens: 2000,
+    aiPersonality: 'professional'
   });
 
   return (
@@ -1588,6 +1529,70 @@ export const SystemSettings = () => {
               value={settings.sessionTimeout} 
               onChange={(e) => setSettings({...settings, sessionTimeout: e.target.value})}
             />
+          </div>
+        </Card>
+
+        <Card>
+          <h3>AI Assistant Settings</h3>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              {settings.aiEnabled ? <FiToggleRight size={24} color="#6366f1" /> : <FiToggleLeft size={24} />}
+              Enable AI Assistant
+            </label>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '10px' }}>AI Model</label>
+            <Select 
+              value={settings.aiModel}
+              onChange={(e) => setSettings({...settings, aiModel: e.target.value})}
+            >
+              <option value="gpt-4">GPT-4</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              <option value="claude">Claude</option>
+            </Select>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '10px' }}>Temperature: {settings.aiTemperature}</label>
+            <Input 
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={settings.aiTemperature}
+              onChange={(e) => setSettings({...settings, aiTemperature: parseFloat(e.target.value)})}
+              style={{ width: '100%' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+              <span>Precise</span>
+              <span>Creative</span>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '10px' }}>Max Tokens</label>
+            <Input 
+              type="number"
+              value={settings.aiMaxTokens}
+              onChange={(e) => setSettings({...settings, aiMaxTokens: parseInt(e.target.value) || 0})}
+              min="100"
+              max="4000"
+              step="100"
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: '10px' }}>Personality</label>
+            <Select 
+              value={settings.aiPersonality}
+              onChange={(e) => setSettings({...settings, aiPersonality: e.target.value})}
+            >
+              <option value="professional">Professional</option>
+              <option value="friendly">Friendly</option>
+              <option value="casual">Casual</option>
+              <option value="technical">Technical</option>
+            </Select>
           </div>
         </Card>
       </Grid>
