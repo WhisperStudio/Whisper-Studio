@@ -8,7 +8,6 @@ import { gsap } from "gsap";
    HJELPEKOMPONENTER (ScrollFloat / ScrollReveal)
    ========================================================= */
 
-/* --- ScrollFloat: bokstav-for-bokstav for OVERSKRIFTER (styres av progress) --- */
 function ScrollFloat({
   children,
   progress = 0,
@@ -32,7 +31,6 @@ function ScrollFloat({
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-
     const chars = el.querySelectorAll(".char");
 
     tlRef.current?.kill();
@@ -54,11 +52,10 @@ function ScrollFloat({
         scaleX: 1,
         ease,
         stagger,
-        duration: 1.8, // roligere tittel
+        duration: 1.8,
       }
     );
     tlRef.current = tl;
-
     return () => {
       tl.kill();
       tlRef.current = null;
@@ -77,14 +74,18 @@ function ScrollFloat({
   );
 }
 
-/* --- ScrollReveal: ord-for-ord for BRØDTEKST (styres av progress) --- */
+/**
+ * ScrollReveal with INLINE HIGHLIGHTS
+ * We support [HL] ... [/HL] markers inside the string to create <span class="word hl">...</span>.
+ * This lets us color/underline full phrases while keeping the word-by-word animation.
+ */
 function ScrollReveal({
   children,
   progress = 0,
   enableBlur = true,
-  baseOpacity = 0.0,     // start helt gjennomsiktig
+  baseOpacity = 0.0,
   baseRotation = 2,
-  blurStrength = 1.2,    // veldig mild blur
+  blurStrength = 1.2,
   containerClassName = "",
   textClassName = "",
 }) {
@@ -93,10 +94,55 @@ function ScrollReveal({
 
   const splitText = useMemo(() => {
     const text = typeof children === "string" ? children : "";
-    return text.split(/(\s+)/).map((word, index) => {
-      if (/^\s+$/.test(word)) return word;
-      return <span className="word" key={index}>{word}</span>;
-    });
+
+    // If no markers, fall back to the simple word split
+    const hasMarkers = /\[HL\]|\[\/HL\]/.test(text);
+    if (!hasMarkers) {
+      return text.split(/(\s+)/).map((word, index) => {
+        if (/^\s+$/.test(word)) return word;
+        return (
+          <span className="word" key={index}>
+            {word}
+          </span>
+        );
+      });
+    }
+
+    // Parse [HL] ... [/HL] blocks and wrap inner words with .word.hl
+    const tokens = text.split(/(\[HL\]|\[\/HL\])/);
+    let inHL = false;
+    let key = 0;
+    const nodes = [];
+
+    const pushWords = (chunk, highlighted) => {
+      // Preserve spaces; only words become .word spans
+      chunk.split(/(\s+)/).forEach((piece) => {
+        if (/^\s+$/.test(piece)) {
+          nodes.push(piece);
+        } else if (piece.length) {
+          nodes.push(
+            <span className={`word${highlighted ? " hl" : ""}`} key={`w-${key++}`}>
+              {piece}
+            </span>
+          );
+        }
+      });
+    };
+
+    for (const t of tokens) {
+      if (t === "[HL]") {
+        inHL = true;
+        continue;
+      }
+      if (t === "[/HL]") {
+        inHL = false;
+        continue;
+      }
+      if (!t) continue;
+      pushWords(t, inHL);
+    }
+
+    return nodes;
   }, [children]);
 
   useLayoutEffect(() => {
@@ -114,7 +160,6 @@ function ScrollReveal({
       { rotate: 0, ease: "none", duration: 1 },
       0
     );
-
     tl.fromTo(
       words,
       {
@@ -151,6 +196,50 @@ function ScrollReveal({
   );
 }
 
+/* ====================== Inline highlight helper ====================== */
+/**
+ * markHighlights(text): wraps selected sentences in [HL]...[/HL].
+ * We pick up to 3 sentences that start with instruction/insight words.
+ */
+const markHighlights = (text) => {
+  if (!text) return "";
+
+  const sentences = text
+    .replace(/\n+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .filter(Boolean);
+
+  const starters = [/^If\b/i, /^Do not\b/i, /^Never\b/i, /^Treat\b/i, /^Keep\b/i, /^Remember\b/i, /^Trade\b/i, /^Be\b/i];
+  const picks = [];
+  const usedIdx = new Set();
+
+  sentences.forEach((s, i) => {
+    if (picks.length >= 3) return;
+    if (starters.some((r) => r.test(s))) {
+      picks.push(i);
+      usedIdx.add(i);
+    }
+  });
+
+  // Ensure at least two highlights; fallback to first / longest
+  if (picks.length < 2 && sentences.length) {
+    picks.push(0);
+    usedIdx.add(0);
+  }
+  if (picks.length < 3 && sentences.length > 1) {
+    // pick a different sentence with some length
+    let cand = sentences
+      .map((s, i) => ({ s, i, len: s.length }))
+      .filter(({ i }) => !usedIdx.has(i))
+      .sort((a, b) => b.len - a.len)[0];
+    if (cand) picks.push(cand.i);
+  }
+
+  return sentences
+    .map((s, i) => (picks.includes(i) ? `[HL]${s}[/HL]` : s))
+    .join(" ");
+};
+
 /* ====================== Utils ====================== */
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
@@ -177,7 +266,7 @@ const RAW_CREATURES = [
 
 Nisser come in many shapes and sizes, but they share the same heart: intelligent, watchful, and fair. Be polite, show respect, and they’ll be kind in return. Cross them—and they will remind you who really runs the farm after dark.
 
-In VOTE, this Nisse is one of the main characters—among the sharpest minds of his kind. He’s your steady companion through the unknown: reading signs you miss, spotting hidden paths, and nudging puzzles into place when danger grows close. Expect quick wit, quiet magic, and the occasional grumble if you forget your manners. Treat him well, and he’ll guide you safely—cap bobbing in the lantern light—toward whatever waits in the dark.`
+In VOTE, this Nisse is one of the main characters—among the sharpest minds of his kind. He’s your steady companion through the unknown: reading signs you miss, spotting hidden paths, and nudging puzzles into place when danger grows close. Expect quick wit, quiet magic, and the occasional grumble if you forget your manners. Treat him well, and he’ll guide you safely—cap bobbing in the lantern light—toward whatever waits in the dark.`,
   },
   {
     id: 2,
@@ -189,7 +278,7 @@ In VOTE, this Nisse is one of the main characters—among the sharpest minds of 
 
 They are dangerous not out of need, but desire. Cruel when they think no one is watching, they lash out for sport and skitter back to the dark. Yet for all their malice, they are simple-minded: the first glimpse of anything unfamiliar—light, a firm voice, a sudden clatter—can send them stumbling away with frightened chatter.
 
-If you meet one, keep your lantern high and your steps steady. Do not chase; make yourself larger than your fear. In the under-earth where they lurk, courage and brightness are sharper than any blade.`
+If you meet one, keep your lantern high and your steps steady. Do not chase; make yourself larger than your fear. In the under-earth where they lurk, courage and brightness are sharper than any blade.`,
   },
   {
     id: 3,
@@ -201,7 +290,7 @@ If you meet one, keep your lantern high and your steps steady. Do not chase; mak
 
 This creature carries a darkness unlike anything seen before: a demonic night that drinks sound and swallows courage. In Scandinavian lore there is the old name—Gammel Erik. In his reckoning with Hel, he seized thousands of beings and broke them to his will: horns snapped, hooves cut away, wings torn from those that wore them. Cursed by his command, they were bound to the shadows, to watch and to punish any who trespass.
 
-Where Shadow passes, lanterns gutter and paths forget where they lead. It does not bargain. It does not warn. If you feel the fog thicken and the world grow muffled, turn back—because Shadow never does.`
+Where Shadow passes, lanterns gutter and paths forget where they lead. It does not bargain. It does not warn. If you feel the fog thicken and the world grow muffled, turn back—because Shadow never does.`,
   },
   {
     id: 4,
@@ -213,7 +302,7 @@ Where Shadow passes, lanterns gutter and paths forget where they lead. It does n
 
 Some say she wears a cow’s tail tucked behind her dress; others whisper her back is hollow like a rotted tree. When the glamour slips, the truth shows through: bark-pale skin, eyes like deep moss, and a hunger older than the farmsteads she haunts. She rewards respect with gifts of luck and safe passage—but mock her, boast, or try to pry at her secrets, and the woods will close like a fist.
 
-Huldra is kin to the sea’s sirens, but her realm is the high forest where wind threads through needles and stones remember your name. If you hear her song, keep your wits and your lantern close. Beauty leads you in; only wisdom leads you out.`
+Huldra is kin to the sea’s sirens, but her realm is the high forest where wind threads through needles and stones remember your name. If you hear her song, keep your wits and your lantern close. Beauty leads you in; only wisdom leads you out.`,
   },
   {
     id: 12,
@@ -225,7 +314,7 @@ Huldra is kin to the sea’s sirens, but her realm is the high forest where wind
 
 Hungry and patient, Nøkken lures not to defend a lair, but to feed. It can shape-shift into a beautiful white horse, spotless and calm, inviting riders with lowered head and gentle breath. The moment someone climbs onto its back, it surges toward the water, plunges under, and drags its victim down where the current keeps secrets.
 
-Parents told tales of Nøkken to keep children from the banks—to teach that dark water is never harmless and beauty can be bait. If you hear a violin over still water, or see a pale horse with eyes too bright for dusk, stay away from the edge and keep the lantern high.`
+Parents told tales of Nøkken to keep children from the banks—to teach that dark water is never harmless and beauty can be bait. If you hear a violin over still water, or see a pale horse with eyes too bright for dusk, stay away from the edge and keep the lantern high.`,
   },
   {
     id: 13,
@@ -237,7 +326,7 @@ Parents told tales of Nøkken to keep children from the banks—to teach that da
 
 Some trolls are clever with bargains and riddles; others are blunt as hammers. All are dangerous when mocked or crossed. Bells and iron unsettle them, and bright fire keeps them at bay—but it’s wits that save most wanderers. Trade fairly, speak carefully, and never linger when the sky begins to pale.
 
-Trolls hoard what they can’t eat and hold grudges longer than winter. If you must deal with one, choose words like you choose footholds on an icy ledge—and remember: sunrise is your strongest ally.`
+Trolls hoard what they can’t eat and hold grudges longer than winter. If you must deal with one, choose words like you choose footholds on an icy ledge—and remember: sunrise is your strongest ally.`,
   },
   {
     id: 14,
@@ -249,7 +338,7 @@ Trolls hoard what they can’t eat and hold grudges longer than winter. If you m
 
 You cannot run from her. She does not chase. She simply arrives at the threshold that fate has marked and sweeps it clean. If you see her, you can only hope she has come for someone else—a mercy to the suffering, a warning to the rest.
 
-Some say she carries a broom for villages and a rake for lone houses; others say she leaves no footprints at all. But all agree: where Pesta passes, the world grows still, and the living count their heartbeats, grateful for each one more.`
+Some say she carries a broom for villages and a rake for lone houses; others say she leaves no footprints at all. But all agree: where Pesta passes, the world grows still, and the living count their heartbeats, grateful for each one more.`,
   },
 ];
 
@@ -266,14 +355,14 @@ const colorFor = (id) => COLOR_BY_ID[id] || "#9aa5ff";
 
 /* ====================== HOVEDKOMPONENT ====================== */
 export default function CharacterScroll() {
-  const CREATURES = useMemo(
-    () => RAW_CREATURES.map((c) => ({ ...c, src: resolveSrc(c.img) })),
-    []
-  );
+  const CREATURES = useMemo(() => RAW_CREATURES.map((c) => ({ ...c, src: resolveSrc(c.img) })), []);
 
-  const [currentIndex, setCurrentIndex] = useState(-1);
-  const [textProg, setTextProg] = useState(0);
-  useEffect(() => { setTextProg(0); }, [currentIndex]);
+  // VISNING styres av "låst indeks" – byttes først når teksten er ferdig scrollet
+  const [renderIndex, setRenderIndex] = useState(-1);
+
+  // Refs for lås/gating
+  const lockedIndexRef = useRef(-1); // hvilket bilde er aktivt
+  const textProgRef = useRef(0);     // fremdrift i teksten for aktivt bilde
 
   const wrapperRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -284,13 +373,18 @@ export default function CharacterScroll() {
   const haloRef = useRef(null);
   const stageRef = useRef(null);
 
-  // Faser
+  // Faser (for total høyde)
   const HERO_PHASE = 60;
   const ZOOM_PHASE = 90;
-  const TEXT_PHASE = 180; // låser lengre på tekst
+  const TEXT_PHASE = 180;
   const FADE_PHASE = 40;
   const PHASE_LENGTH = ZOOM_PHASE + TEXT_PHASE + FADE_PHASE;
   const TOTAL_HEIGHT = HERO_PHASE + CREATURES.length * PHASE_LENGTH + 60;
+
+  // Bildet skal "leve" lenger mens man leser
+  const HOLD_BEFORE_FADE = 10.99;
+
+
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -335,6 +429,7 @@ export default function CharacterScroll() {
 
       const HERO_RATIO = 0.12;
 
+      // HERO
       if (progress < HERO_RATIO) {
         const heroProgress = progress / HERO_RATIO;
         const heroOpacity = 1 - heroProgress;
@@ -346,7 +441,8 @@ export default function CharacterScroll() {
           heroRef.current.style.visibility = "visible";
           heroRef.current.style.pointerEvents = "auto";
         }
-        setCurrentIndex(-1);
+        lockedIndexRef.current = -1;
+        setRenderIndex(-1);
         return;
       }
 
@@ -356,23 +452,52 @@ export default function CharacterScroll() {
         heroRef.current.style.pointerEvents = "none";
       }
 
-      const creatureProgress = (progress - HERO_RATIO) / (1 - HERO_RATIO);
-      const totalCreaturePhase = creatureProgress * CREATURES.length;
-      const activeCreatureIndex = Math.min(Math.floor(totalCreaturePhase), CREATURES.length - 1);
-      let phaseProgress = totalCreaturePhase - activeCreatureIndex;
+      // GLOBAL fremdrift for alle skapninger
+      const afterHero = (progress - HERO_RATIO) / (1 - HERO_RATIO);
+      const totalCreaturePhase = afterHero * CREATURES.length;
 
-      if (activeCreatureIndex !== currentIndex) setCurrentIndex(activeCreatureIndex);
+      // 1) Init: lås første
+      if (lockedIndexRef.current < 0) {
+        lockedIndexRef.current = 0;
+        setRenderIndex(0);
+        textProgRef.current = 0;
+      }
 
-      const accent = colorFor(CREATURES[activeCreatureIndex].id);
+      // 2) Tillat å gå bakover umiddelbart
+      const intendedIndex = Math.min(Math.floor(totalCreaturePhase), CREATURES.length - 1);
+      if (intendedIndex < lockedIndexRef.current) {
+        lockedIndexRef.current = intendedIndex;
+        setRenderIndex(intendedIndex);
+        textProgRef.current = 0;
+      }
+
+      // ===== RÅ fase (for TEKST & GATING) =====
+      const phaseRaw = totalCreaturePhase - lockedIndexRef.current; // 0..1
+
+      // Tekst-progresjon beregnes fra rå fase – skal IKKE stoppes av visual hold
+      const textPhaseStart = 0.14; // start litt tidligere
+      const textPhaseEnd   = 0.995; // slutt litt senere
+      const tProg = clamp((phaseRaw - textPhaseStart) / (textPhaseEnd - textPhaseStart), 0, 1);
+      const textDone = tProg >= 0.998;
+
+      // ===== VISUELL fase (for BILDE/halo) =====
+     let phaseViz = phaseRaw;
+      // Hold bildet helt til teksten er ferdig scrollet
+      if (!textDone && phaseViz > HOLD_BEFORE_FADE) {
+        phaseViz = HOLD_BEFORE_FADE; // frys bildet, men la teksten fortsette
+      }
+      // Når teksten er ferdig: la bildet gjøre en myk "final grow" før fade/bytte
+      // (dvs. la phaseViz flyte fritt fra HOLD_BEFORE_FADE -> 1 mens brukeren scroller)
+
+      const activeIdx = lockedIndexRef.current;
+      if (renderIndex !== activeIdx) setRenderIndex(activeIdx);
+
+      // Accent-farge
+      const accent = colorFor(CREATURES[activeIdx].id);
       if (wrapperRef.current) wrapperRef.current.style.setProperty("--accent", accent);
 
-      let zoom = 0.1,
-        opacity = 0,
-        textOpacity = 0,
-        haloScale = 0,
-        haloOpacity = 0;
-
-      // ---- Tekstscroll for .body ----
+      // ===== Tekstscroll (bruk tProg) =====
+      let textOpacity = 1;
       if (textRef.current && bodyRef.current) {
         const wrap = textRef.current.querySelector(".scrollWrap");
         const content = bodyRef.current;
@@ -380,77 +505,86 @@ export default function CharacterScroll() {
         const wrapH = wrap?.getBoundingClientRect().height || 0;
         const contentH = content?.getBoundingClientRect().height || 0;
 
-        const naturalScroll = Math.max(0, contentH - wrapH);
-        const minScroll = clamp(window.innerHeight * 0.18, 140, 220);
-        const travel = Math.max(naturalScroll, minScroll);
+        // --- NEW: precise interpolation so the LAST words end up ~center (≈50% of scrollWrap)
+        const initialPad = clamp(wrapH * 0.12, 120, 220); // small head-start
+        const startOffset = initialPad;
 
-        // start litt senere for å gi tittelen rom
-        const textPhaseStart = 0.28;
-        const textPhaseEnd   = 0.98;
+        // Final position: top of content such that bottom sits around wrap center:
+        // top = 0.5*wrapH - contentH  (so the last line is roughly mid-screen)
+        const targetOffset = 0.5 * wrapH - contentH;
 
-        const tProg = clamp(
-          (phaseProgress - textPhaseStart) / (textPhaseEnd - textPhaseStart),
-          0,
-          1
-        );
+        // In case content is short, avoid jumping upward too far
+        const endOffset = Math.min(targetOffset, startOffset - 60);
 
-        const offset = -travel * tProg;
+        const offset = startOffset + (endOffset - startOffset) * tProg;
         content.style.setProperty("--content-offset", `${offset}px`);
 
-        if (tProg < 1 && phaseProgress > textPhaseEnd) {
-          phaseProgress = textPhaseEnd;
-        }
+        // Dynamiske fade-bånd
+        const styles = getComputedStyle(wrap);
+        const topBase = parseFloat(styles.getPropertyValue("--top-fade-base")) || 6;
+        const botBase = parseFloat(styles.getPropertyValue("--bottom-fade-base")) || 6;
+        const topFade = tProg < 0.10 ? topBase : topBase + ((tProg - 0.10) / 0.90) * 12;
+       const bottomFade = botBase + tProg * 8;
+        wrap.style.setProperty("--top-fade", `${Math.round(topFade)}%`);
+        wrap.style.setProperty("--bottom-fade", `${Math.round(bottomFade)}%`);
 
-        // overlay-opasitet (fade inn like etter tittel)
-        if (phaseProgress < textPhaseStart) {
-          textOpacity = smoothstep( Math.min(1, Math.max(0, (phaseProgress - (textPhaseStart - 0.12)) / 0.12)) );
-        } else if (phaseProgress < textPhaseEnd) {
+        // Tekstopasitet (bruk visual fase til inn/ut-fade)
+        if (phaseViz < textPhaseStart) {
+          textOpacity = smoothstep(Math.min(1, Math.max(0, (phaseViz - (textPhaseStart - 0.12)) / 0.12)));
+        } else if (phaseViz < textPhaseEnd) {
           textOpacity = 1;
         } else {
-          const fp = (phaseProgress - textPhaseEnd) / (1 - textPhaseEnd);
+          const fp = (phaseViz - textPhaseEnd) / (1 - textPhaseEnd);
           textOpacity = Math.max(0, 1 - fp * 2.0);
         }
 
-        setTextProg(tProg);
+        // lagre tProg for GSAP + gating
+        textProgRef.current = tProg;
+
+        // Lås opp neste når teksten er ferdig og brukeren har kommet til neste celle
+        if (textDone && totalCreaturePhase >= lockedIndexRef.current + 1.0) {
+          lockedIndexRef.current = Math.min(lockedIndexRef.current + 1, CREATURES.length - 1);
+          setRenderIndex(lockedIndexRef.current);
+          textProgRef.current = 0;
+          return;
+        }
       }
 
-      // ---- bilde/halo ----
-      if (phaseProgress < 0.3) {
-        const zp = phaseProgress / 0.3;
+      // ===== Bilde/halo (bruk phaseViz) =====
+      let zoom = 1, opacity = 1, haloScale = 1.5, haloOpacity = 0.6;
+      if (phaseViz < 0.3) {
+        const zp = phaseViz / 0.3;
         zoom = 0.1 + easeOut(zp) * 0.9;
         opacity = smoothstep(zp);
         haloScale = easeOut(zp) * 1.5;
         haloOpacity = smoothstep(zp) * 0.6;
-      } else if (phaseProgress < 0.8) {
+      } else if (phaseViz < 0.8) {
         zoom = 1.0;
         opacity = 1;
         haloScale = 1.5;
         haloOpacity = 0.6;
       } else {
-        const fp = (phaseProgress - 0.8) / 0.2;
+        const fp = (phaseViz - 0.8) / 0.2;
         zoom = 1.0 + fp * 0.15;
         opacity = Math.max(0, 1 - fp * 2);
         haloScale = 1.5 + fp * 0.5;
         haloOpacity = Math.max(0, 0.6 - fp);
       }
 
-      const img = imageRefs.current[activeCreatureIndex];
+      const img = imageRefs.current[activeIdx];
       if (img) {
         img.style.setProperty("--zoom", String(zoom));
         img.style.setProperty("--opacity", String(opacity));
       }
-
-      if (textRef.current) {
-        textRef.current.style.setProperty("--text-opacity", String(textOpacity));
-      }
-
+      if (textRef.current) textRef.current.style.setProperty("--text-opacity", String(textOpacity));
       if (haloRef.current) {
         haloRef.current.style.setProperty("--halo-scale", String(haloScale));
         haloRef.current.style.setProperty("--halo-opacity", String(haloOpacity));
       }
 
+      // Skjul alle andre bilder
       imageRefs.current.forEach((other, idx) => {
-        if (other && idx !== activeCreatureIndex) {
+        if (other && idx !== activeIdx) {
           other.style.setProperty("--opacity", "0");
         }
       });
@@ -468,35 +602,34 @@ export default function CharacterScroll() {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
-  }, [CREATURES, TOTAL_HEIGHT, currentIndex]);
+  }, [CREATURES, TOTAL_HEIGHT, renderIndex]);
 
-  const currentCreature = currentIndex >= 0 ? CREATURES[currentIndex] : null;
+  const currentCreature = renderIndex >= 0 ? CREATURES[renderIndex] : null;
 
-  // vinduer – copy starter klart etter heading
-  const headingProg = easeOut(segment(textProg, 0.10, 0.42));
-  const copyProg    = segment(textProg, 0.35, 0.98); // <- senere start, ingen "peek" bak tittelen
-  const tagsProg    = segment(textProg, 0.70, 0.95);
+  // GSAP-overskrift/tekst-effekter drives av textProgRef via et lite poll
+  const [textProgState, setTextProgState] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTextProgState(textProgRef.current), 50);
+    return () => clearInterval(id);
+  }, []);
+  const headingProg = easeOut(segment(textProgState, 0.08, 0.44));
+  const copyProg    = segment(textProgState, 0.20, 0.995);
+  const tagsProg    = segment(textProgState, 0.72, 0.97);
 
   return (
     <div className="component-wrapper" ref={wrapperRef}>
       <div className="scroll-container" ref={scrollContainerRef}>
         {/* Hero */}
         <section className="hero" ref={heroRef}>
-          <div className="kicker" data-text="FOLKLORE UNIVERSE">
-            FOLKLORE UNIVERSE
-          </div>
-          <h1 data-text="MEET THE CREATURES">MEET THE CREATURES</h1>
+          <div className="kicker" data-text="FOLKLORE UNIVERSE">FOLKLORE UNIVERSE</div>
+          <h1 data-text="MEET THE CREATURES">MEET SOME OF THE CREATURES</h1>
           <p>The adventure is out there and waiting for you.</p>
         </section>
 
         {/* Stage */}
         <div className="zoom-stage" ref={stageRef}>
           {currentCreature && (
-            <div
-              className="halo"
-              ref={haloRef}
-              style={{ "--halo-color": colorFor(currentCreature.id) }}
-            />
+            <div className="halo" ref={haloRef} style={{ "--halo-color": colorFor(currentCreature.id) }} />
           )}
 
           {CREATURES.map((creature, index) => (
@@ -516,16 +649,13 @@ export default function CharacterScroll() {
                 <div className="eyebrow" data-text={currentCreature.sub.toUpperCase()}>
                   {currentCreature.sub.toUpperCase()}
                 </div>
-
                 <ScrollFloat key={currentCreature.id} progress={headingProg}>
                   {currentCreature.title}
                 </ScrollFloat>
               </div>
 
-              {/* Transparent scroll-område: opacity styres av copyProg */}
-              <div className="scrollWrap" style={{ opacity: copyProg }}>
+              <div className="scrollWrap">
                 <div className="body" ref={bodyRef}>
-
                   <ScrollReveal
                     key={`copy-${currentCreature.id}`}
                     progress={copyProg}
@@ -534,9 +664,11 @@ export default function CharacterScroll() {
                     baseRotation={0}
                     blurStrength={1.2}
                   >
-                    {currentCreature.details ??
+                    {markHighlights(
+                      currentCreature.details ??
                       currentCreature.summary ??
-                      `In the depths of Nordic mythology, creatures like ${currentCreature.title} represent the untamed forces of nature and the unknown.`}
+                      `In the depths of Nordic mythology, creatures like ${currentCreature.title} represent the untamed forces of nature and the unknown.`
+                    )}
                   </ScrollReveal>
 
                   <ScrollReveal
@@ -547,9 +679,8 @@ export default function CharacterScroll() {
                     baseRotation={0}
                     textClassName="tags"
                   >
-                    {currentCreature.tags?.map((t) => `#${t}`).join(" ")}
+                    {(currentCreature.tags ?? []).map((t) => `#${t}`).join(" ")}
                   </ScrollReveal>
-
                 </div>
               </div>
             </div>

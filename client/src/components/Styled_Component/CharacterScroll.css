@@ -78,6 +78,15 @@
   opacity: var(--stage-opacity, 0);
   pointer-events: none;
 }
+.zoom-stage::before{
+  content:"";
+  position:absolute; inset:0; pointer-events:none; z-index:3;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0) 22%),
+    linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0) 22%);
+  mix-blend-mode: multiply;
+  opacity: .7; /* tune .5–.85 */
+}
 .zoom-stage::after{
   content:"";
   position:absolute; inset:0; pointer-events:none;
@@ -110,14 +119,18 @@
   pointer-events: none;
 
   filter:
-    brightness(0.98) contrast(1.03) saturate(1.03)
-    drop-shadow(0 3px 12px color-mix(in oklab, var(--accent) 10%, rgba(0,0,0,.35)))
-    drop-shadow(0 0 28px  color-mix(in oklab, var(--accent) 12%, rgba(0,0,0,.28)));
+    brightness(0.98) contrast(1.04) saturate(1.04)
+    drop-shadow(0 6px 22px color-mix(in oklab, var(--accent) 10%, rgba(0,0,0,.48)))
+    drop-shadow(0 0 42px color-mix(in oklab, var(--accent) 14%, rgba(0,0,0,.34)));
 
   --left-keep: 60%;
   --left-soft: 100%;
   --right-keep: 60%;
   --right-soft: 100%;
+  --top-keep: 60%;
+  --top-soft: 100%;
+  --bottom-keep: 60%;
+  --bottom-soft: 100%;
 
   --feather-x: 45%;
   --feather-y: 50%;
@@ -183,20 +196,38 @@
   background: linear-gradient(to right, rgba(255,255,255,.16), rgba(255,255,255,.04));
 }
 
-/* Transparent scroll area (no panel, fades with inline opacity) */
+/* Transparent scroll area (med dynamiske fade-bånd) */
 .text-overlay .scrollWrap{
+  
+  /* Justerbare knotter */
+  --copy-top: 24px;                 /* vertikal offset fra header (px) */
+  --copy-min: 360px;                /* minste høyde */
+  --copy-viewport: 50vh;            /* ønsket viewport (vh) */
+  --copy-max: 700px;                /* maks høyde */
+  --top-fade-base: 6%;              /* grunn-tykkelse top fade */
+  --bottom-fade-base: 6%;           /* grunn-tykkelse bunn fade */
+
+  /* Dynamiske verdier settes fra JS, men har defaults her */
+  --top-fade: 8%;
+  --bottom-fade: 10%;
+
   position: relative;
-  top: 24px;                      /* senker kopiens start under tittelen */
-  height: clamp(360px, 50vh, 600px);
+  top: var(--copy-top);
+  height: clamp(var(--copy-min), var(--copy-viewport), var(--copy-max));
   overflow: hidden;
   padding: 0;
   border-radius: 0;
-  background: transparent;        /* <- ingen skygge/panel */
+  background: transparent;
   backdrop-filter: none;
   box-shadow: none;
   border: none;
-  /* mykere mask så topplinjer ikke "peeker" før scrollet litt */
-  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 92%, transparent 100%);
+
+  /* mykere mask: hindrer at topplinjer peeker for tidlig */
+  mask-image: linear-gradient(to bottom,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,1) var(--top-fade),
+      rgba(0,0,0,1) calc(100% - var(--bottom-fade)),
+      rgba(0,0,0,0) 100%);
 }
 .text-overlay .body{
   transform: translateY(var(--content-offset, 0px));
@@ -214,7 +245,7 @@
 }
 .text-overlay .details{
   margin-top: 0;
-  padding-top: 140px;
+  padding-top: 140px;             /* ekstra head-start */
   font-family: "Coming Soon", cursive;
   font-weight: 400;
   font-style: normal;
@@ -222,6 +253,12 @@
   line-height: 1.95;
   color: rgba(255,255,255,.98);
   text-shadow: 0 1px 1px rgba(0,0,0,.22);
+}
+
+.scroll-reveal-text .word.hl{
+  color: color-mix(in oklab, var(--accent) 92%, #fff);
+  font-weight: 900;
+  text-shadow: 0 0.8px 0 rgba(0,0,0,.25), 0 0 10px color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
 /* Tags */
