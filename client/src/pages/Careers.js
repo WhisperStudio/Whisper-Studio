@@ -19,6 +19,10 @@ const CareersContainer = styled.div`
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   text-align: center;
   min-height: 100vh;
+  
+  @media (max-width: 768px) {
+    padding: 90px 20px 60px;
+  }
 `;
 
 const Title = styled.h1`
@@ -26,6 +30,11 @@ const Title = styled.h1`
   font-weight: 800;
   margin-bottom: 24px;
   animation: ${fadeIn} 0.8s ease-out;
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -36,6 +45,12 @@ const Subtitle = styled.p`
   color: #b0b0b0;
   animation: ${fadeIn} 0.8s ease-out 0.2s;
   animation-fill-mode: backwards;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin: 0 auto 50px auto;
+    padding: 0 10px;
+  }
 `;
 
 const JobListings = styled.div`
@@ -68,6 +83,13 @@ const JobListing = styled.div`
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
   }
+  
+  @media (max-width: 768px) {
+    padding: 25px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
 `;
 
 const JobInfo = styled.div``;
@@ -76,6 +98,10 @@ const JobTitle = styled.h3`
   font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 8px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.4rem;
+  }
 `;
 
 const JobDetails = styled.p`
@@ -97,6 +123,12 @@ const ApplyButton = styled.a`
   &:hover {
     background-color: #3367d6;
     transform: scale(1.05);
+  }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    text-align: center;
+    padding: 12px 20px;
   }
 `;
 

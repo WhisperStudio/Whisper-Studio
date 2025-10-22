@@ -23,6 +23,10 @@ const AboutContainer = styled.div`
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   text-align: center;
   min-height: 100vh;
+  
+  @media (max-width: 768px) {
+    padding: 90px 20px 60px;
+  }
 `;
 
 const Title = styled.h1`
@@ -31,6 +35,11 @@ const Title = styled.h1`
   margin-bottom: 24px;
   letter-spacing: 1px;
   animation: ${fadeIn} 0.8s ease-out;
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -41,6 +50,12 @@ const Subtitle = styled.p`
   color: #b0b0b0;
   animation: ${fadeIn} 0.8s ease-out 0.2s;
   animation-fill-mode: backwards;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin: 0 auto 50px auto;
+    padding: 0 10px;
+  }
 `;
 
 const ContentSection = styled.div`
@@ -58,6 +73,12 @@ const SectionTitle = styled.h2`
   margin-bottom: 24px;
   border-left: 4px solid #4285F4;
   padding-left: 20px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+    margin-bottom: 18px;
+    padding-left: 15px;
+  }
 `;
 
 const Paragraph = styled.p`
@@ -65,11 +86,21 @@ const Paragraph = styled.p`
   line-height: 1.8;
   color: #c0c0c0;
   margin-bottom: 24px;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
 `;
 
 const TeamSection = styled.div`
   margin: 120px auto 100px;
   max-width: 1100px;
+  
+  @media (max-width: 768px) {
+    margin: 80px auto 60px;
+  }
 `;
 
 const TeamGrid = styled.div`

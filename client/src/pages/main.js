@@ -7,6 +7,10 @@ import backgroundImage from '../bilder/BoyDramatic.mp4';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
+import voteV from '../images/Vote_V.png';
+import voteO from '../images/Vote_O.png';
+import voteT from '../images/Vote_T.png';
+import voteE from '../images/Vote_E.png';
 
 /* ---------- Utils ---------- */
 const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
@@ -142,22 +146,71 @@ const ContentContainer = styled.div`
   align-items: flex-start;
   padding-left: 5%; 
   padding-top: 60px;
+  
+  @media (max-width: 768px) {
+    align-items: center;
+    padding-left: 5%;
+    padding-right: 5%;
+    padding-top: 80px;
+    justify-content: center;
+  }
 `;
 
 const TitleContainer = styled.div`
-  color: white;
-  font-size: clamp(3rem, 9vw, 8rem);
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(2px, 0.8vw, 8px);
   opacity: ${p => p.$opacity};
   transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   animation: ${heroIn} 1000ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  filter: drop-shadow(0 8px 30px rgba(0,0,0,0.55));
+
+  @media (max-width: 768px) {
+    align-self: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 95%;
+    gap: clamp(2px, 1.5vw, 6px);
+    flex-wrap: nowrap;
+    overflow: visible;
+  }
+`;
+
+const TitleLetter = styled.img`
+  --letter-size: clamp(80px, 16vw, 160px);
+  width: ${p => `calc(var(--letter-size) * ${p.$scale ?? 1})`};
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  margin-left: -35px;
+  margin-right: -35px;
   
-  @media (max-width: 768px) { 
-    text-align: center; 
-    align-self: center; 
+  @media (max-width: 768px) {
+    --letter-size: clamp(45px, 13vw, 70px);
+    margin-left: -5px;
+    margin-right: -5px;
+    flex-shrink: 1;
+    max-width: 22vw;
+  }
+`;
+
+const TitleDot = styled.span`
+  width: clamp(6px, 0.8vw, 10px);
+  height: clamp(6px, 0.8vw, 10px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.55);
+  display: inline-block;
+  align-self: flex-end;
+  transform: translateY(36%);
+  flex-shrink: 0;
+  
+  @media (max-width: 768px) {
+    width: clamp(4px, 1vw, 7px);
+    height: clamp(4px, 1vw, 7px);
+    transform: translateY(30%);
   }
 `;
 
@@ -174,6 +227,9 @@ const ButtonContainer = styled.div`
   @media (max-width: 768px) { 
     flex-direction: column; 
     gap: 15px;
+    width: 100%;
+    max-width: 320px;
+    align-self: center;
   }
 `;
 
@@ -202,15 +258,15 @@ const PlayButton = styled.button`
   }
   
   @media (max-width: 768px) { 
-    display: block;
-    width: 200px;
+    width: 100%;
+    font-size: 1.2rem;
+    padding: 14px 28px;
   }
 `;
 
 const WatchTrailerButton = styled.button`
   padding: 16px 32px; 
   font-size: 1.3rem;
-{{ ... }}
   font-weight: 600;
   background: rgba(255, 255, 255, 0.1);
   color: white;
@@ -230,6 +286,12 @@ const WatchTrailerButton = styled.button`
   &:active {
     transform: translateY(-1px) scale(1.02);
   }
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    font-size: 1.2rem;
+    padding: 14px 28px;
+  }
 `;
 
 /* ---------- News + Cards ---------- */
@@ -240,6 +302,10 @@ const NewsSection = styled.section`
   box-sizing: border-box;
   background: linear-gradient(180deg, rgba(14, 12, 13, 0.9) 0%, rgba(14, 12, 13, 0.95) 100%);
   backdrop-filter: blur(20px);
+  
+  @media (max-width: 768px) {
+    padding: 80px 5% 60px;
+  }
 `;
 
 const NewsSectionTitle = styled.h2`
@@ -255,6 +321,12 @@ const NewsSectionTitle = styled.h2`
   will-change: transform, opacity;
   transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  
+  @media (max-width: 768px) {
+    margin-bottom: 50px;
+    font-size: clamp(2rem, 8vw, 3rem);
+    letter-spacing: 2px;
+  }
 `;
 
 const CardContainer = styled.div`
@@ -332,6 +404,10 @@ const CardImage = styled.div`
     inset: 0;
     background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
   }
+  
+  @media (max-width: 768px) {
+    padding-top: ${p => (p.large ? '55%' : '60%')};
+  }
 `;
 
 const CardContent = styled.div`
@@ -340,6 +416,10 @@ const CardContent = styled.div`
   flex-direction: column; 
   justify-content: space-between; 
   flex-grow: 1;
+  
+  @media (max-width: 768px) {
+    padding: ${p => (p.large ? '30px' : '25px')};
+  }
 `;
 
 const CardTitle = styled.h3`
@@ -349,6 +429,11 @@ const CardTitle = styled.h3`
   margin-bottom: 25px; 
   line-height: 1.1;
   letter-spacing: -0.02em;
+  
+  @media (max-width: 768px) {
+    font-size: ${p => (p.large ? '2.2rem' : '1.8rem')};
+    margin-bottom: 18px;
+  }
 `;
 
 const CardDescription = styled.p`
@@ -357,6 +442,12 @@ const CardDescription = styled.p`
   line-height: 1.6; 
   margin-bottom: 35px;
   font-weight: 400;
+  
+  @media (max-width: 768px) {
+    font-size: ${p => (p.large ? '1.1rem' : '1rem')};
+    margin-bottom: 25px;
+    line-height: 1.5;
+  }
 `;
 
 const CardButton = styled.button`
@@ -383,6 +474,13 @@ const CardButton = styled.button`
   &:active {
     transform: translateY(-1px) scale(1.02);
   }
+  
+  @media (max-width: 768px) {
+    padding: 14px 28px;
+    font-size: 1rem;
+    width: 100%;
+    align-self: stretch;
+  }
 `;
 
 const CardDate = styled.span`
@@ -393,6 +491,11 @@ const CardDate = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+  }
 `;
 
 /* ---------- Component ---------- */
@@ -523,7 +626,13 @@ function App() {
             $shift={heroShift}
             $scale={heroScale}
           >
-            V.O.T.E
+            <TitleLetter src={voteV} alt="V" style={{ marginBottom: '-20px', marginRight: '-60px' }}/>
+            <TitleDot />
+            <TitleLetter src={voteO} alt="O" style={{ marginBottom: '-10px' }}/>
+            <TitleDot />
+            <TitleLetter src={voteT} alt="T" />
+            <TitleDot />
+            <TitleLetter src={voteE} alt="E" style={{ marginBottom: '-18px' }}/>
           </TitleContainer>
 
           <ButtonContainer

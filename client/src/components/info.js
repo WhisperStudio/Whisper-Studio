@@ -106,6 +106,24 @@ const TextBox = styled.div`
     font-size: 25px;
     line-height: 1.4;
   }
+  
+  @media (max-width: 768px) {
+    left: 0;
+    top: 0;
+    width: 90%;
+    margin: 30vh auto 0 auto;
+    padding: 15px;
+    
+    h2 {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+    
+    p {
+      font-size: 18px;
+      line-height: 1.5;
+    }
+  }
 `;
 
 function ScrollAnimation() {

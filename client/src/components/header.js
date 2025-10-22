@@ -19,7 +19,12 @@ const HeaderContainer = styled.header`
       isScrolled ? 'black, black, transparent' : 'black, black, black, transparent'}
   );
   transition: background-image 0.3s ease-in-out;
-  @media (max-width: 768px) { padding: 1rem 2rem; }
+  
+  @media (max-width: 768px) { 
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
+  }
 `;
 
 const Logo = styled.a`
@@ -110,7 +115,7 @@ const HamburgerButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  z-index: 1001;
+  z-index: 1002;
   width: 30px; height: 20px;
   position: relative;
   @media (max-width: 768px) { display: block; }
@@ -119,7 +124,7 @@ const HamburgerButton = styled.button`
     display: block;
     position: absolute;
     height: 2px; width: 100%;
-    background: ${({ isOpen, textColor }) => (isOpen ? 'black' : textColor)};
+    background: ${({ isOpen, textColor }) => (isOpen ? 'white' : textColor)};
     border-radius: 2px;
     transition: all 0.25s ease-in-out;
   }
@@ -138,37 +143,50 @@ const fadeOut = keyframes`from{opacity:1;transform:translateY(0)}to{opacity:0;tr
 const MobileNavMenu = styled.nav`
   display: ${({ isVisible }) => (isVisible ? 'flex' : 'none')};
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: stretch;
-  position: fixed; inset: 0;
-  background: white;
-  padding: 2rem 1.25rem 3.25rem;
-  gap: 1.5rem;
-  z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  background: #000000;
+  padding: 100px 1.5rem 2rem 1.5rem;
+  gap: 0;
+  z-index: 999;
   animation: ${({ isOpen }) => (isOpen ? fadeIn : fadeOut)} 0.3s ease-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 `;
 
 const MobileNavItem = styled.a`
-  font-size: 1.5rem;
-  padding: 0.75rem 0.25rem;
-  color: black;
+  font-size: 1.4rem;
+  padding: 1.2rem 0.5rem;
+  color: #ffffff;
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 1px;
   position: relative;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  
+  &:last-of-type {
+    border-bottom: none;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 0; height: 2px;
+    background: white;
+    transition: width 0.3s ease;
+  }
+  &:hover::after { width: 100%; }
 `;
 
-const MobileIndicator = styled.div`
-  position: absolute;
-  left: 0;
-  bottom: 1.5rem;
-  height: 4px;
-  background: black;
-  border-radius: 2px;
-  transition: left 480ms cubic-bezier(.22,.61,.36,1),
-              width 480ms cubic-bezier(.22,.61,.36,1);
-  box-shadow: 0 0 0.5px currentColor, 0 0 6px rgba(0,0,0,.15);
-`;
+/* Removed MobileIndicator - simplified mobile menu */
 
 /* ===================== Scroll to top ===================== */
 
@@ -215,6 +233,10 @@ const VintraImg = styled.img`
     opacity ${LOGO_FADE}ms ease-in-out
     ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
   pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const StudioImg = styled.img`
@@ -224,6 +246,10 @@ const StudioImg = styled.img`
     opacity ${LOGO_FADE}ms ease-in-out
     ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
   pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 /* V-en som spinner og skaleres */
@@ -239,6 +265,14 @@ const VoteVImg = styled.img`
     isScrolled
       ? css`animation: ${spinGrow} ${V_DURATION}ms ease-out forwards;`
       : css`animation: ${spinShrink} ${V_DURATION}ms ease-in forwards;`}
+  
+  @media (max-width: 768px) {
+    position: static;
+    height: 45px;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 `;
 
 /* ===================== Component ===================== */
@@ -252,11 +286,8 @@ const Header = () => {
   const [activeIdx, setActiveIdx] = useState(null);
   const [leavingIdx, setLeavingIdx] = useState(null);
 
-  // Mobile indicator
-  const [mobileActive, setMobileActive] = useState(0);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  // Mobile menu ref
   const mobileContainerRef = useRef(null);
-  const mobileRefs = useRef([]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -274,7 +305,6 @@ const Header = () => {
       setTimeout(() => setMenuState({ isOpen: false, isVisible: false }), 300);
     } else {
       setMenuState({ isOpen: true, isVisible: true });
-      requestAnimationFrame(() => updateIndicator(mobileActive));
     }
   };
 
@@ -287,21 +317,7 @@ const Header = () => {
     { href: '/contact',             label: 'Support' },
   ];
 
-  const updateIndicator = (idx) => {
-    const container = mobileContainerRef.current;
-    const el = mobileRefs.current[idx];
-    if (!container || !el) return;
-    const cRect = container.getBoundingClientRect();
-    const eRect = el.getBoundingClientRect();
-    setIndicator({ left: eRect.left - cRect.left, width: eRect.width });
-  };
-
-  useEffect(() => {
-    updateIndicator(mobileActive);
-    const onResize = () => updateIndicator(mobileActive);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [mobileActive, menuState.isVisible]);
+  // Removed indicator logic for simpler mobile menu
 
   const handleMouseEnter = (idx) => {
     setActiveIdx(idx);
@@ -373,19 +389,15 @@ const Header = () => {
           <MobileNavItem
             key={item.href}
             href={item.href}
-            ref={el => (mobileRefs.current[idx] = el)}
             onClick={(e) => {
               e.preventDefault();
-              setMobileActive(idx);
-              updateIndicator(idx);
-              setTimeout(() => { window.location.href = item.href; }, 180);
+              toggleMenu();
+              setTimeout(() => { window.location.href = item.href; }, 300);
             }}
           >
             {item.label}
           </MobileNavItem>
         ))}
-
-        <MobileIndicator style={{ left: `${indicator.left}px`, width: `${indicator.width}px` }} />
       </MobileNavMenu>
     </HeaderContainer>
   );
