@@ -70,6 +70,10 @@ const Section = styled.section`
   padding: calc(var(--header) + 56px) 0 120px; /* never collide with header */
   isolation: isolate;
   overflow: hidden; /* 🔥 sørger for at ingenting "lyser" utenfor seksjonen */
+  
+  @media (max-width: 768px) {
+    padding: calc(var(--header) + 30px) 0 80px;
+  }
 `;
 
 const Backdrop = styled.div`
@@ -89,11 +93,15 @@ const Particles = styled.canvas`
 
 const Wrap = styled.div`
   position: relative; z-index: 1; width: min(1280px, 92vw); margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    width: 95vw;
+  }
 `;
 
 const Hero = styled.div`
   display:grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items:end; margin-bottom: 18px;
-  @media (max-width: 980px){ grid-template-columns: 1fr; }
+  @media (max-width: 980px){ grid-template-columns: 1fr; gap: 18px; }
 `;
 
 const TitleBlock = styled.div``;
@@ -101,14 +109,28 @@ const H1 = styled.h1`
   margin:0; font-size: clamp(30px, 2.6vw + 18px, 56px); letter-spacing:-.02em;
   background: linear-gradient(90deg, #fff, #9fdcff 40%, #b7a2ff 70%);
   -webkit-background-clip:text; background-clip:text; color:transparent;
+  
+  @media (max-width: 768px) {
+    font-size: clamp(24px, 6vw, 36px);
+  }
 `;
 const Sub = styled.p`
   margin:.3rem 0 0; color:${C.subtle}; max-width: 70ch;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+    max-width: 100%;
+  }
 `;
 
 const Toolbar = styled.div`
   position: sticky; top: calc(var(--header) + 10px); z-index: 5;
   display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items:center; backdrop-filter: blur(6px);
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 `;
 
 /* 🔹 Glass-divider som matcher knappestilen (brukes mellom kategorier og underkategorier) */
@@ -123,6 +145,11 @@ const GlassDivider = styled.div`
 
 const Controls = styled.div`
   display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+  
+  @media (max-width: 768px) {
+    gap: 8px;
+    font-size: 0.9rem;
+  }
 `;
 
 const Pill = styled.button`
@@ -142,16 +169,33 @@ const Pill = styled.button`
 
   &:hover { transform: translateY(-1px); }
   &:focus-visible { outline: 2px solid ${C.neonB}; outline-offset: 2px; }
+  
+  @media (max-width: 768px) {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
 `;
 
 const Search = styled.input`
   appearance:none; background: rgba(255,255,255,.03); border:1px solid ${C.border};
   border-radius: 999px; padding: 10px 14px; color:${C.text}; min-width: 220px;
+  
+  @media (max-width: 768px) {
+    min-width: 100%;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
 `;
 
 const Select = styled.select`
   appearance:none; background: rgba(255,255,255,.03); border:1px solid ${C.border}; color:${C.text};
   border-radius: 12px; padding: 10px 14px; min-width: 160px;
+  
+  @media (max-width: 768px) {
+    min-width: 120px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
 `;
 
 const ViewToggle = styled.div`

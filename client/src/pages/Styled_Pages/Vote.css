@@ -18,6 +18,14 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    min-height: 100vh;
+    height: auto;
+  }
 }
 
 .bg-video {
@@ -25,6 +33,16 @@ body {
   width: 100%; height: 100%;
   object-fit: cover;
   z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .bg-video {
+    width: 100%;
+    height: 100vh;
+    min-height: 100vh;
+    object-fit: cover;
+    object-position: center;
+  }
 }
 
 .dark-overlay {
@@ -54,6 +72,13 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 3;
+  padding: 0 5%;
+}
+
+@media (max-width: 768px) {
+  .vote-container {
+    padding: 0 3%;
+  }
 }
 
 /* ===================== Animasjoner ===================== */
@@ -79,6 +104,19 @@ body {
   padding: 1.2rem 1.6rem;
 }
 
+@media (max-width: 768px) {
+  .vote-row {
+    gap: 0.2rem;
+    padding: 0.3rem 0.5rem;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+}
+
 .letter-wrap {
   display: flex;
   align-items: flex-end;
@@ -93,6 +131,17 @@ body {
   width: auto;
   object-fit: contain;
   /* høyde settes pr. bokstav inline (style={{height: '...'}}) */
+}
+
+@media (max-width: 768px) {
+  .letter-img {
+    max-height: 6rem !important;
+    height: auto !important;
+    width: auto !important;
+    max-width: 20vw;
+    object-fit: contain;
+    flex-shrink: 1;
+  }
 }
 
 .dot {
@@ -110,6 +159,15 @@ body {
   /* delay settes inline via style */
 }
 
+@media (max-width: 768px) {
+  .dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    flex-shrink: 0;
+    margin: 0 0.1rem;
+  }
+}
+
 /* ===================== Øvrig UI ===================== */
 .top-overlay {
   position: absolute;
@@ -119,14 +177,29 @@ body {
   opacity: 0;
   transition: opacity 1s ease;
   z-index: 4;
+  width: 90%;
+  text-align: center;
 }
 .top-overlay.show { opacity: 1; }
+
+@media (max-width: 768px) {
+  .top-overlay {
+    top: calc(50% - 8rem);
+    width: 95%;
+  }
+}
 
 .top-text {
   font-size: 3rem;
   font-family: 'Cinzel', serif;
   color: rgba(200,200,200,0.8);
   text-shadow: 0 0 15px rgba(0,0,0,0.8);
+}
+
+@media (max-width: 768px) {
+  .top-text {
+    font-size: 2rem;
+  }
 }
 
 .under-overlay {
@@ -138,8 +211,16 @@ body {
   transition: opacity 1s ease;
   text-align: center;
   z-index: 4;
+  width: 90%;
 }
 .under-overlay.show { opacity: 1; }
+
+@media (max-width: 768px) {
+  .under-overlay {
+    top: calc(50% + 8rem);
+    width: 95%;
+  }
+}
 
 .under-text {
   font-size: 2rem;
@@ -147,6 +228,12 @@ body {
   color: rgba(200,200,200,0.8);
   text-shadow: 0 0 10px rgba(0,0,0,0.8);
   display: block;
+}
+
+@media (max-width: 768px) {
+  .under-text {
+    font-size: 1.5rem;
+  }
 }
 
 .play-music-button {
@@ -161,6 +248,13 @@ body {
   transition: background .3s;
 }
 .play-music-button:hover { background: #666; }
+
+@media (max-width: 768px) {
+  .play-music-button {
+    padding: .6rem 1.2rem;
+    font-size: 1rem;
+  }
+}
 
 .fancy-divider {
   position: absolute;
@@ -198,12 +292,27 @@ body {
 }
 .mute-button:hover { background: #444; transform: scale(1.05); }
 
+@media (max-width: 768px) {
+  .mute-button {
+    bottom: 1rem;
+    left: 1rem;
+    padding: .6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
 /* ===================== News ===================== */
 .news-section {
   background: #0a0a0a;
   padding: 100px 5% 80px;
   box-sizing: border-box;
   min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .news-section {
+    padding: 60px 5% 50px;
+  }
 }
 
 .news-section-title {
@@ -215,6 +324,14 @@ body {
   text-transform: uppercase;
   margin-top: 40px;
   margin-bottom: 80px;
+}
+
+@media (max-width: 768px) {
+  .news-section-title {
+    font-size: 2.5rem;
+    margin-top: 20px;
+    margin-bottom: 50px;
+  }
 }
 
 .card-grid {
@@ -255,7 +372,7 @@ body {
   .small-group { grid-template-rows: auto; }
 }
 
-.small-card { /* inherits base-card styles */ }
+/* Small card inherits base-card styles */
 
 .card-image {
   width: 100%;
@@ -275,6 +392,15 @@ body {
 }
 .card-content.large { padding: 40px; }
 
+@media (max-width: 768px) {
+  .card-content {
+    padding: 20px;
+  }
+  .card-content.large {
+    padding: 25px;
+  }
+}
+
 .card-date {
   color: rgba(255,255,255,0.6);
   font-size: 1rem;
@@ -290,6 +416,16 @@ body {
   margin-bottom: 20px;
 }
 .card-title.large { font-size: 2.8rem; }
+
+@media (max-width: 768px) {
+  .card-title {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+  .card-title.large {
+    font-size: 2rem;
+  }
+}
 
 .card-description {
   color: rgba(255,255,255,0.8);
