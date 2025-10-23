@@ -35,6 +35,14 @@ const MainLayout = ({ children }) => (
     <Header />
     {children}
     <EnhancedChatBot />
+  </>
+);
+
+// Admin Layout with Bug Report Button
+const AdminLayout = ({ children }) => (
+  <>
+    <Header />
+    {children}
     <BugReportButton />
   </>
 );
@@ -70,7 +78,7 @@ function App() {
           <Route path="/bug-report"     element={<MainLayout><BugReportPage /></MainLayout>} />
           <Route path="/admin"          element={
             <ProtectedRoute requireAdmin={true}>
-              <MainLayout><Admin /></MainLayout>
+              <AdminLayout><Admin /></AdminLayout>
             </ProtectedRoute>
           } />
           <Route path="/about-us"       element={<MainLayout><AboutUs /></MainLayout>} />
