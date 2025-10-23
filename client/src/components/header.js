@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import Vintra from '../images/VINTRA.png';
 import Studio from '../images/STUDIO.png';
@@ -210,6 +211,7 @@ const ScrollTopButton = styled.button`
 const V_DURATION = 800;       // ms
 const LOGO_FADE = 950;        // ms
 const LOGO_DELAY_BACK = 590;   // ms
+const V_DELAY = 550;          // ms delay before V animation starts - start later in logo fade
 
 /* Justér så V-en treffer nøyaktig V-en i VINTRA */
 const V_OFFSET_X = -8;        // px
@@ -220,9 +222,9 @@ const spinGrow = keyframes`
   to   { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
 `;
 
-const spinShrink = keyframes`
+const spinBack = keyframes`
   from { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
-  to   { opacity: 0; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
+  to   { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
 `;
 
 const VintraImg = styled.img`
@@ -261,16 +263,38 @@ const VoteVImg = styled.img`
   pointer-events: none;
   transform-origin: center;
 
-  ${({ isScrolled }) =>
-    isScrolled
-      ? css`animation: ${spinGrow} ${V_DURATION}ms ease-out forwards;`
-      : css`animation: ${spinShrink} ${V_DURATION}ms ease-in forwards;`}
-  
+  /* Default: completely hidden */
+  opacity: 0;
+  visibility: hidden;
+
+  /* Simplified animation logic */
+  ${({ isScrolled, $hasScrolledFromTop }) => {
+    if (isScrolled && $hasScrolledFromTop) {
+      return css`
+        opacity: 1;
+        visibility: visible;
+        animation: ${spinGrow} ${V_DURATION}ms ease-out ${V_DELAY}ms forwards;
+      `;
+    } else if ($hasScrolledFromTop) {
+      return css`
+        opacity: 1;
+        visibility: visible;
+        animation: ${spinBack} ${V_DURATION}ms ease-in forwards;
+      `;
+    }
+    return css`
+      opacity: 0;
+      visibility: hidden;
+      animation: none;
+    `;
+  }}
+
   @media (max-width: 768px) {
     position: static;
     height: 45px;
-    animation: none !important;
     opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
     transform: none !important;
   }
 `;
@@ -278,8 +302,10 @@ const VoteVImg = styled.img`
 /* ===================== Component ===================== */
 
 const Header = () => {
+  const location = useLocation();
   const [menuState, setMenuState] = useState({ isOpen: false, isVisible: false });
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hasScrolledFromTop, setHasScrolledFromTop] = useState(false);
   const [showTop, setShowTop] = useState(false);
 
   // Desktop hover state
@@ -289,15 +315,76 @@ const Header = () => {
   // Mobile menu ref
   const mobileContainerRef = useRef(null);
 
+  // Track if user has scrolled from the very top
+  const hasScrolledFromTopRef = useRef(false);
+
+  // Reset scroll state when navigating to new pages
+  useEffect(() => {
+    setHasScrolledFromTop(false);
+    setIsScrolled(false);
+    setShowTop(false);
+    hasScrolledFromTopRef.current = false;
+
+    // Ensure we're at the top when navigating to new pages
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   useEffect(() => {
     const onScroll = () => {
-      setIsScrolled(window.scrollY >= 50);
-      setShowTop(window.scrollY >= 200);
+      const scrollY = window.scrollY;
+
+      // Always check current scroll position first
+      setIsScrolled(scrollY >= 50);
+
+      // Only enable V animation if user scrolls from the very top (0) to > 0
+      if (scrollY === 0) {
+        setIsScrolled(false);
+        // Don't reset hasScrolledFromTop immediately - let CSS animation complete
+      } else if (hasScrolledFromTopRef.current === false && scrollY > 0) {
+        // Only trigger when user actively scrolls from 0 to > 0
+        setHasScrolledFromTop(true);
+        hasScrolledFromTopRef.current = true;
+      }
+
+      setShowTop(scrollY >= 200);
     };
-    onScroll();
-    window.addEventListener('scroll', onScroll);
+
+    // More robust initialization - ensure V is hidden on load
+    const initializeScroll = () => {
+      // CRITICAL: Always start with V hidden, regardless of scroll position
+      setHasScrolledFromTop(false);
+      setIsScrolled(false);
+      hasScrolledFromTopRef.current = false;
+
+      // Check current scroll position
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY >= 50);
+      setShowTop(scrollY >= 200);
+
+      // V logo should NEVER be visible on page load/refresh
+      // Animation only triggers when user scrolls from 0 to > 0
+      // If scrollY > 0 on load, keep V hidden - user didn't scroll from top
+    };
+
+    // Use requestAnimationFrame for more reliable initialization
+    requestAnimationFrame(initializeScroll);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Separate effect to handle state reset after reverse animation
+  useEffect(() => {
+    if (hasScrolledFromTop && !isScrolled) {
+      // User scrolled back to top - reset state after animation completes
+      const timer = setTimeout(() => {
+        setHasScrolledFromTop(false);
+        hasScrolledFromTopRef.current = false;
+      }, V_DURATION + 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasScrolledFromTop, isScrolled]);
 
   const toggleMenu = () => {
     if (menuState.isOpen) {
@@ -337,8 +424,7 @@ const Header = () => {
           <LogoStage>
             <VintraImg src={Vintra} alt="Vintra" isScrolled={isScrolled} />
             <StudioImg src={Studio} alt="Studio" isScrolled={isScrolled} />
-            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} />
-          </LogoStage>
+            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} /></LogoStage>
         </Logodiv>
       </Logo>
 
@@ -383,7 +469,6 @@ const Header = () => {
       <MobileNavMenu
         isOpen={menuState.isOpen}
         isVisible={menuState.isVisible}
-        ref={mobileContainerRef}
       >
         {items.map((item, idx) => (
           <MobileNavItem
