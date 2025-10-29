@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+// src/components/TicketSystem.js
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   db, collection, addDoc, getDocs, query, orderBy, onSnapshot,
   updateDoc, doc, serverTimestamp, where, deleteDoc
 } from '../firebase';
+import TicketReplyWindow from './TicketReplyWindow';
 import {
   FiMessageSquare, FiSend, FiPaperclip, FiImage, FiFile,
   FiAlertCircle, FiCheckCircle, FiClock, FiUser, FiTag,
   FiX, FiMaximize2, FiMinimize2, FiMoreVertical, FiEdit3,
   FiTrash2, FiStar, FiFilter, FiSearch, FiBell, FiArchive,
-  FiRefreshCw, FiDownload, FiUpload, FiZap, FiShield
+  FiRefreshCw, FiDownload, FiUpload, FiZap, FiShield, FiMessageCircle
 } from 'react-icons/fi';
 import {
   BsTicketPerforated, BsChatDots, BsExclamationTriangle,
@@ -250,10 +252,34 @@ const TicketTitle = styled.h4`
 
 const TicketMeta = styled.div`
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 10px;
+  
+  span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+`;
+
+const ViewButton = styled.button`
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(99, 102, 241, 0.2);
+  }
 `;
 
 const StatusBadge = styled.span`
@@ -410,135 +436,19 @@ const SubmitButton = styled(motion.button)`
   }
 `;
 
-// Chat View
-const ChatContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-`;
-
-const MessagesArea = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-`;
-
-const Message = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  ${props => props.isUser && 'flex-direction: row-reverse;'}
-`;
-
-const MessageAvatar = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: ${props => props.isUser
-    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
-`;
-
-const MessageContent = styled.div`
-  max-width: 70%;
-`;
-
-const MessageBubble = styled.div`
-  padding: 12px 16px;
-  background: ${props => props.isUser
-    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'
-    : 'rgba(255, 255, 255, 0.05)'};
-  border: 1px solid ${props => props.isUser
-    ? 'rgba(99, 102, 241, 0.3)'
-    : 'rgba(255, 255, 255, 0.1)'};
-  border-radius: ${props => props.isUser
-    ? '15px 15px 5px 15px'
-    : '15px 15px 15px 5px'};
-  color: #fff;
-  font-size: 14px;
-  line-height: 1.5;
-`;
-
-const MessageTime = styled.div`
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  margin-top: 5px;
-  ${props => props.isUser && 'text-align: right;'}
-`;
-
-const ChatInput = styled.div`
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  gap: 10px;
-`;
-
-const ChatTextInput = styled.input`
-  flex: 1;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #fff;
-  font-size: 14px;
-
-  &:focus {
-    outline: none;
-    border-color: #6366f1;
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.3);
-  }
-`;
-
-const SendButton = styled(motion.button)`
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
 // Main Component
 const TicketSystem = ({ showButton = true }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('tickets');
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyWindowOpen, setReplyWindowOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: 'general',
     priority: 'medium'
   });
-  const [chatMessage, setChatMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -549,36 +459,23 @@ const TicketSystem = ({ showButton = true }) => {
   useEffect(() => {
     let id = localStorage.getItem('enhancedChatUserId') || localStorage.getItem('chatUserId') || localStorage.getItem('userId');
     if (!id) {
-      // Generate new ID if none exists
       id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('enhancedChatUserId', id);
     }
     setCurrentUserId(id);
-    console.log('TicketSystem: Using userId:', id);
   }, []);
 
   // Load current user's tickets from Firebase
   useEffect(() => {
     if (!currentUserId) return;
-    
-    console.log('TicketSystem: Loading tickets for user:', currentUserId);
     const ticketsRef = collection(db, 'tickets');
-    
-    // Simple query without where clause to avoid index issues
     const q = query(ticketsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('TicketSystem: Received', snapshot.docs.length, 'total tickets from Firebase');
-      
-      // Filter client-side for current user
-      let ticketsList = snapshot.docs
+      const ticketsList = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(t => t.userId === currentUserId);
-      
-      console.log('TicketSystem: Filtered to', ticketsList.length, 'tickets for current user');
       setTickets(ticketsList);
-
-      // Count unread tickets (open status)
       const unread = ticketsList.filter(t => t.status === 'open').length;
       setUnreadCount(unread);
     }, (error) => {
@@ -588,13 +485,12 @@ const TicketSystem = ({ showButton = true }) => {
     return () => unsubscribe();
   }, [currentUserId]);
 
-  // Listen for global event to open ticket overlay (from EnhancedChatBot quick action)
+  // Listen for global event to open ticket overlay
   useEffect(() => {
     const openTickets = (e) => {
       setIsOpen(true);
       const detail = e?.detail || {};
       if (detail.tab) setActiveTab(detail.tab);
-      // Always reset any selected ticket when opening via global event
       setSelectedTicket(null);
       if (detail.formData) {
         setFormData(prev => ({ ...prev, ...detail.formData }));
@@ -620,11 +516,8 @@ const TicketSystem = ({ showButton = true }) => {
         messages: []
       };
 
-      console.log('TicketSystem: Creating ticket with data:', ticketData);
-      const docRef = await addDoc(collection(db, 'tickets'), ticketData);
-      console.log('TicketSystem: Ticket created successfully with ID:', docRef.id);
+      await addDoc(collection(db, 'tickets'), ticketData);
 
-      // Reset form
       setFormData({
         title: '',
         description: '',
@@ -632,9 +525,7 @@ const TicketSystem = ({ showButton = true }) => {
         priority: 'medium'
       });
 
-      // Switch to tickets tab
       setActiveTab('tickets');
-      
       alert('Ticket opprettet! Du kan nå se den i "My Tickets" fanen.');
     } catch (error) {
       console.error('Error creating ticket:', error);
@@ -643,66 +534,29 @@ const TicketSystem = ({ showButton = true }) => {
     }
   };
 
-  // Send message in ticket chat
-  const handleSendMessage = async () => {
-    if (!chatMessage.trim() || !selectedTicket) return;
-
-    setLoading(true);
-    try {
-      const messageData = {
-        text: chatMessage,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-        userId: currentUserId
-      };
-
-      // Update ticket with new message
-      const ticketRef = doc(db, 'tickets', selectedTicket.id);
-      const updatedMessages = [...(selectedTicket.messages || []), messageData];
-
-      await updateDoc(ticketRef, {
-        messages: updatedMessages,
-        updatedAt: serverTimestamp(),
-        status: 'in-progress'
-      });
-
-      // Update local state
-      setSelectedTicket({
-        ...selectedTicket,
-        messages: updatedMessages
-      });
-
-      setChatMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Format timestamp
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString();
   };
 
-  // Subscribe to selected ticket for real-time updates to messages
-  useEffect(() => {
-    if (!selectedTicket?.id) return;
-    const unsub = onSnapshot(doc(db, 'tickets', selectedTicket.id), (snap) => {
-      if (snap.exists()) {
-        setSelectedTicket({ id: snap.id, ...snap.data() });
-      }
-    });
-    return () => unsub();
-  }, [selectedTicket?.id]);
+  const openReplyWindow = (ticket) => {
+    setSelectedTicket(ticket);
+    setReplyWindowOpen(true);
+    // Lukk panel for å gi plass til reply-vinduet
+    setIsOpen(false);
+    // Marker ticket som “in-progress” om den er åpen
+    if (ticket.status === 'open') {
+      const ticketRef = doc(db, 'tickets', ticket.id);
+      updateDoc(ticketRef, { status: 'in-progress', updatedAt: serverTimestamp() }).catch(() => {});
+    }
+  };
+
+  const closeReplyWindow = () => {
+    setReplyWindowOpen(false);
+    setSelectedTicket(null);
+    setIsOpen(true);
+  };
 
   return (
     <>
@@ -740,223 +594,173 @@ const TicketSystem = ({ showButton = true }) => {
               </HeaderActions>
             </Header>
 
-            {!selectedTicket ? (
-              <>
-                <TabNav>
-                  <TabButton
-                    active={activeTab === 'tickets'}
-                    onClick={() => setActiveTab('tickets')}
-                  >
-                    <FiMessageSquare /> My Tickets
-                  </TabButton>
-                  <TabButton
-                    active={activeTab === 'create'}
-                    onClick={() => setActiveTab('create')}
-                  >
-                    <FiEdit3 /> New Ticket
-                  </TabButton>
-                </TabNav>
+            <TabNav>
+              <TabButton
+                active={activeTab === 'tickets'}
+                onClick={() => setActiveTab('tickets')}
+              >
+                <FiMessageSquare /> My Tickets
+              </TabButton>
+              <TabButton
+                active={activeTab === 'create'}
+                onClick={() => setActiveTab('create')}
+              >
+                <FiEdit3 /> New Ticket
+              </TabButton>
+            </TabNav>
 
-                <Content>
-                  {activeTab === 'tickets' ? (
-                    <TicketList>
-                      {tickets.length > 0 ? (
-                        tickets.map(ticket => (
-                          <TicketCard
-                            key={ticket.id}
-                            onClick={() => setSelectedTicket(ticket)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <TicketHeader>
-                              <div>
-                                <TicketTitle>{ticket.title}</TicketTitle>
-                                <TicketMeta>
-                                  <FiClock />
-                                  {formatDate(ticket.createdAt)}
-                                </TicketMeta>
-                              </div>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <StatusBadge status={ticket.status}>
-                                  {ticket.status}
-                                </StatusBadge>
-                                <PriorityBadge priority={ticket.priority}>
-                                  {ticket.priority}
-                                </PriorityBadge>
-                              </div>
-                            </TicketHeader>
-                            <TicketDescription>
-                              {ticket.description.substring(0, 100)}...
-                            </TicketDescription>
-                          </TicketCard>
-                        ))
-                      ) : (
-                        <div style={{
-                          textAlign: 'center',
-                          padding: '40px',
-                          color: 'rgba(255,255,255,0.5)'
-                        }}>
-                          <BsTicketPerforated size={48} style={{ marginBottom: '20px' }} />
-                          <p>Ingen tickets ennå</p>
-                          <p style={{ fontSize: '14px', marginTop: '10px' }}>
-                            Opprett en ticket for å få support
-                          </p>
-                          <p style={{ fontSize: '12px', marginTop: '20px', color: 'rgba(255,255,255,0.3)' }}>
-                            Debug: User ID = {currentUserId}
-                          </p>
-                        </div>
-                      )}
-                    </TicketList>
-                  ) : (
-                    <CreateForm onSubmit={handleCreateTicket}>
-                      <FormGroup>
-                        <Label>Title</Label>
-                        <Input
-                          type="text"
-                          placeholder="Brief description of your issue"
-                          value={formData.title}
-                          onChange={(e) => setFormData({...formData, title: e.target.value})}
-                          required
-                        />
-                      </FormGroup>
-
-                      <FormGroup>
-                        <Label>Category</Label>
-                        <Select
-                          value={formData.category}
-                          onChange={(e) => setFormData({...formData, category: e.target.value})}
-                        >
-                          <option value="general">General</option>
-                          <option value="technical">Technical</option>
-                          <option value="billing">Billing</option>
-                          <option value="options">Options</option>
-                          <option value="bug">Bug Report</option>
-                        </Select>
-                      </FormGroup>
-
-                      <FormGroup>
-                        <Label>Priority</Label>
-                        <Select
-                          value={formData.priority}
-                          onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                        >
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                          <option value="urgent">Urgent</option>
-                        </Select>
-                      </FormGroup>
-
-                      <FormGroup>
-                        <Label>Description</Label>
-                        <TextArea
-                          placeholder="Describe your issue in detail..."
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          required
-                        />
-                      </FormGroup>
-
-                      <SubmitButton
-                        type="submit"
-                        disabled={loading}
+            <Content>
+              {activeTab === 'tickets' ? (
+                <TicketList>
+                  {tickets.length > 0 ? (
+                    tickets.map(ticket => (
+                      <TicketCard
+                        key={ticket.id}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        {loading ? (
-                          <>
-                            <FiRefreshCw className="spin" /> Creating...
-                          </>
-                        ) : (
-                          <>
-                            <FiSend /> Create Ticket
-                          </>
-                        )}
-                      </SubmitButton>
-                    </CreateForm>
+                        <TicketHeader>
+                          <TicketTitle>{ticket.title}</TicketTitle>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <StatusBadge status={ticket.status}>
+                              {ticket.status}
+                            </StatusBadge>
+                            <PriorityBadge priority={ticket.priority}>
+                              {ticket.priority}
+                            </PriorityBadge>
+                          </div>
+                        </TicketHeader>
+                        <TicketDescription>
+                          {ticket.description.substring(0, 100)}{ticket.description.length > 100 ? '...' : ''}
+                        </TicketDescription>
+                        <TicketMeta>
+                          <span><FiClock /> {formatDate(ticket.createdAt)}</span>
+                          <span><FiMessageCircle /> {ticket.messages?.length || 0} messages</span>
+                        </TicketMeta>
+                        <ViewButton 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openReplyWindow(ticket);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            color: '#818cf8',
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            width: '100%',
+                            marginTop: '12px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          <FiMessageCircle size={14} />
+                          Open Reply Window
+                        </ViewButton>
+                      </TicketCard>
+                    ))
+                  ) : (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '40px',
+                      color: 'rgba(255,255,255,0.5)'
+                    }}>
+                      <BsTicketPerforated size={48} style={{ marginBottom: '20px' }} />
+                      <p>Ingen tickets ennå</p>
+                      <p style={{ fontSize: '14px', marginTop: '10px' }}>
+                        Opprett en ticket for å få support
+                      </p>
+                      <p style={{ fontSize: '12px', marginTop: '20px', color: 'rgba(255,255,255,0.3)' }}>
+                        Debug: User ID = {currentUserId}
+                      </p>
+                    </div>
                   )}
-                </Content>
-              </>
-            ) : (
-              <ChatContainer>
-                <Header>
-                  <HeaderTitle>
-                    <button
-                      onClick={() => setSelectedTicket(null)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6366f1',
-                        cursor: 'pointer',
-                        marginRight: '10px'
-                      }}
+                </TicketList>
+              ) : (
+                <CreateForm onSubmit={handleCreateTicket}>
+                  <FormGroup>
+                    <Label>Title</Label>
+                    <Input
+                      type="text"
+                      placeholder="Brief description of your issue"
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      required
+                    />
+                  </FormGroup>
+
+                  <FormGroup>
+                    <Label>Category</Label>
+                    <Select
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
                     >
-                      ←
-                    </button>
-                    {selectedTicket.title}
-                  </HeaderTitle>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <StatusBadge status={selectedTicket.status}>
-                      {selectedTicket.status}
-                    </StatusBadge>
-                  </div>
-                </Header>
+                      <option value="general">General</option>
+                      <option value="technical">Technical</option>
+                      <option value="billing">Billing</option>
+                      <option value="options">Options</option>
+                      <option value="bug">Bug Report</option>
+                    </Select>
+                  </FormGroup>
 
-                <MessagesArea>
-                  <Message>
-                    <MessageAvatar>U</MessageAvatar>
-                    <MessageContent>
-                      <MessageBubble>
-                        {selectedTicket.description}
-                      </MessageBubble>
-                      <MessageTime>{formatTime(selectedTicket.createdAt)}</MessageTime>
-                    </MessageContent>
-                  </Message>
+                  <FormGroup>
+                    <Label>Priority</Label>
+                    <Select
+                      value={formData.priority}
+                      onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </Select>
+                  </FormGroup>
 
-                  {selectedTicket.messages?.map((msg, index) => (
-                    <Message key={index} isUser={msg.sender === 'user'}>
-                      <MessageAvatar isUser={msg.sender === 'user'}>
-                        {msg.sender === 'user' ? 'U' : 'A'}
-                      </MessageAvatar>
-                      <MessageContent>
-                        <MessageBubble isUser={msg.sender === 'user'}>
-                          {msg.text}
-                        </MessageBubble>
-                        <MessageTime isUser={msg.sender === 'user'}>
-                          {formatTime(msg.timestamp)}
-                        </MessageTime>
-                      </MessageContent>
-                    </Message>
-                  ))}
-                </MessagesArea>
+                  <FormGroup>
+                    <Label>Description</Label>
+                    <TextArea
+                      placeholder="Describe your issue in detail..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      required
+                    />
+                  </FormGroup>
 
-                <ChatInput>
-                  <ChatTextInput
-                    type="text"
-                    placeholder="Type your message..."
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <SendButton
-                    onClick={handleSendMessage}
-                    disabled={loading || !chatMessage.trim()}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
+                  <SubmitButton
+                    type="submit"
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <FiSend />
-                  </SendButton>
-                </ChatInput>
-              </ChatContainer>
-            )}
+                    {loading ? (
+                      <>
+                        <FiRefreshCw className="spin" /> Creating...
+                      </>
+                    ) : (
+                      <>
+                        <FiSend /> Create Ticket
+                      </>
+                    )}
+                  </SubmitButton>
+                </CreateForm>
+              )}
+            </Content>
           </TicketWindow>
         )}
       </AnimatePresence>
+
+      {/* Svarvindu i egen overlay */}
+      {replyWindowOpen && selectedTicket && (
+        <TicketReplyWindow
+          ticket={selectedTicket}
+          onClose={closeReplyWindow}
+        />
+      )}
     </>
   );
 };
