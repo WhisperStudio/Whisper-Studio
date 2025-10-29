@@ -38,7 +38,7 @@ import {
   FiImage,
   FiFile
 } from 'react-icons/fi';
-import './AdminTeamChat.css';
+import './Styled_Component/AdminTeamChat.css';
 
 const FILTER_OPTIONS = [
   { value: 'all', label: 'Alle meldinger' },

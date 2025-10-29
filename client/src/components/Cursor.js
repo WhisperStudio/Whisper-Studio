@@ -14,7 +14,7 @@ const RING_BLUE_GLOW = "rgba(59,180,255,.55)";
 
 const Ring = styled.div`
   position: fixed;
-  z-index: 8000;
+  z-index: 100000; /* Ensure custom cursor is above chat container (9999) */
   width: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
   height: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
   border-radius: 50%;

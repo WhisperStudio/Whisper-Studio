@@ -22,6 +22,11 @@ const BotContainer = styled.div`
   border: 1px solid #003366;
   box-shadow: 0 0 20px rgba(0,85,170,0.3);
   overflow: hidden;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30" fill="%2300ddff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>'), auto;
+  
+  * {
+    cursor: inherit;
+  }
 `;
 
 const ChatArea = styled.div`

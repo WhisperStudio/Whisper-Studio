@@ -114,7 +114,8 @@ const MessageItem = styled.div`
 `;
 
 const AdminTextArea = styled.textarea`
-  width: 100%;
+  width: 50%;
+  max-width: 80%;
   padding: 12px;
   margin-bottom: 6px;
   border-radius: 10px;
