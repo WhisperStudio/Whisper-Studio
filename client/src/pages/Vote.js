@@ -22,13 +22,20 @@ import Vote_E from '../images/Vote_E.png';
 // Rekkefølge på skjerm: V . O . T . E
 // Først inn: O og T. Deretter: V og E. Dottene etter hver sin bokstav.
 const PLAN = [
-  { type: 'img', key: 'V', src: Vote_V, h: '12rem',  delay: 0.60 },
-  { type: 'dot', key: 'dot1',           delay: 0.78 },
-  { type: 'img', key: 'O', src: Vote_O, h: '9.5rem', delay: 0.00 },
-  { type: 'dot', key: 'dot2',           delay: 0.90 },
-  { type: 'img', key: 'T', src: Vote_T, h: '11rem',  delay: 0.00 },
-  { type: 'dot', key: 'dot3',           delay: 1.02 },
-  { type: 'img', key: 'E', src: Vote_E, h: '10.5rem',delay: 0.60 },
+  // V and its dot
+  { type: 'img', key: 'V', src: Vote_V, h: '12rem', delay: 2.0, style: { marginRight: '-1.5rem', position: 'relative', top: '0.5rem' } },
+  { type: 'dot', key: 'dot1', delay: 0.5 },
+  
+  // O and its dot
+  { type: 'img', key: 'O', src: Vote_O, h: '11rem', delay: 3.0 },
+  { type: 'dot', key: 'dot2', delay: 1.0 },
+  
+  // T and its dot
+  { type: 'img', key: 'T', src: Vote_T, h: '10.2rem', delay: 4.0 },
+  { type: 'dot', key: 'dot3', delay: 1.5 },
+  
+  // E (no dot after E)
+  { type: 'img', key: 'E', src: Vote_E, h: '13rem', delay: 5.0, style: { marginTop: '1.2rem', position: 'relative', top: '1.2rem' } },
 ];
 
 export default function VotePage() {
@@ -124,7 +131,10 @@ export default function VotePage() {
                         className="letter-img"
                         src={item.src}
                         alt={item.key}
-                        style={{ height: item.h }}
+                        style={{ 
+                          height: item.h,
+                          ...(item.style || {}) 
+                        }}
                       />
                     </span>
                   );
