@@ -159,40 +159,73 @@ const ContentContainer = styled.div`
 const TitleContainer = styled.div`
   display: flex;
   align-items: flex-end;
-  gap: clamp(2px, 0.8vw, 8px);
+  justify-content: flex-start;
+  gap: 0;
   opacity: ${p => p.$opacity};
   transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   animation: ${heroIn} 1000ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
   filter: drop-shadow(0 8px 30px rgba(0,0,0,0.55));
+  width: 100%;
+  padding: 0;
+  padding-left: 0;
+  margin-left: 0;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  position: relative;
+  left: -90px;
+  padding-right: 50px;
+  width: calc(100% + 90px);
 
   @media (max-width: 768px) {
-    align-self: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 95%;
-    gap: clamp(2px, 1.5vw, 6px);
-    flex-wrap: nowrap;
-    overflow: visible;
-  }
-`;
+    left: -45px;
+    padding-right: 30px;
+    width: calc(100% + 45px);
+  }`;
 
 const TitleLetter = styled.img`
-  --letter-size: clamp(80px, 16vw, 160px);
-  width: ${p => `calc(var(--letter-size) * ${p.$scale ?? 1})`};
-  height: auto;
+  --letter-size: 120px;
+  width: var(--letter-size);
+  height: var(--letter-size);
   object-fit: contain;
+  object-position: center;
   pointer-events: none;
   user-select: none;
-  margin-left: -35px;
-  margin-right: -35px;
+  flex: 0 0 auto;
+  margin: 0 5px;
+  
+  ${props => props.$letter === 'V' && `
+    --letter-size: 160px;
+    margin-right: -10px;
+  `}
+  
+  ${props => props.$letter === 'E' && `
+    --letter-size: 163px;
+    margin-left: -5px;
+  `}
+  
+  ${props => props.$letter === 'O' && `
+    --letter-size: 142px;
+    margin-bottom: -5px;
+  `}
   
   @media (max-width: 768px) {
-    --letter-size: clamp(45px, 13vw, 70px);
-    margin-left: -5px;
-    margin-right: -5px;
-    flex-shrink: 1;
-    max-width: 22vw;
+    --letter-size: 70px;
+    
+    ${props => props.$letter === 'V' && `
+      --letter-size: 90px;
+      margin-right: -5px;
+    `}
+    
+    ${props => props.$letter === 'E' && `
+      --letter-size: 92px;
+      margin-left: -3px;
+    `}
+    
+    ${props => props.$letter === 'O' && `
+      --letter-size: 80px;
+      margin-bottom: -3px;
+    `}
   }
 `;
 
@@ -626,13 +659,13 @@ function App() {
             $shift={heroShift}
             $scale={heroScale}
           >
-            <TitleLetter src={voteV} alt="V" style={{ marginBottom: '-20px', marginRight: '-60px' }}/>
+            <TitleLetter src={voteV} alt="V" $letter="V" style={{ marginBottom: '-20px' }}/>
             <TitleDot />
-            <TitleLetter src={voteO} alt="O" style={{ marginBottom: '-10px' }}/>
+            <TitleLetter src={voteO} alt="O" $letter="O" style={{ marginBottom: '-10px' }}/>
             <TitleDot />
             <TitleLetter src={voteT} alt="T" />
             <TitleDot />
-            <TitleLetter src={voteE} alt="E" style={{ marginBottom: '-18px' }}/>
+            <TitleLetter src={voteE} alt="E" $letter="E" style={{ marginBottom: '-18px' }}/>
           </TitleContainer>
 
           <ButtonContainer
