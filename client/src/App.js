@@ -19,7 +19,7 @@ import BugReportPage from './pages/BugReportPage';
 
 // NEW: Web development promo + estimator page
 // Make sure this file exists, e.g. src/pages/WebDevPromoPage.jsx
-import WebDevPromoPage from './pages/WebDevPromoPage';
+import WebDevPromoPage from './pages/Website/WebDevPromoPage';
 
 // Components
 import Header from './components/header';

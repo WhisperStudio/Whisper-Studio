@@ -16,14 +16,13 @@ import {
   collectionGroup
 } from '../firebase';
 import { FiSend, FiSmile, FiX, FiMoon, FiZap, FiSun, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
-import { BsTranslate, BsChatDots, BsTicketPerforated } from 'react-icons/bs';
+import { BsChatDots, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
 import TicketSystem from './TicketSystem';
-import { generateAIResponse } from '../services/aiService';
 import { createPolkadotAvatar } from './PolkadotAvatar';
 
-// ⬇️ Ny import med språk/intent og forhåndssvar
-import { detectLang, getIntent, replyFor } from './ChatBot_Promts';
+// Import Python bot client
+import { sendToBot } from "./ChatBot_Promts";
 
 /* ===================== THEME ===================== */
 const themes = {
@@ -427,27 +426,11 @@ const EnhancedChatBot = () => {
   const maintenanceRef = useRef(false);
   const headerAvatarRef = useRef(null);
   const headerAvatarApiRef = useRef(null);
+  const welcomeRequestedRef = useRef(false);
 
   const currentTheme = themes[theme];
 
-  /* ---------- Simple translations for UI chrome ---------- */
-  const translations = {
-    en: {
-      title: 'Vintra AI Assistant',
-      status: 'Online',
-      placeholder: 'Type your message...',
-      welcome: '👋 Welcome to Vintra! I\'m your AI assistant. How can I help you today?',
-      error: 'Sorry, something went wrong. Please try again.',
-    },
-    no: {
-      title: 'Vintra AI Assistent',
-      status: 'Pålogget',
-      placeholder: 'Skriv din melding...',
-      welcome: '👋 Velkommen til Vintra! Jeg er din AI-assistent. Hvordan kan jeg hjelpe deg i dag?',
-      error: 'Beklager, noe gikk galt. Vennligst prøv igjen.',
-    }
-  };
-  const t = translations[language] || translations.en;
+  // UI chrome uses static labels; all bot text comes from Python backend
 
   /* ===================== INIT & SUBSCRIPTIONS ===================== */
   useEffect(() => {
@@ -525,12 +508,28 @@ const EnhancedChatBot = () => {
       });
       setMessages(list);
 
-      if (list.length === 0 && isOpen) {
-        addDoc(msgsRef, {
-          text: t.welcome,
-          sender: 'bot',
-          timestamp: serverTimestamp(),
-        }).catch(err => console.error('Error adding welcome message:', err));
+      // Request welcome from Python bot once when chat opens and no messages exist
+      if (list.length === 0 && isOpen && !welcomeRequestedRef.current) {
+        welcomeRequestedRef.current = true;
+        const greetInput = 'hello';
+        (async () => {
+          try {
+            const data = await sendToBot(greetInput);
+            if (data?.lang) {
+              setLanguage(data.lang);
+              localStorage.setItem('chatLanguage', data.lang);
+            }
+            if (data?.reply) {
+              await addDoc(msgsRef, {
+                text: data.reply,
+                sender: 'bot',
+                timestamp: serverTimestamp(),
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching welcome from Python bot:', err);
+          }
+        })();
       }
     });
 
@@ -659,10 +658,6 @@ const EnhancedChatBot = () => {
     if (!text || !userId) return;
     if (maintenanceRef.current && !takenOverRef.current) return;
 
-    // Auto-set UI language to user's message language
-    const detected = detectLang(text);
-    setLanguage(detected);
-    localStorage.setItem('chatLanguage', detected);
 
     setInput('');
     setIsTyping(true);
@@ -679,7 +674,7 @@ const EnhancedChatBot = () => {
         const eta = await estimateWaitMinutes();
         try {
           await addDoc(collection(db, 'chats', userId, 'messages'), {
-            text: detected === 'no'
+            text: language === 'no'
               ? `⚠️ Botten er under arbeid. En rådgiver kontakter deg snart. Forventet ventetid: ${eta} min.`
               : `⚠️ Our bot is under construction. An advisor will contact you shortly. Estimated wait: ${eta} min.`,
             sender: 'bot',
@@ -695,35 +690,31 @@ const EnhancedChatBot = () => {
 
       if (takenOverRef.current) { setIsTyping(false); return; }
 
-      // ---- INTENT HANDLING (canned, multilingual, typo-tolerant) ----
-      const intent = getIntent(text, awaitingTicketConfirm);
-      const canned = replyFor(intent, detected, setAwaitingTicketConfirm, setActiveView);
-      if (canned) {
-        await onBotReply(canned);
-        setIsTyping(false);
-        return;
-      }
-
-      // ---- FALLBACK TO AI SERVICE ----
-      setTimeout(async () => {
-        if (takenOverRef.current || maintenanceRef.current) { setIsTyping(false); return; }
-        try {
-          const reply = await generateAIResponse(text, userId);
-          await onBotReply(reply);
-        } catch (error) {
-          console.error('Error generating AI response:', error);
-          const fallback = detected === 'no'
-            ? "Interessant! Fortell gjerne litt mer, så skal jeg prøve å hjelpe."
-            : "That's interesting! Tell me a bit more and I'll try to help.";
-          await onBotReply(fallback);
+      // ---- CALL PYTHON BOT BACKEND ----
+      try {
+        const data = await sendToBot(text);
+        if (data?.lang) {
+          setLanguage(data.lang);
+          localStorage.setItem('chatLanguage', data.lang);
+        }
+        setAwaitingTicketConfirm(!!data?.awaiting_ticket_confirm);
+        if (data?.active_view) setActiveView(data.active_view);
+        if (data?.reply) {
+          await onBotReply(data.reply);
         }
         setIsTyping(false);
-      }, 600);
+        return;
+      } catch (err) {
+        console.error('Python bot call failed:', err);
+      }
+
+      // No local fallback; Python backend is the single source of truth
+      setIsTyping(false);
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
       setMessages(prev => [...prev, {
-        id: `err_${Date.now()}`, text: t.error, sender: 'bot', timestamp: new Date(),
+        id: `err_${Date.now()}`, text: 'Sorry, something went wrong. Please try again.', sender: 'bot', timestamp: new Date(),
       }]);
     }
   };
@@ -786,24 +777,19 @@ const EnhancedChatBot = () => {
                     <div ref={headerAvatarRef} />
                   </Avatar>
                   <HeaderInfo>
-                    <HeaderTitle>{t.title}</HeaderTitle>
+                    <HeaderTitle>Vintra AI Assistant</HeaderTitle>
                     <HeaderStatus>
                       {takenOver
-                        ? (language === 'no' ? 'Supportmedarbeider aktiv' : 'Support Agent Active')
+                        ? 'Support Agent Active'
                         : (maintenance
-                            ? (language === 'no'
-                                ? `Vedlikehold pågår${expectedWait ? ` • Forventet ventetid ${expectedWait} min` : ''}`
-                                : `Under Maintenance${expectedWait ? ` • ETA ${expectedWait} min` : ''}`)
-                            : t.status)}
+                            ? `Under Maintenance${expectedWait ? ` • ETA ${expectedWait} min` : ''}`
+                            : 'Online')}
                     </HeaderStatus>
                   </HeaderInfo>
                 </HeaderLeft>
                 <HeaderActions>
                   <HeaderButton onClick={cycleTheme}>
                     {theme === 'light' ? <FiMoon /> : theme === 'dark' ? <FiZap /> : <FiSun />}
-                  </HeaderButton>
-                  <HeaderButton onClick={() => setLanguage(language === 'en' ? 'no' : 'en')}>
-                    <BsTranslate />
                   </HeaderButton>
                   <HeaderButton onClick={toggleChat}><FiX /></HeaderButton>
                 </HeaderActions>
@@ -892,10 +878,8 @@ const EnhancedChatBot = () => {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={(maintenance && !takenOver)
-                          ? (language === 'no'
-                              ? `Vedlikehold – vennligst vent${expectedWait ? ` ~${expectedWait} min` : ''}`
-                              : `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`)
-                          : t.placeholder}
+                          ? `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`
+                          : 'Type your message...'}
                         disabled={isTyping || (maintenance && !takenOver)}
                       />
                       <InputActions>

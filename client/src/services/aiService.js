@@ -1,31 +1,8 @@
 import axios from 'axios';
 
-// AI Service Configuration
+// AI Service Configuration (kept minimal; backend handles prompts)
 const AI_CONFIG = {
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY, // Fixed to match .env file
-    model: 'gpt-4',
-    maxTokens: 500,
-    temperature: 0.7,
-  },
-  fallbackResponses: {
-    greeting: [
-      "Hello! I'm your AI assistant. How can I help you today?",
-      "Hi there! What can I do for you?",
-      "Welcome! I'm here to assist you.",
-    ],
-    error: [
-      "I apologize, but I'm having trouble understanding. Could you rephrase that?",
-      "Sorry, I couldn't process that request. Please try again.",
-      "There seems to be an issue. Let me try to help you differently.",
-    ],
-    thinking: [
-      "Let me think about that...",
-      "Processing your request...",
-      "Analyzing your question...",
-    ],
-  },
-  contextWindow: 10, // Number of previous messages to include for context
+  contextWindow: 10,
 };
 
 // Message context manager
@@ -60,162 +37,38 @@ const contextManager = new ContextManager();
 
 // OpenAI API Integration
 export const generateAIResponse = async (message, userId, options = {}) => {
+  // Route to Python bot backend instead of local prompts/OpenAI
   try {
-    // Add message to context
-    contextManager.addMessage(userId, { role: 'user', content: message });
-
-    // Get conversation context
-    const context = contextManager.getContext(userId);
-
-    // If no API key, use intelligent fallback
-    if (!AI_CONFIG.openai.apiKey) {
-      const response = generateIntelligentFallback(message, context);
-      contextManager.addMessage(userId, { role: 'assistant', content: response });
-      return response;
-    }
-
-    // Call OpenAI API
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: options.model || AI_CONFIG.openai.model,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a helpful AI assistant for VintraStudio. You help users with questions about the company and the VOTE game.
-
-About VOTE:
-- VOTE is a story-driven open-world game inspired by Nordic nature and culture
-- Features beautiful landscapes, engaging gameplay, and rich narrative
-- Expected to cost around $20 when released
-- Currently in active development with regular updates
-
-About VintraStudio:
-- Innovative game development company focused on creating immersive experiences
-- Passionate team working on bringing unique gaming experiences to life
-- Flagship project is VOTE, showcasing dedication to quality and creativity
-
-Be friendly, professional, and concise. Always provide specific information when available, and offer to help with related topics.`
-          },
-          ...context
-        ],
-        max_tokens: options.maxTokens || AI_CONFIG.openai.maxTokens,
-        temperature: options.temperature || AI_CONFIG.openai.temperature,
-        stream: options.stream || false,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${AI_CONFIG.openai.apiKey}`,
-          'Content-Type': 'application/json',
-        },
+    const sessionId = userId || (() => {
+      if (typeof window === 'undefined') return 'server-test';
+      let id = localStorage.getItem('voteSessionId');
+      if (!id) {
+        id = (crypto.randomUUID?.() || String(Date.now()));
+        localStorage.setItem('voteSessionId', id);
       }
+      return id;
+    })();
+
+    const res = await axios.post(
+      'http://localhost:8000/api/chat',
+      { session_id: sessionId, text: message },
+      { headers: { 'Content-Type': 'application/json' } }
     );
-
-    const aiResponse = response.data.choices[0].message.content;
-    contextManager.addMessage(userId, { role: 'assistant', content: aiResponse });
-    
-    return aiResponse;
+    const data = res.data || {};
+    const reply = data.reply || '';
+    // maintain minimal local context if needed
+    contextManager.addMessage(sessionId, { role: 'user', content: message });
+    contextManager.addMessage(sessionId, { role: 'assistant', content: reply });
+    return reply;
   } catch (error) {
-    console.error('AI Service Error:', error);
-
-    // Use intelligent fallback on error
-    const fallbackResponse = generateIntelligentFallback(message, contextManager.getContext(userId));
-    contextManager.addMessage(userId, { role: 'assistant', content: fallbackResponse });
-
-    return fallbackResponse;
+    console.error('AI Service Error (Python backend):', error);
+    throw error;
   }
 };
 
-// Intelligent fallback system with pattern matching
-const generateIntelligentFallback = (message, context) => {
-  const msg = message.toLowerCase();
-  
-  // Greeting patterns
-  if (/^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening))/.test(msg)) {
-    return getRandomResponse(AI_CONFIG.fallbackResponses.greeting);
-  }
-  
-  // Questions about VOTE game
-  if (msg.includes('vote') || msg.includes('game')) {
-    const gameResponses = [
-      "VOTE is our exciting story-driven open-world game inspired by Nordic nature and culture. It features stunning landscapes, engaging gameplay, and a rich narrative.",
-      "The VOTE game is currently in development. We're creating beautiful maps, characters, and an immersive story. Check our Art Gallery to see some previews!",
-      "VOTE combines exploration, storytelling, and Nordic mythology in a unique gaming experience. Would you like to know more about specific features?",
-    ];
-    return getRandomResponse(gameResponses);
-  }
-  
-  // Questions about VintraStudio
-  if (msg.includes('vintra') || msg.includes('studio') || msg.includes('company')) {
-    const studioResponses = [
-      "VintraStudio is an innovative game development company focused on creating immersive experiences. Our main project is VOTE, a Nordic-inspired open-world game.",
-      "We're a passionate team at VintraStudio working on bringing unique gaming experiences to life. Our flagship project VOTE showcases our dedication to quality and creativity.",
-      "VintraStudio specializes in game development with a focus on storytelling and beautiful environments. How can I help you learn more about us?",
-    ];
-    return getRandomResponse(studioResponses);
-  }
-  
-  // Help requests
-  if (msg.includes('help') || msg.includes('support') || msg.includes('assist')) {
-    return "I'm here to help! You can ask me about:\n• VintraStudio and our team\n• The VOTE game and its features\n• Our development progress\n• General inquiries\n\nWhat would you like to know?";
-  }
-  
-  // Features and gameplay
-  if (msg.includes('feature') || msg.includes('gameplay') || msg.includes('play')) {
-    const featureResponses = [
-      "VOTE features open-world exploration, character customization, quest systems, and a rich story inspired by Nordic mythology.",
-      "The gameplay includes exploration of vast Nordic landscapes, character progression, crafting systems, and engaging combat mechanics.",
-      "Players can expect immersive storytelling, beautiful environments, dynamic weather, and meaningful choices that affect the game world.",
-    ];
-    return getRandomResponse(featureResponses);
-  }
-  
-  // Art and graphics
-  if (msg.includes('art') || msg.includes('graphic') || msg.includes('visual')) {
-    return "Our Art Gallery showcases the stunning visuals of VOTE, including landscapes, creatures, and characters inspired by Nordic culture. The game features high-quality graphics with attention to detail in every environment.";
-  }
-  
-  // Release date
-  if (msg.includes('when') || msg.includes('release') || msg.includes('launch')) {
-    return "VOTE is currently in active development. We're working hard to create the best possible experience. Follow our updates for the latest development news and release information!";
-  }
-  
-  // Platform questions
-  if (msg.includes('platform') || msg.includes('pc') || msg.includes('console') || msg.includes('mobile')) {
-    return "We're initially focusing on PC development for VOTE to ensure the best possible experience. Platform availability will be announced as development progresses.";
-  }
-  
-  // Price questions
-  if (msg.includes('price') || msg.includes('cost') || msg.includes('buy') || msg.includes('purchase')) {
-    return "VOTE is expected to cost around $20 when it's released. This provides excellent value for the immersive gaming experience we're creating. Would you like to know more about the game's features or our development timeline?";
-  }
-  
-  // Community and social
-  if (msg.includes('community') || msg.includes('discord') || msg.includes('social')) {
-    return "Join our growing community to stay updated on VOTE's development! We regularly share progress updates, concept art, and engage with our players.";
-  }
-  
-  // Technical questions
-  if (msg.includes('requirement') || msg.includes('spec') || msg.includes('system')) {
-    return "System requirements for VOTE will be optimized to ensure a smooth experience across a range of hardware. Detailed specifications will be shared as we approach release.";
-  }
-  
-  // Analyze context for follow-up questions
-  if (context.length > 0) {
-    const lastUserMessage = context.filter(m => m.role === 'user').pop();
-    if (lastUserMessage && msg.includes('more') || msg.includes('else') || msg.includes('other')) {
-      return "I'd be happy to provide more information! Could you be more specific about what aspect you'd like to know more about?";
-    }
-  }
-  
-  // Default response with specific suggestions
-  return "I'd be happy to help you with information about VintraStudio and our VOTE game! You can ask me about:\n• VOTE gameplay and features\n• Game pricing and release information\n• VintraStudio and our development process\n• Art gallery and concept art\n• How to get updates on development\n\nWhat specific aspect interests you most?";
-};
+// Removed local intelligent fallback: all prompts should come from Python backend.
 
-// Get random response from array
-const getRandomResponse = (responses) => {
-  return responses[Math.floor(Math.random() * responses.length)];
-};
+// Removed getRandomResponse (no longer needed)
 
 // Sentiment analysis
 export const analyzeSentiment = (message) => {
