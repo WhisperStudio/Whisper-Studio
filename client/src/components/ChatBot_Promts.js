@@ -1,9 +1,5 @@
 // ChatBot_Promts.js
-const API_URL =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8000/api/chat"
-    : "https://api.vintrastudio.com/api/chat";
+const API_URL = "http://142.93.237.94:8001/api/chatbot";
 
 // Thin client: forwards user input to Python FastAPI and returns its response
 

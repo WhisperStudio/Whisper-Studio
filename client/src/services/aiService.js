@@ -50,7 +50,7 @@ export const generateAIResponse = async (message, userId, options = {}) => {
     })();
 
     const res = await axios.post(
-      'http://localhost:8000/api/chat',
+      'http://142.93.237.94:8001/api/chatbot',
       { session_id: sessionId, text: message },
       { headers: { 'Content-Type': 'application/json' } }
     );
