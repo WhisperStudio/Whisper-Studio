@@ -1,27 +1,18 @@
-# api.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from chatbot_core import handle_message, ChatState
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# CORS for frontend (React dev server)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://vintrastudio.com",
-        "https://www.vintrastudio.com",
-    ],
+    allow_origins=["*"],  # For development only, replace with your frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # enkel in-memory state pr. sessionId
 SESSIONS: dict[str, ChatState] = {}
 
@@ -43,3 +34,11 @@ def chat(req: ChatRequest):
     result, state = handle_message(req.text, state)
     SESSIONS[req.session_id] = state
     return ChatResponse(**result)
+
+@app.post("/api/chatbot", response_model=ChatResponse)
+def chat_compat(req: ChatRequest):
+    return chat(req)
+
+@app.post("/api/handler", response_model=ChatResponse)
+def chat_handler(req: ChatRequest):
+    return chat(req)
