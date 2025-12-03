@@ -49,11 +49,12 @@ export const generateAIResponse = async (message, userId, options = {}) => {
       return id;
     })();
 
-    const res = await axios.post(
-      'http://142.93.237.94:8001/api/chatbot',
-      { session_id: sessionId, text: message },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+      const res = await axios.post(
+    '/api/chat',                        // <–– hit vercel function
+    { session_id: sessionId, text: message },
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+
     const data = res.data || {};
     const reply = data.reply || '';
     // maintain minimal local context if needed
