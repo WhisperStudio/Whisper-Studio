@@ -1,4 +1,3 @@
 deep-translator
 scikit-learn
-spacy
-nb-core-news-sm
+
