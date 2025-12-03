@@ -29,6 +29,7 @@ except Exception:
     TfidfVectorizer = None
     LogisticRegression = None
 
+
 NLP = None
 
 
@@ -345,6 +346,7 @@ def fuzzy_intent_from_examples(text_no: str, min_score: float = 0.6) -> str | No
         return best_label
     return None
 
+
 ML_VECTORIZER = None
 ML_CLASSIFIER = None
 
@@ -425,6 +427,7 @@ def get_intent(text_no: str, state: ChatState) -> str:
     ):
         return "team_size"
 
+
       # 2) Eksempel-basert fuzzy intent etter de viktigste spesialreglene
     fuzzy_intent = fuzzy_intent_from_examples(t)
     if fuzzy_intent and not state.awaiting_ticket_confirm and fuzzy_intent != "off_topic":
@@ -436,6 +439,7 @@ def get_intent(text_no: str, state: ChatState) -> str:
         return ml_intent
 
     # 4) REGELBASERT
+
 
     # JA/NEI på ticket?
     if state.awaiting_ticket_confirm and fuzzy_includes(t, YES_WORDS, 1):

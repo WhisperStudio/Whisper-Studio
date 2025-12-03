@@ -1,3 +1,2 @@
 deep-translator
 scikit-learn
-
