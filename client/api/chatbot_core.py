@@ -29,14 +29,8 @@ except Exception:
     TfidfVectorizer = None
     LogisticRegression = None
 
-try:  # spaCy er valgfritt – brukes hvis tilgjengelig
-    import spacy
-    try:
-        NLP = spacy.load("nb_core_news_sm")
-    except Exception:
-        NLP = None
-except ImportError:
-    NLP = None
+
+NLP = None
 
 
 # ===================== TEKST-HJELPERE =====================
@@ -292,6 +286,66 @@ def ml_preprocess(text: str) -> str:
     tokens = [t.lemma_ for t in doc if not t.is_space and not t.is_punct]
     return " ".join(tokens)
 
+def fuzzy_token_match(tok: str, cand: str, max_dist: int = 2) -> bool:
+    """
+    Fuzzy match mellom to ord – tillater stavefeil basert på lengde.
+    """
+    tok = norm(tok)
+    cand = norm(cand)
+    if not tok or not cand:
+        return False
+    if tok == cand:
+        return True
+    allowed = min(max_dist, max(1, len(cand) // 3))
+    return levenshtein(tok, cand) <= allowed
+
+
+def phrase_match_score(text_tokens: list[str], pattern_tokens: list[str]) -> float:
+    """
+    Gir en score mellom 0 og 1 for hvor godt en tekst matcher en eksempel-setning.
+    1.0 = alle pattern-ord har en (fuzzy) match i teksten.
+    """
+    if not pattern_tokens:
+        return 0.0
+    matches = 0
+    for p_tok in pattern_tokens:
+        if any(fuzzy_token_match(t, p_tok) for t in text_tokens):
+            matches += 1
+    return matches / len(pattern_tokens)
+
+
+def fuzzy_intent_from_examples(text_no: str, min_score: float = 0.6) -> str | None:
+    """
+    Bruker ML_TRAIN_DATA som "eksempel-setninger" og finner hvilken intent
+    som best matcher teksten, med fuzzy token-match.
+    """
+    if not text_no:
+        return None
+
+    text_tokens = norm(text_no).split()
+    if not text_tokens:
+        return None
+
+    best_label = None
+    best_score = 0.0
+
+    for example, intent in ML_TRAIN_DATA:
+        # vi bruker ikke off_topic her – det håndteres av egne regler
+        if intent == "off_topic":
+            continue
+        pattern_tokens = norm(example).split()
+        if not pattern_tokens:
+            continue
+
+        score = phrase_match_score(text_tokens, pattern_tokens)
+        if score > best_score:
+            best_score = score
+            best_label = intent
+
+    if best_label and best_score >= min_score:
+        return best_label
+    return None
+
 
 ML_VECTORIZER = None
 ML_CLASSIFIER = None
@@ -373,20 +427,19 @@ def get_intent(text_no: str, state: ChatState) -> str:
     ):
         return "team_size"
 
-    # 2) ML etter de viktigste spesialreglene
-    ml_intent = ml_predict_intent(t)
-    if ml_intent:
-        # Spesialtilfelle: hvis vi venter på ticket-bekreftelse, overstyr JA/NEI
-        if state.awaiting_ticket_confirm:
-            if fuzzy_includes(t, YES_WORDS, 1):
-                return "confirm_ticket_yes"
-            if fuzzy_includes(t, NO_WORDS, 1):
-                return "confirm_ticket_no"
-        # Ellers stoler vi på ML-forslaget (men lar off_topic håndteres av regler)
-        if ml_intent != "off_topic":
-            return ml_intent
 
-    # 3) REGELBASERT
+      # 2) Eksempel-basert fuzzy intent etter de viktigste spesialreglene
+    fuzzy_intent = fuzzy_intent_from_examples(t)
+    if fuzzy_intent and not state.awaiting_ticket_confirm and fuzzy_intent != "off_topic":
+        return fuzzy_intent
+
+    # 3) ML-intent (scikit-learn) – brukes bare hvis modellen faktisk er trent
+    ml_intent = ml_predict_intent(t)
+    if ml_intent and not state.awaiting_ticket_confirm and ml_intent != "off_topic":
+        return ml_intent
+
+    # 4) REGELBASERT
+
 
     # JA/NEI på ticket?
     if state.awaiting_ticket_confirm and fuzzy_includes(t, YES_WORDS, 1):
