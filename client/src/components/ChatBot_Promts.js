@@ -1,5 +1,6 @@
 // ChatBot_Promts.js
-const API_URL = "http://142.93.237.94:8001/api/chatbot";
+// !!IKKE_I_BRUK!!  const API_URL = "http://142.93.237.94:8001/api/chatbot";
+const API_URL = "/api/chat";  
 
 // Thin client: forwards user input to Python FastAPI and returns its response
 
@@ -32,6 +33,5 @@ export const sendToBot = async (text) => {
   }
 
   const data = await res.json();
-  // data = { reply, lang, intent, awaiting_ticket_confirm, active_view, last_topic }
   return data;
 };
