@@ -1,3 +1,4 @@
+
 // src/pages/AdminPanel.js
 import React, { useEffect, useState, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
@@ -22,8 +23,9 @@ import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard
 import { 
   ServerStatus, DatabaseManager, SecurityCenter,
   UserManagement, SystemSettings, AdvancedAnalytics,
-  TicketsView 
+  TicketsView
 } from '../components/AdminComponents';
+import AISettings from '../components/AISetting';
 import { AdminLoadingScreen } from '../components/LoadingComponent';
 import TaskManagement from '../components/TaskManagement/TaskManagement';
 import PendingAccess from '../components/PendingAccess';
@@ -697,6 +699,9 @@ export default function AdminPanel() {
         { key: "teamChat", label: "Admin Team Chat", icon: <FiMessageCircle />, permission: 'teamChat' },
         { key: "tickets", label: "Support Tickets", icon: <FiFileText />, permission: 'tickets' }
       ]},
+      { section: "🤖 AI Configuration", items: [
+        { key: "ai", label: "AI Settings", icon: <BsRobot />, permission: 'aiBot' },
+      ]},
       { section: "📊 Statistics", items: [
         { key: "lineChart", label: "Analytics & Map", icon: <FiBarChart2 />, permission: 'analytics' },
         { key: "pieChart", label: "Pie Chart", icon: <FiPieChart />, permission: 'analytics' },
@@ -783,7 +788,8 @@ export default function AdminPanel() {
     bugDashboard: <BugDashboard />,
     adminManagement: <AdminSupportManagement />,
     userManagement: <OwnerUserManagement />,
-    settings: <SystemSettings />
+    settings: <SystemSettings />,
+    ai: <AISettings />
   };
 
   return (

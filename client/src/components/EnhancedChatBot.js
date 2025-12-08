@@ -15,11 +15,11 @@ import {
   updateDoc,
   collectionGroup
 } from '../firebase';
-import { FiSend, FiSmile, FiX, FiMoon, FiZap, FiSun, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
-import { BsChatDots, BsTicketPerforated } from 'react-icons/bs';
+import { FiSend, FiSmile, FiX, FiMoon, FiZap, FiSun, FiEdit3, FiClock, FiArrowLeft, FiUser, FiAlertTriangle } from 'react-icons/fi';
+import { BsChatDots, BsTicketPerforated, BsRobot } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
 import TicketSystem from './TicketSystem';
-import { createPolkadotAvatar } from './PolkadotAvatar';
+import GlassOrbAvatar from './GlassOrbAvatar';
 
 // Import Python bot client
 import { sendToBot } from "./ChatBot_Promts";
@@ -172,16 +172,22 @@ const ChatWindow = styled(motion.div)`
   }
 `;
 const Header = styled.div`
-  background: ${props => props.theme.gradient}; padding: 20px; display: flex; align-items: center; justify-content: space-between;
-  color: white; position: relative; overflow: hidden;
-  &::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-  }
+  background: ${props => props.theme.name === 'dark' ? '#0a0d1a' : '#0a0d1a'};
+  padding: 15px 20px 15px 90px; /* Increased left padding for avatar */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 90px; /* Ensure enough height for the avatar */
+  position: relative;
+  border-bottom: 1px solid ${props => props.theme.border};
 `;
 const TabNav = styled.div`
-  display: flex; padding: 10px 15px; gap: 8px; background: ${props => props.theme.surface};
+  display: flex;
   border-bottom: 1px solid ${props => props.theme.border};
+  padding: 0 20px;
+  background: ${props => props.theme.surface};
+  position: relative;
+  z-index: 10;
 `;
 const TabButton = styled.button`
   flex: 1; padding: 10px 16px;
@@ -220,7 +226,15 @@ const TicketStatusBadge = styled.span`
 `;
 const TicketCardDesc = styled.p` font-size: 13px; color: ${props => props.theme.textSecondary}; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; `;
 
-const HeaderLeft = styled.div` display: flex; align-items: center; gap: 12px; z-index: 1; `;
+const HeaderLeft = styled.div` 
+  display: flex; 
+  align-items: center; 
+  position: relative;
+  padding-left: 10px; /* Add padding to account for avatar width */
+  min-height: 80px; /* Ensure enough height for the avatar */
+  width: 100%;
+  z-index: 1; 
+`;
 const Avatar = styled.div`
   width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.3s ease;
   &::before {
@@ -234,11 +248,22 @@ const Avatar = styled.div`
     border: 2px solid rgba(99, 102, 241, 0.3); opacity: 0; transition: all 0.3s ease;
   }
   &:hover::after { opacity: 1; animation: ${pulse} 2s ease-in-out infinite; }
-  & > div { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; }
+  & > div { width: 100%; height: 100%; }
   @keyframes gradientShift { 0% {background-position: 0% 50%} 50% {background-position: 100% 50%} 100% {background-position: 0% 50%} }
 `;
-const HeaderInfo = styled.div` display: flex; flex-direction: column; `;
-const HeaderTitle = styled.h3` margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.5px; `;
+const HeaderInfo = styled.div` 
+  display: flex; 
+  flex-direction: column; 
+  width: 100%;
+`;
+const HeaderTitle = styled.h3` 
+  margin: 0; 
+  font-size: 16px; 
+  font-weight: 600; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
 const HeaderStatus = styled.span`
   font-size: 12px; opacity: 0.9; display: flex; align-items: center; gap: 5px;
   &::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: ${pulse} 2s infinite; }
@@ -253,11 +278,43 @@ const HeaderButton = styled.button`
 `;
 
 const MessagesContainer = styled.div`
-  flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: ${props => props.theme.surface}; scroll-behavior: smooth;
+  flex: 1; 
+  overflow-y: auto; 
+  padding: 20px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 15px; 
+  background: ${props => props.theme.surface}; 
+  scroll-behavior: smooth; 
+  position: relative;
+  
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: ${props => props.theme.border}; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb:hover { background: ${props => props.theme.textSecondary}; }
+  &::-webkit-scrollbar-thumb { 
+    background: ${props => props.theme.border}; 
+    border-radius: 3px; 
+  }
+  &::-webkit-scrollbar-thumb:hover { 
+    background: ${props => props.theme.textSecondary}; 
+  }
+  
+  ${props => props.$maintenance && css`
+    &::after {
+      content: '⚠️';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(2);
+      opacity: 0.3;
+      font-size: 60px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    & > * {
+      opacity: 0.5;
+    }
+  `}
 `;
 const MessageWrapper = styled(motion.div)`
   display: flex; align-items: flex-end; gap: 8px; ${props => props.$isUser && 'flex-direction: row-reverse;'}
@@ -348,53 +405,52 @@ const FormButton = styled(motion.button)`
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
-/* ===================== POLKADOT AVATAR (MESSAGE) ===================== */
-const MessageAvatarPolkadot = ({ messageId, sender, isTyping }) => {
-  const containerRef = useRef(null);
-  const apiRef = useRef(null);
-  const [isAnimating, setIsAnimating] = useState(false);
+const MaintenanceOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  color: #ffa500;
+  text-align: center;
+  padding: 20px;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 100px solid rgba(255, 165, 0, 0.2);
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: rotate 10s linear infinite;
+  }
+  
+  &::after {
+    content: '⚠️';
+    font-size: 48px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  
+  @keyframes rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+`;
 
-  useEffect(() => {
-    if (!containerRef.current || apiRef.current) return;
-    const config = {
-      size: 32, dots: 60, rings: 4, minRadius: 0, maxRadius: 13, dotSize: 3,
-      variant: 'free', baseHue: sender === 'admin' ? 280 : 210, spread: 0,
-      sat: 95, light: 55, alpha: 0.75, bgAlpha: 0.12, glowStrength: 12,
-      speedMin: 3.0, speedMax: 10.0, bobAmp: 2.0, bobSpeed: 1.8, state: 'idle', visible: true, physics: false
-    };
-    apiRef.current = createPolkadotAvatar(containerRef.current, config);
-    return () => { if (apiRef.current) { apiRef.current.destroy(); apiRef.current = null; } };
-  }, [sender]);
-
-  useEffect(() => {
-    if (!apiRef.current) return;
-    if (isTyping) {
-      setIsAnimating(true);
-      const dots = apiRef.current.root.querySelectorAll('.orb');
-      dots.forEach((orb, i) => {
-        const delay = i * 8;
-        setTimeout(() => {
-          orb.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-          orb.style.opacity = '0';
-          orb.style.transform = `scale(1.5) rotate(${Math.random() * 360}deg)`;
-        }, delay);
-      });
-    } else if (isAnimating) {
-      const dots = apiRef.current.root.querySelectorAll('.orb');
-      dots.forEach((orb, i) => {
-        const delay = i * 8;
-        setTimeout(() => {
-          orb.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-          orb.style.opacity = '1';
-          orb.style.transform = 'scale(1) rotate(0deg)';
-        }, delay);
-      });
-      setIsAnimating(false);
-    }
-  }, [isTyping, isAnimating]);
-
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
-};
+// ===================== AI AVATAR ===================== */
+// The AI_Avatar component is now imported from './AI_Avatar'
 
 /* ===================== COMPONENT ===================== */
 const EnhancedChatBot = () => {
@@ -410,14 +466,14 @@ const EnhancedChatBot = () => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [hasNotification] = useState(false);
+  const [maintenance, setMaintenance] = useState(false);
+  const [expectedWait, setExpectedWait] = useState(null);
   const [showTicketForm, setShowTicketForm] = useState(false); // kept for potential popup form usage
   const [ticketData, setTicketData] = useState({ title: '', description: '', category: 'general', priority: 'medium' });
   const [activeView, setActiveView] = useState('chat'); // 'chat', 'tickets', 'createTicket', 'viewTicket'
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketMessage, setTicketMessage] = useState('');
-  const [maintenance, setMaintenance] = useState(false);
-  const [expectedWait, setExpectedWait] = useState(null);
   const [awaitingTicketConfirm, setAwaitingTicketConfirm] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -425,7 +481,6 @@ const EnhancedChatBot = () => {
   const takenOverRef = useRef(false);
   const maintenanceRef = useRef(false);
   const headerAvatarRef = useRef(null);
-  const headerAvatarApiRef = useRef(null);
   const welcomeRequestedRef = useRef(false);
 
   const currentTheme = themes[theme];
@@ -447,36 +502,16 @@ const EnhancedChatBot = () => {
     setLanguage(savedLanguage);
   }, []);
 
-  // Header avatar
-  useEffect(() => {
-    if (!isOpen || !headerAvatarRef.current) return;
-    if (headerAvatarApiRef.current) return;
-    const timer = setTimeout(() => {
-      if (!headerAvatarRef.current) return;
-      headerAvatarApiRef.current = createPolkadotAvatar(headerAvatarRef.current, {
-        size: 32, dots: 80, rings: 5, minRadius: 0, maxRadius: 12, dotSize: 3.5,
-        variant: 'sphere', baseHue: 210, spread: 0, sat: 95, light: 55, alpha: 0.85,
-        bgAlpha: 0.15, glowStrength: 15, speedMin: 4.0, speedMax: 12.0, bobAmp: 1.5, bobSpeed: 2.0,
-        state: 'idle', visible: true, physics: true, gravity: 'none'
-      });
-    }, 100);
-    return () => {
-      clearTimeout(timer);
-      if (headerAvatarApiRef.current) { headerAvatarApiRef.current.destroy(); headerAvatarApiRef.current = null; }
-    };
-  }, [isOpen]);
+  // Header avatar state management for the AI_Avatar component
+  // Header avatar state management for the GlassOrbAvatar component
+  const [headerAvatarState, setHeaderAvatarState] = useState('idle');
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    if (!headerAvatarApiRef.current) return;
-    if (isTyping) headerAvatarApiRef.current.setState('typing');
-    else if (input.length > 0) headerAvatarApiRef.current.setState('listening');
-    else headerAvatarApiRef.current.setState('idle');
+    if (isTyping) setHeaderAvatarState('typing');
+    else if (input.length > 0) setHeaderAvatarState('listening');
+    else setHeaderAvatarState('idle');
   }, [isTyping, input]);
-
-  useEffect(() => {
-    if (!headerAvatarApiRef.current) return;
-    headerAvatarApiRef.current.update({ gravity: isOpen ? 'down' : 'up' });
-  }, [isOpen]);
 
   useEffect(() => {
     if (!userId) return;
@@ -551,6 +586,21 @@ const EnhancedChatBot = () => {
   }, [isOpen]);
 
   const toggleChat = () => { setIsOpen(!isOpen); setShowEmoji(false); };
+
+  const toggleMaintenance = async () => {
+    const newMaintenanceState = !maintenance;
+    setMaintenance(newMaintenanceState);
+    if (userId) {
+      try {
+        await setDoc(doc(db, 'chats', userId), { 
+          maintenance: newMaintenanceState,
+          expectedWait: newMaintenanceState ? 15 : null
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error updating maintenance status:', error);
+      }
+    }
+  };
 
   const handleEmojiClick = (emojiObject) => {
     setInput(prev => prev + emojiObject.emoji);
@@ -756,28 +806,30 @@ const EnhancedChatBot = () => {
             >
               <Header>
                 <HeaderLeft>
-                  <Avatar
-                    onMouseEnter={() => {
-                      if (headerAvatarApiRef.current) {
-                        headerAvatarApiRef.current.update({
-                          maxRadius: 18, speedMin: 12.0, speedMax: 30.0, glowStrength: 30, alpha: 1.0,
-                          bobAmp: 3.0, bobSpeed: 3.5, dotSize: 4.5
-                        });
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      if (headerAvatarApiRef.current) {
-                        headerAvatarApiRef.current.update({
-                          maxRadius: 12, speedMin: 4.0, speedMax: 12.0, glowStrength: 15, alpha: 0.85,
-                          bobAmp: 1.5, bobSpeed: 2.0, dotSize: 3.5
-                        });
-                      }
-                    }}
-                  >
-                    <div ref={headerAvatarRef} />
-                  </Avatar>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-80px',
+                    top: '0px',
+                    zIndex: 10
+                  }}>
+                    <GlassOrbAvatar 
+                      messageId="header" 
+                      sender="bot" 
+                      isTyping={isTyping}
+                      style={{ 
+                        width: '80px',
+                        height: '80px',
+                        transform: isHovered ? 'scale(1.1)' : 'scale(1)',
+                        transition: 'transform 0.3s ease-in-out',
+                        margin: 0
+                      }} 
+                    />
+                  </div>
                   <HeaderInfo>
-                    <HeaderTitle>Vintra AI Assistant</HeaderTitle>
+                    <HeaderTitle>
+                      {maintenance ? <FiAlertTriangle color="#ffa500" /> : <BsRobot color="#6366f1" />}
+                      Vintra AI Assistant
+                    </HeaderTitle>
                     <HeaderStatus>
                       {takenOver
                         ? 'Support Agent Active'
@@ -788,21 +840,36 @@ const EnhancedChatBot = () => {
                   </HeaderInfo>
                 </HeaderLeft>
                 <HeaderActions>
-                  <HeaderButton onClick={cycleTheme}>
-                    {theme === 'light' ? <FiMoon /> : theme === 'dark' ? <FiZap /> : <FiSun />}
+                  <HeaderButton onClick={toggleMaintenance} title="Toggle Maintenance Mode">
+                    <FiAlertTriangle color={maintenance ? "#ffa500" : "currentColor"} />
                   </HeaderButton>
-                  <HeaderButton onClick={toggleChat}><FiX /></HeaderButton>
+                  <HeaderButton onClick={cycleTheme} title="Change Theme">
+                    {theme === 'dark' ? <FiSun /> : <FiMoon />}
+                  </HeaderButton>
+                  <HeaderButton onClick={() => setIsOpen(false)} title="Close">
+                    <FiX />
+                  </HeaderButton>
                 </HeaderActions>
               </Header>
 
               <TabNav>
-                <TabButton $active={activeView === 'chat'} onClick={() => setActiveView('chat')}>
+                <TabButton 
+                  $active={activeView === 'chat'} 
+                  onClick={() => setActiveView('chat')}
+                >
                   <BsChatDots /> Chat
                 </TabButton>
-                <TabButton $active={activeView === 'tickets'} onClick={() => setActiveView('tickets')}>
-                  <BsTicketPerforated /> Tickets {tickets.length > 0 && `(${tickets.length})`}
+                <TabButton 
+                  $active={activeView === 'tickets'} 
+                  onClick={() => setActiveView('tickets')}
+                >
+                  <BsTicketPerforated /> Tickets
                 </TabButton>
-                <TabButton $active={activeView === 'createTicket'} onClick={() => setActiveView('createTicket')}>
+                <TabButton 
+                  $active={activeView === 'createTicket'}
+                  onClick={() => setActiveView('createTicket')}
+                  $primary
+                >
                   <FiEdit3 /> New
                 </TabButton>
               </TabNav>
@@ -810,32 +877,26 @@ const EnhancedChatBot = () => {
               {/* Chat View */}
               {activeView === 'chat' && (
                 <>
-                  <MessagesContainer>
-                    {messages.map((message, index) => {
-                      const isLastBotMessage = message.sender !== 'user' && index === messages.length - 1;
-                      const hasAvatar = message.sender === 'user' || isLastBotMessage;
+                  <MessagesContainer $maintenance={maintenance && !takenOver}>
+                    {messages.map((message) => {
+                      const isUser = message.sender === 'user';
                       return (
-                        <MessageWrapper
-                          key={message.id}
-                          $isUser={message.sender === 'user'}
-                          $hasAvatar={hasAvatar}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          {hasAvatar && (
-                            <MessageAvatar $isUser={message.sender === 'user'}>
-                              {message.sender === 'user'
-                                ? '👤'
-                                : <MessageAvatarPolkadot messageId={message.id} sender={message.sender} isTyping={false} />
-                              }
-                            </MessageAvatar>
-                          )}
+                        <MessageWrapper key={message.id} $isUser={isUser}>
+                          <MessageAvatar $isUser={isUser}>
+                            {isUser ? '👤' : (
+                              <GlassOrbAvatar 
+                                messageId={message.id} 
+                                sender={message.sender} 
+                                isTyping={false}
+                                style={{ width: '32px', height: '32px' }} 
+                              />
+                            )}
+                          </MessageAvatar>
                           <MessageContent>
-                            <MessageBubble $isUser={message.sender === 'user'}>
+                            <MessageBubble $isUser={isUser}>
                               {message.text}
                             </MessageBubble>
-                            <MessageTime $isUser={message.sender === 'user'}>
+                            <MessageTime $isUser={isUser}>
                               {formatTime(message.timestamp)}
                             </MessageTime>
                           </MessageContent>
@@ -846,7 +907,12 @@ const EnhancedChatBot = () => {
                     {isTyping && (
                       <MessageWrapper $isUser={false}>
                         <MessageAvatar $isUser={false}>
-                          <MessageAvatarPolkadot messageId="typing" sender="bot" isTyping={true} />
+                          <GlassOrbAvatar 
+                            messageId="typing" 
+                            sender="bot" 
+                            isTyping={true}
+                            style={{ width: '32px', height: '32px' }} 
+                          />
                         </MessageAvatar>
                         <MessageContent>
                           <MessageBubble $isUser={false} $isTyping={true}>

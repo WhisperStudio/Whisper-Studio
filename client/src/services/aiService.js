@@ -50,7 +50,7 @@ export const generateAIResponse = async (message, userId, options = {}) => {
     })();
 
     const res = await axios.post(
-      'http://142.93.237.94:8001/api/chatbot',
+      'https://pyapi.vintrastudio.com/api/chatbot',
       { session_id: sessionId, text: message },
       { headers: { 'Content-Type': 'application/json' } }
     );
