@@ -1,28 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css, ThemeProvider } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  db, 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  orderBy, 
-  serverTimestamp,
-  doc,
-  setDoc,
-  onSnapshot,
-  updateDoc,
-  collectionGroup
-} from '../firebase';
-import { FiSend, FiSmile, FiX, FiMoon, FiZap, FiSun, FiEdit3, FiClock, FiArrowLeft, FiUser, FiAlertTriangle } from 'react-icons/fi';
+import { FiSend, FiPlus, FiX, FiSun, FiMoon, FiGlobe, FiMessageSquare, FiAlertTriangle } from 'react-icons/fi';
+import { FaRobot } from 'react-icons/fa';
+import GlassOrbAvatar from './GlassOrbAvatar';
+import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, onSnapshot, updateDoc, collectionGroup } from '../firebase';
+import { FiSmile, FiZap, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
 import { BsChatDots, BsTicketPerforated, BsRobot } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
-import TicketSystem from './TicketSystem';
-import GlassOrbAvatar from './GlassOrbAvatar';
-
-// Import Python bot client
-import { sendToBot } from "./ChatBot_Promts";
+import { generateAIResponse } from '../services/aiService';
 
 /* ===================== THEME ===================== */
 const themes = {
@@ -91,6 +77,28 @@ const themes = {
     messageBot: '#1a1a1a',
     messageUserText: '#000000',
     messageBotText: '#ffffff',
+  },
+  christmas: {
+    primary: '#ff6b6b',
+    primaryDark: '#ff3737',
+    primaryLight: '#ff9a9a',
+    secondary: '#33cc33',
+    background: '#ffffff',
+    surface: '#f9fafb',
+    surfaceHover: '#f3f4f6',
+    text: '#111827',
+    textSecondary: '#6b7280',
+    border: '#e5e7eb',
+    shadow: 'rgba(0, 0, 0, 0.1)',
+    error: '#ef4444',
+    success: '#10b981',
+    warning: '#f59e0b',
+    info: '#3b82f6',
+    gradient: 'linear-gradient(135deg, #ff6b6b 0%, #33cc33 100%)',
+    messageUser: '#ff6b6b',
+    messageBot: '#f3f4f6',
+    messageUserText: '#ffffff',
+    messageBotText: '#111827',
   }
 };
 
@@ -207,7 +215,7 @@ const TicketList = styled.div` display: flex; flex-direction: column; gap: 12px;
 const TicketCard = styled(motion.div)`
   background: ${props => props.theme.messageBot}; border: 1px solid ${props => props.theme.border};
   border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.3s;
-  &:hover { background: ${props => props.theme.surfaceHover}; transform: translateX(5px); }
+  &:hover { background: ${props => props.surfaceHover}; transform: translateX(5px); }
 `;
 const TicketCardHeader = styled.div` display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; `;
 const TicketCardTitle = styled.h4` font-size: 15px; font-weight: 600; color: ${props => props.theme.text}; margin: 0 0 4px 0; `;
@@ -234,6 +242,7 @@ const HeaderLeft = styled.div`
   min-height: 80px; /* Ensure enough height for the avatar */
   width: 100%;
   z-index: 1; 
+  gap: 20px;
 `;
 const Avatar = styled.div`
   width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.3s ease;
@@ -458,15 +467,16 @@ const EnhancedChatBot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [skin, setSkin] = useState('default');
   const [theme, setTheme] = useState('dark');
-  const [language, setLanguage] = useState('en'); // auto-switch on user message
+  const [language, setLanguage] = useState('en');
+  const [maintenance, setMaintenance] = useState(false);
   const [userId, setUserId] = useState('');
   const [takenOver, setTakenOver] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [hasNotification] = useState(false);
-  const [maintenance, setMaintenance] = useState(false);
   const [expectedWait, setExpectedWait] = useState(null);
   const [showTicketForm, setShowTicketForm] = useState(false); // kept for potential popup form usage
   const [ticketData, setTicketData] = useState({ title: '', description: '', category: 'general', priority: 'medium' });
@@ -496,11 +506,40 @@ const EnhancedChatBot = () => {
     }
     setUserId(id);
 
-    const savedTheme = localStorage.getItem('chatTheme') || 'dark';
     const savedLanguage = localStorage.getItem('chatLanguage') || 'en';
-    setTheme(savedTheme);
+    const savedSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+    
     setLanguage(savedLanguage);
-  }, []);
+    
+    // Load theme and avatar skin from admin settings
+    if (savedSettings.theme) {
+      setTheme(savedSettings.theme);
+      document.documentElement.setAttribute('data-theme', savedSettings.theme);
+    }
+    
+    if (savedSettings.avatarSkin) {
+      setSkin(savedSettings.avatarSkin);
+    }
+    
+    setLanguage(savedLanguage);
+    
+    // Listen for storage changes to update settings in real-time
+    const handleStorageChange = (e) => {
+      if (e.key === 'adminSettings') {
+        const newSettings = JSON.parse(e.newValue || '{}');
+        if (newSettings.theme && newSettings.theme !== theme) {
+          setTheme(newSettings.theme);
+          document.documentElement.setAttribute('data-theme', newSettings.theme);
+        }
+        if (newSettings.avatarSkin && newSettings.avatarSkin !== skin) {
+          setSkin(newSettings.avatarSkin);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [theme, skin]);
 
   // Header avatar state management for the AI_Avatar component
   // Header avatar state management for the GlassOrbAvatar component
@@ -549,7 +588,7 @@ const EnhancedChatBot = () => {
         const greetInput = 'hello';
         (async () => {
           try {
-            const data = await sendToBot(greetInput);
+            const data = await generateAIResponse({ message: greetInput, userId });
             if (data?.lang) {
               setLanguage(data.lang);
               localStorage.setItem('chatLanguage', data.lang);
@@ -587,20 +626,8 @@ const EnhancedChatBot = () => {
 
   const toggleChat = () => { setIsOpen(!isOpen); setShowEmoji(false); };
 
-  const toggleMaintenance = async () => {
-    const newMaintenanceState = !maintenance;
-    setMaintenance(newMaintenanceState);
-    if (userId) {
-      try {
-        await setDoc(doc(db, 'chats', userId), { 
-          maintenance: newMaintenanceState,
-          expectedWait: newMaintenanceState ? 15 : null
-        }, { merge: true });
-      } catch (error) {
-        console.error('Error updating maintenance status:', error);
-      }
-    }
-  };
+  // Maintenance state is now managed through the admin panel
+  // and synced via localStorage
 
   const handleEmojiClick = (emojiObject) => {
     setInput(prev => prev + emojiObject.emoji);
@@ -742,7 +769,7 @@ const EnhancedChatBot = () => {
 
       // ---- CALL PYTHON BOT BACKEND ----
       try {
-        const data = await sendToBot(text);
+        const data = await generateAIResponse({ message: text, userId });
         if (data?.lang) {
           setLanguage(data.lang);
           localStorage.setItem('chatLanguage', data.lang);
@@ -816,6 +843,7 @@ const EnhancedChatBot = () => {
                       messageId="header" 
                       sender="bot" 
                       isTyping={isTyping}
+                      skin={skin}
                       style={{ 
                         width: '80px',
                         height: '80px',
@@ -827,7 +855,7 @@ const EnhancedChatBot = () => {
                   </div>
                   <HeaderInfo>
                     <HeaderTitle>
-                      {maintenance ? <FiAlertTriangle color="#ffa500" /> : <BsRobot color="#6366f1" />}
+                      {maintenance ? <FiAlertTriangle color="#ffa500" /> : <none/>}
                       Vintra AI Assistant
                     </HeaderTitle>
                     <HeaderStatus>
@@ -840,12 +868,6 @@ const EnhancedChatBot = () => {
                   </HeaderInfo>
                 </HeaderLeft>
                 <HeaderActions>
-                  <HeaderButton onClick={toggleMaintenance} title="Toggle Maintenance Mode">
-                    <FiAlertTriangle color={maintenance ? "#ffa500" : "currentColor"} />
-                  </HeaderButton>
-                  <HeaderButton onClick={cycleTheme} title="Change Theme">
-                    {theme === 'dark' ? <FiSun /> : <FiMoon />}
-                  </HeaderButton>
                   <HeaderButton onClick={() => setIsOpen(false)} title="Close">
                     <FiX />
                   </HeaderButton>
@@ -1170,9 +1192,6 @@ const EnhancedChatBot = () => {
             </ChatWindow>
           )}
         </AnimatePresence>
-
-        {/* Ticket System Integration (kept for consistency) */}
-        <TicketSystem showButton={false} />
 
         <FloatingButton
           onClick={toggleChat}

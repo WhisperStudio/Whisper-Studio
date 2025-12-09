@@ -1442,6 +1442,7 @@ export const SystemSettings = () => {
   const [settings, setSettings] = useState({
     siteName: 'Vintra Studio',
     maintenanceMode: false,
+    theme: 'dark',
     emailNotifications: true,
     autoBackup: true,
     backupFrequency: 'daily',
@@ -1452,14 +1453,46 @@ export const SystemSettings = () => {
     aiModel: 'gpt-4',
     aiTemperature: 0.7,
     aiMaxTokens: 2000,
-    aiPersonality: 'professional'
+    aiPersonality: 'professional',
+    avatarSkin: 'default'
   });
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+    setSettings(prev => ({
+      ...prev,
+      ...savedSettings,
+      theme: savedSettings.theme || 'dark',
+      avatarSkin: savedSettings.avatarSkin || 'default'
+    }));
+  }, []);
+
+  // Save settings to localStorage when they change
+  const updateSettings = (newSettings) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    localStorage.setItem('adminSettings', JSON.stringify(updated));
+    
+    // Apply theme globally
+    if (newSettings.theme) {
+      document.documentElement.setAttribute('data-theme', newSettings.theme);
+    }
+  };
 
   return (
     <Container>
       <Header>
         <Title><FiSettings /> System Settings</Title>
-        <Button primary><FiSave /> Save Settings</Button>
+        <Button 
+          primary 
+          onClick={() => {
+            // Save settings to database or API here
+            alert('Settings saved!');
+          }}
+        >
+          <FiSave /> Save Settings
+        </Button>
       </Header>
       
       <Grid>
@@ -1475,9 +1508,33 @@ export const SystemSettings = () => {
           
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-              {settings.maintenanceMode ? <FiToggleRight size={24} color="#6366f1" /> : <FiToggleLeft size={24} />}
+              <div onClick={() => updateSettings({ maintenanceMode: !settings.maintenanceMode })}>
+                {settings.maintenanceMode ? <FiToggleRight size={24} color="#6366f1" /> : <FiToggleLeft size={24} />}
+              </div>
               Maintenance Mode
             </label>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '10px' }}>Theme</label>
+            <Select 
+              value={settings.theme}
+              onChange={(e) => updateSettings({ theme: e.target.value })}
+            >
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </Select>
+          </div>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '10px' }}>Avatar Skin</label>
+            <Select 
+              value={settings.avatarSkin}
+              onChange={(e) => updateSettings({ avatarSkin: e.target.value })}
+            >
+              <option value="default">Default</option>
+              <option value="juleskin">Christmas Theme</option>
+            </Select>
           </div>
           
           <div>

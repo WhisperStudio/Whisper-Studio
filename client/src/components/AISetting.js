@@ -89,11 +89,16 @@ const AISettings = () => {
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     'AI is currently under maintenance. Please check back later or contact support if you need assistance.'
   );
+  const [settings, setSettings] = useState({
+    theme: 'dark',
+    avatarSkin: 'default'
+  });
 
   // Load settings from localStorage on component mount
   useEffect(() => {
-    const loadSettings = () => {
+    const loadSettings = async () => {
       try {
+        // Load AI settings
         const savedSettings = localStorage.getItem('aiSettings');
         if (savedSettings) {
           const { isEnabled, message } = JSON.parse(savedSettings);
@@ -101,21 +106,46 @@ const AISettings = () => {
           setStatus(isEnabled ? 'Operational' : 'Maintenance');
           if (message) setMaintenanceMessage(message);
         }
+        
+        // Load theme and avatar settings
+        const adminSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+        setSettings(prev => ({
+          ...prev,
+          theme: adminSettings.theme || 'dark',
+          avatarSkin: adminSettings.avatarSkin || 'default'
+        }));
       } catch (error) {
         console.error('Error loading AI settings:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     loadSettings();
   }, []);
+  
+  const updateSettings = (newSettings) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    
+    // Save to localStorage
+    const currentSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+    const updatedSettings = { ...currentSettings, ...updated };
+    localStorage.setItem('adminSettings', JSON.stringify(updatedSettings));
+    
+    // Apply theme
+    if (newSettings.theme) {
+      document.documentElement.setAttribute('data-theme', newSettings.theme);
+    }
+  };
 
   const handleToggleBot = async () => {
     const newState = !isBotEnabled;
     setIsSaving(true);
     
     try {
+      updateSettings({ isEnabled: newState });
+      
       // In a real app, you would save this to your backend
       const settings = {
         isEnabled: newState,
@@ -150,6 +180,32 @@ const AISettings = () => {
     } catch (error) {
       console.error('Error updating maintenance message:', error);
       alert('Failed to update maintenance message. Please try again.');
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    
+    try {
+      const settings = {
+        isEnabled: isBotEnabled,
+        message: maintenanceMessage,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem('aiSettings', JSON.stringify(settings));
+      localStorage.setItem('aiMaintenanceMode', !isBotEnabled);
+      
+      setIsBotEnabled(isBotEnabled);
+      setStatus(isBotEnabled ? 'Operational' : 'Maintenance');
+      
+      // Show success message
+      alert('Settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -305,6 +361,49 @@ const AISettings = () => {
           </div>
         </Card>
       </Grid>
+      
+      <Card>
+        <h2>Appearance</h2>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Theme</label>
+          <select 
+            value={settings.theme}
+            onChange={(e) => updateSettings({ theme: e.target.value })}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '0.375rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              color: '#fff',
+              border: '1px solid #4b5563',
+              width: '100%',
+              maxWidth: '300px'
+            }}
+          >
+            <option value="dark" style={{ color: '#fff', backgroundColor: '#3a3939ff' }}>Dark</option>
+            <option value="light" style={{ color: '#fff', backgroundColor: '#3a3939ff' }}>Light</option>
+          </select>
+        </div>
+        
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Avatar Skin</label>
+          <select 
+            value={settings.avatarSkin}
+            onChange={(e) => updateSettings({ avatarSkin: e.target.value })}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '0.375rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              color: '#fff',
+              border: '1px solid #4b5563',
+              width: '100%',
+              maxWidth: '300px'
+            }}
+          >
+            <option value="default" style={{ color: '#fff', backgroundColor: '#3a3939ff' }}>Default</option>
+            <option value="juleskin" style={{ color: '#fff', backgroundColor: '#3a3939ff' }}>Christmas Theme</option>
+          </select>
+        </div>
+      </Card>
       
       <Card>
         <h2>Advanced Settings</h2>
