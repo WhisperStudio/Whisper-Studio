@@ -1,195 +1,362 @@
 // src/components/ChatDashboard.js
 import React, { useState, useEffect, useRef } from "react";
-import styled from "styled-components";
-import { FiLock, FiUnlock, FiTrash2, FiMessageCircle, FiUser, FiX } from 'react-icons/fi';
-import { db, collection, collectionGroup, getDocs, query, orderBy, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
+import styled, { keyframes, css } from "styled-components";
+import { 
+  FiLock, FiUnlock, FiTrash2, FiMessageCircle, FiUser, 
+  FiX, FiSend, FiMinimize2, FiMaximize2, FiAlertTriangle 
+} from 'react-icons/fi';
+import { 
+  db, collection, getDocs, query, orderBy, addDoc, 
+  serverTimestamp, deleteDoc, doc, getDoc, setDoc, 
+  updateDoc, onSnapshot 
+} from '../firebase';
 import { auth } from '../firebase';
-import { CompactLoader } from './LoadingComponent';
+import { CompactLoader } from './LoadingComponent'; // Antar denne er tilgjengelig
 
+// --- Stiler ---
 
+// Nøkkelrammer for puls-effekt
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+`;
+
+// Hovedcontainer
 const ChatDashboardContainer = styled.div`
-  background: radial-gradient(1200px 600px at 10% 0%, rgba(99,102,241,0.15), transparent),
-              radial-gradient(900px 500px at 90% 20%, rgba(236,72,153,0.12), transparent),
-              #0b1121;
-  padding: 2rem;
-  border-radius: 18px;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
-  color: white;
+  /* Nytt, dypere mørkt tema */
+  background-color: #0d1117; 
+  color: #c9d1d9; /* Lys tekst for mørk bakgrunn */
+  padding: 0;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  border: 1px solid rgba(148,163,184,0.12);
+  min-height: 80vh;
+  max-width: 1400px;
+  margin: 2rem auto;
+  border: 1px solid #21262d;
+  overflow: hidden;
 `;
 
-const ChatListWrapper = styled.div`
+// Hovedinnhold (Liste + Detaljer)
+const ChatContent = styled.div`
   display: flex;
-  gap: 1.25rem;
+  flex-grow: 1;
 `;
 
+// Chat liste-sidepanel
 const ChatList = styled.div`
-  flex: 1;
-  max-width: 320px;
-  padding: 16px;
+  flex-basis: 350px; /* Litt bredere liste */
+  flex-shrink: 0;
+  border-right: 1px solid #21262d;
+  background-color: #161b22; /* Litt lysere bakgrunn enn hovedcontainer */
+  padding: 1rem 0;
   overflow-y: auto;
-  background: linear-gradient(180deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
-  border: 1px solid rgba(99,102,241,0.25);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  height: 100%;
 `;
 
+// Hvert element i listen
 const ChatListItem = styled.div`
-  padding: 12px;
-  border-radius: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  background: ${({ active }) => (active ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(168,85,247,0.2))' : 'transparent')};
-  border: 1px solid ${({ active }) => (active ? 'rgba(99,102,241,0.35)' : 'rgba(148,163,184,0.15)')};
-  transition: all 0.25s ease;
+  border-left: 4px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+  
+  /* Aktivt element */
+  ${({ active }) => active && css`
+    background-color: #1f6feb20; /* Subtil blå bakgrunn */
+    border-left-color: #1f6feb; /* Blå stripe */
+  `}
+
   &:hover {
-    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,85,247,0.16));
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+    background-color: ${({ active }) => (active ? '#1f6feb30' : '#21262d')};
   }
 `;
 
-const ChatDetails = styled.div`
-  flex: 2;
-  padding: 16px;
-  background: linear-gradient(180deg, rgba(2,6,23,0.8), rgba(2,6,23,0.6));
-  border: 1px solid rgba(148,163,184,0.15);
-  border-radius: 16px;
-  backdrop-filter: blur(8px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+const ChatMeta = styled.div`
+  flex-grow: 1;
+  overflow: hidden;
 `;
 
-const MessagesContainer = styled.div`
-  height: 480px;
-  overflow-y: auto;
-  border: 1px solid rgba(99,102,241,0.25);
-  padding: 16px;
-  margin-bottom: 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(23,37,84,0.65), rgba(15,23,42,0.65));
+const ChatTitle = styled.strong`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #c9d1d9;
+  margin-bottom: 2px;
+`;
+
+const LastMessage = styled.small`
+  display: block;
+  font-size: 12px;
+  color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const UnreadBadge = styled.span`
+  background-color: #0ea5e9; /* Cyan for uleste meldinger */
+  color: #000;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-left: 10px;
+  animation: ${({ active }) => active ? css`${pulse} 1.5s infinite` : 'none'};
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  color: #f85149;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s, background-color 0.2s;
+  
+  &:hover {
+    opacity: 1;
+    background-color: #f8514920;
+  }
+`;
+
+// Chat detaljpanel
+const ChatDetails = styled.div`
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
+  padding: 1.5rem;
+`;
+
+// Meldingsoverskrift
+const ChatHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #21262d;
+  margin-bottom: 1rem;
+`;
+
+const HeaderTitle = styled.h3`
+  margin: 0;
+  font-size: 20px;
+  color: #58a6ff;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
   gap: 10px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+`;
+
+// Meldinger
+const MessagesContainer = styled.div`
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background-color: #0d1117; 
+  border: 1px solid #21262d;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 const MessageBubble = styled.div`
-  padding: 12px 16px;
-  margin: 4px 0;
-  border-radius: 14px;
-  max-width: 75%;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-width: 65%;
+  font-size: 14px;
+  line-height: 1.5;
   word-wrap: break-word;
-  align-self: ${({ variant }) => (variant === 'user' ? 'flex-end' : 'flex-start')};
-  background: ${({ variant }) => (
-    variant === 'user' ? 'linear-gradient(135deg, rgba(14,165,233,0.25), rgba(99,102,241,0.25))' :
-    variant === 'admin' ? 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)' :
-    variant === 'bot' ? 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(59,130,246,0.16))' :
-    'rgba(148, 163, 184, 0.15)'
-  )};
-  color: ${({ variant }) => (
-    variant === 'admin' ? '#fff' :
-    '#cfefff'
-  )};
-  border: 1px solid ${({ variant }) => (
-    variant === 'user' ? 'rgba(14,165,233,0.35)' :
-    variant === 'admin' ? 'rgba(99, 102, 241, 0.4)' :
-    variant === 'bot' ? 'rgba(168, 85, 247, 0.35)' :
-    'rgba(148, 163, 184, 0.25)'
-  )};
+  color: #c9d1d9;
+  
+  /* Bruker (venstrejustert for brukeren) */
+  ${({ variant }) => variant === 'user' && css`
+    align-self: flex-start;
+    background-color: #1f2832; /* Subtil, mørk grå */
+    border-bottom-left-radius: 2px;
+  `}
+  
+  /* Admin (høyrejustert for admin) */
+  ${({ variant }) => variant === 'admin' && css`
+    align-self: flex-end;
+    background-color: #1f6feb; /* Primærblå */
+    border-bottom-right-radius: 2px;
+    color: #fff;
+  `}
+  
+  /* System/Bot */
+  ${({ variant }) => (variant === 'bot' || variant === 'system') && css`
+    align-self: flex-start;
+    background-color: #30363d;
+    color: #58a6ff;
+    border-bottom-left-radius: 2px;
+  `}
 `;
 
-const MessageItem = styled.div`
-  margin-bottom: 8px;
-  line-height: 1.4;
-  color: ${({ sender }) => {
-    if (sender === "bot") return "#7824BC"; // Purple for bot
-    if (sender === "admin") return "#3B82F6"; // Blue for admin
-    if (sender === "user") return "#484F5D"; // Dark text for user
-    return "#000";
-  }};
+// Inputfelt og handlinger
+const AdminInputArea = styled.div`
+  padding-top: 1rem;
 `;
 
-const AdminTextArea = styled.textarea`
-  width: 50%;
-  max-width: 80%;
-  padding: 12px;
-  margin-bottom: 6px;
-  border-radius: 10px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e2e8f0;
-  font-family: inherit;
-  line-height: 1.4;
-  min-height: 90px;
-  max-height: 220px;
-  resize: vertical;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
-  transition: border-color 0.2s, box-shadow 0.2s;
-
-  &::placeholder {
-    color: #94a3b8;
-  }
-
-  &:focus {
-    outline: none;
-    border-color: #60a5fa;
-    box-shadow: 0 0 0 3px rgba(96,165,250,0.2);
-  }
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-`;
-
-const ActionButton = styled.button`
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #fff;
-  background-color: ${({ bgColor }) => bgColor || "#2563eb"};
-  transition: background-color 0.3s;
+const StatusAndActions = styled.div`
   display: flex;
   align-items: center;
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
-const CategoryFilter = styled.select`
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid rgb(49, 54, 77);
-  margin-bottom: 12px;
-  background-color: #1a1f2e;
-  color: #fff;
-`;
-
-const CardTitle = styled.h2`
-  margin-bottom: 12px;
-  font-size: 18px;
+  justify-content: space-between;
+  margin-bottom: 1rem;
 `;
 
 const StatusBadge = styled.span`
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 18px;
   font-size: 12px;
-  font-weight: 700;
-  background: ${({ active }) => active ? 'rgba(34, 197, 94, 0.22)' : 'rgba(99, 102, 241, 0.18)'};
-  border: 1px solid ${({ active }) => active ? 'rgba(34, 197, 94, 0.4)' : 'rgba(99, 102, 241, 0.35)'};
-  color: ${({ active }) => active ? '#34d399' : '#a78bfa'};
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  
+  /* AI Active */
+  ${({ active }) => !active && css`
+    background-color: #23863620; 
+    border: 1px solid #238636;
+    color: #3fb950;
+  `}
+  
+  /* Taken Over */
+  ${({ active }) => active && css`
+    background-color: #a371f720; 
+    border: 1px solid #a371f7;
+    color: #a371f7;
+  `}
 `;
 
-// Funksjon for å signalisere at admin skriver
+const ActionButtonsGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const ActionButton = styled.button`
+  padding: 8px 16px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #c9d1d9;
+  background-color: #21262d;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: #30363d;
+    border-color: #8b949e;
+  }
+
+  ${({ primary }) => primary && css`
+    background-color: #1f6feb;
+    border-color: #1f6feb;
+    color: #fff;
+    &:hover {
+      background-color: #388bfd;
+    }
+  `}
+
+  ${({ danger }) => danger && css`
+    background-color: #f85149;
+    border-color: #f85149;
+    color: #fff;
+    &:hover {
+      background-color: #da3633;
+    }
+  `}
+`;
+
+const AdminTextArea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  font-family: inherit;
+  line-height: 1.5;
+  min-height: 80px;
+  resize: vertical;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #1f6feb;
+    box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.2);
+  }
+`;
+
+const SendButton = styled(ActionButton)`
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background-color: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #1f6feb;
+  }
+`;
+
+const InputWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+`;
+
+const UtilityText = styled.div`
+  color: #8b949e;
+  font-size: 11px;
+  margin-top: 4px;
+`;
+
+// Filtrering
+const CategoryFilter = styled.select`
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+  background-color: #21262d;
+  color: #c9d1d9;
+  margin-bottom: 1rem;
+  appearance: none; /* Fjern standard pil */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23c9d1d9'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+`;
+
+
+// Funksjon for å signalisere at admin skriver (som før)
 const setAdminTyping = async (typing) => {
   try {
+    // Dette kalles til et eksternt API, så vi beholder funksjonaliteten
     await fetch("https://api.vintrastudio.com/api/admin/typing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -207,52 +374,60 @@ const ChatDashboard = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [selectedChatInfo, setSelectedChatInfo] = useState(null); // chat doc data (e.g., takenOver)
+  const [selectedChatInfo, setSelectedChatInfo] = useState(null); 
   const messagesUnsubRef = useRef(null);
   const chatInfoUnsubRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const allMessagesUnsubRef = useRef(null);
   const adminTypingActiveRef = useRef(false);
   const adminInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const [filterCategory, setFilterCategory] = useState("All");
 
-  // Load conversations from Firebase with real-time updates
+  // Rull til bunnen av meldingene
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  // Kaller scroll ved hver meldingsoppdatering for den valgte chatten
+  useEffect(() => {
+    if (selected) {
+      scrollToBottom();
+    }
+  }, [conversations, selected]);
+
+  // Load conversations (Hovedfunksjon som setter opp sanntidslytter)
   useEffect(() => {
     let unsubscribe;
     
-    const loadConversations = async () => {
+    const loadConversations = () => {
       try {
         setLoading(true);
-        console.log('ChatDashboard: Setting up real-time chat listener...');
-        
-        // Set up real-time listener for chats collection
         const chatsRef = collection(db, 'chats');
+        
+        // Sanntidslytter for hovedsamlingsdokumentene
         unsubscribe = onSnapshot(chatsRef, async (chatsSnapshot) => {
-          console.log('ChatDashboard: Chat documents updated:', chatsSnapshot.size);
-          
           const convs = {};
+          const fetchPromises = [];
+
+          // For å unngå å laste *alle* meldinger for *alle* chatter ved *hver* oppdatering:
+          // Vi bruker kun chat-dokumentet for å vite hvilke chatter som eksisterer,
+          // og henter kun de nyeste meldingene for listen (ikke full samtalelogg).
           
-          // Process each chat document
           for (const chatDoc of chatsSnapshot.docs) {
             const userId = chatDoc.id;
             const chatData = chatDoc.data();
-            console.log('ChatDashboard: Processing chat for user:', userId);
             
-            // Get messages for this chat
-            try {
-              const messagesRef = collection(db, 'chats', userId, 'messages');
-              const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
-              const messagesSnapshot = await getDocs(messagesQuery);
-              
-              console.log(`ChatDashboard: Found ${messagesSnapshot.size} messages for user ${userId}`);
-              
-              if (messagesSnapshot.size > 0) {
-                const userMessages = [];
+            // Hent kun de siste 5 meldingene for forhåndsvisning i listen (ytelsesoptimalisering)
+            const messagesRef = collection(db, 'chats', userId, 'messages');
+            const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc')); // Descending for latest first
+            
+            fetchPromises.push(
+              getDocs(messagesQuery).then(messagesSnapshot => {
+                let userMessages = [];
                 messagesSnapshot.forEach(msgDoc => {
                   const data = msgDoc.data();
                   const sender = data.sender || data.from;
-                  const mappedFrom = sender === 'user' ? 'user' : 
-                                     sender === 'admin' ? 'admin' : 
-                                     sender === 'system' ? 'system' : 'bot';
+                  const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
                   
                   userMessages.push({
                     id: msgDoc.id,
@@ -263,21 +438,36 @@ const ChatDashboard = () => {
                     senderEmail: data.senderEmail || data.adminEmail
                   });
                 });
-                
-                // Sort messages by timestamp
+
+                // Sortere tilbake til asc for riktig rekkefølge i forhåndsvisningen
                 userMessages.sort((a, b) => a.timestamp - b.timestamp);
                 convs[userId] = userMessages;
-                
-                console.log(`ChatDashboard: Loaded ${userMessages.length} messages for user ${userId}`);
-              }
-            } catch (error) {
-              console.error(`ChatDashboard: Error loading messages for user ${userId}:`, error);
-            }
+
+                // Oppdaterer den valgte chatten hvis den er i den nye listen.
+                // Den valgte chatten har sin egen, mer detaljerte lytter (se onSelect).
+                if (userId === selected) {
+                    setConversations(prev => ({ ...prev, [userId]: userMessages }));
+                }
+              }).catch(error => {
+                console.error(`Error loading messages for user ${userId}:`, error);
+              })
+            );
           }
           
-          console.log('ChatDashboard: Loaded conversations:', Object.keys(convs).length);
-          setConversations(convs);
+          await Promise.all(fetchPromises);
+          
+          // Setter kun hoved-conversations state for listen med de nyeste meldingene.
+          // Full meldingsoppdatering for den valgte chatten håndteres av 'onSelect' lytteren.
+          setConversations(prev => {
+              // Beholder den valgte chatten sin fullstendige historikk hvis den finnes.
+              const updatedConvs = {...convs};
+              if (selected && prev[selected] && updatedConvs[selected]) {
+                  updatedConvs[selected] = prev[selected]; // Beholder den fullstendige historikken
+              }
+              return updatedConvs;
+          });
           setLoading(false);
+          
         }, (error) => {
           console.error('ChatDashboard: Error in real-time listener:', error);
           setLoading(false);
@@ -295,7 +485,7 @@ const ChatDashboard = () => {
         unsubscribe();
       }
     };
-  }, []);
+  }, []); // Kun kjøres ved mount/unmount
 
   // Cleanup listeners on unmount
   useEffect(() => {
@@ -306,29 +496,27 @@ const ChatDashboard = () => {
     };
   }, []);
 
+  // Håndterer valg av chat: setter opp sanntidslyttere for MELINGER og CHAT DOKUMENTET
   const onSelect = async (userId) => {
+    // Avslutt forrige lyttere
+    if (messagesUnsubRef.current) messagesUnsubRef.current();
+    if (chatInfoUnsubRef.current) chatInfoUnsubRef.current();
+
     setSelected(userId);
-
-    // Unsubscribe previous listeners
-    if (messagesUnsubRef.current) {
-      messagesUnsubRef.current();
-      messagesUnsubRef.current = null;
-    }
-    if (chatInfoUnsubRef.current) {
-      chatInfoUnsubRef.current();
-      chatInfoUnsubRef.current = null;
+    if (!userId) {
+      setSelectedChatInfo(null);
+      return;
     }
 
-    if (!userId) return;
-
-    // Live messages subscription
+    // 1. Live messages subscription (henter HELE historikken for den valgte chatten)
     try {
       const messagesRef = collection(db, 'chats', userId, 'messages');
-      const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+      const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc')); // Ascending for visning
+      
       messagesUnsubRef.current = onSnapshot(messagesQuery, (snapshot) => {
         const messages = snapshot.docs.map((d) => {
           const data = d.data();
-          const sender = data.sender;
+          const sender = data.sender || data.from;
           const mappedFrom = sender === 'user' ? 'user' : sender === 'admin' ? 'admin' : sender === 'system' ? 'system' : 'bot';
           return {
             id: d.id,
@@ -336,23 +524,26 @@ const ChatDashboard = () => {
             text: data.text,
             timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000) || new Date(),
             userId,
-            senderEmail: data.senderEmail
+            senderEmail: data.senderEmail || data.adminEmail
           };
         });
+        
+        // Oppdater fullstendig meldingstilstand for den valgte chatten
         setConversations((prev) => ({ ...prev, [userId]: messages }));
+        scrollToBottom();
       });
     } catch (err) {
       console.error('onSelect: error subscribing to messages', err);
     }
 
-    // Chat doc subscription (for takeover status)
+    // 2. Chat doc subscription (for takeover status, etc.)
     try {
       const chatRef = doc(db, 'chats', userId);
       chatInfoUnsubRef.current = onSnapshot(chatRef, (snap) => {
         setSelectedChatInfo(snap.exists() ? snap.data() : null);
       });
 
-      // Ensure chat doc exists
+      // Sikrer at chat-dokumentet eksisterer
       const chatSnap = await getDoc(chatRef);
       if (!chatSnap.exists()) {
         await setDoc(chatRef, {
@@ -366,64 +557,55 @@ const ChatDashboard = () => {
     }
   };
 
+  // Sender melding fra admin
   const onSend = async () => {
     if (!input.trim() || !selected || sending) return;
     
     setSending(true);
     const messageText = input.trim();
-    setInput('');
+    setInput(''); // Tømmer inputfeltet umiddelbart
     
     try {
-      // Save to Firebase
       const messageData = {
         text: messageText,
         sender: 'admin',
-        senderEmail: auth.currentUser?.email,
+        senderEmail: auth.currentUser?.email || 'unknown-admin',
         timestamp: serverTimestamp(),
         userId: selected
       };
       
       const messagesRef = collection(db, 'chats', selected, 'messages');
       await addDoc(messagesRef, messageData);
-      // Update chat doc lastUpdated
-      try {
-        await updateDoc(doc(db, 'chats', selected), {
-          lastUpdated: serverTimestamp(),
-          adminTyping: false
-        });
-      } catch (_) {}
       
-      // Update local state
-      const newMessage = {
-        id: Date.now().toString(),
-        from: 'admin',
-        text: messageText,
-        timestamp: new Date(),
-        userId: selected,
-        senderEmail: auth.currentUser?.email
-      };
+      // Oppdaterer chat-dokumentet og deaktiverer skriveindikator
+      await updateDoc(doc(db, 'chats', selected), {
+        lastUpdated: serverTimestamp(),
+        adminTyping: false
+      });
       
-      setConversations(prev => ({
-        ...prev,
-        [selected]: [...(prev[selected] || []), newMessage]
-      }));
+      // Slå av den eksterne skriveindikatoren
+      try { setAdminTyping(false); } catch { /* ignoreres */ }
+      adminTypingActiveRef.current = false;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      scrollToBottom();
       
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setSending(false);
-      // Keep focus in textarea for fluid typing
+      // Holder fokus for raske svar
       try { adminInputRef.current?.focus(); } catch {}
     }
   };
 
-  // Add a system message into the conversation (visible to user)
+  // Legger til en systemmelding (brukes ved takeover/release)
   const addSystemMessage = async (userId, text) => {
     try {
       const messagesRef = collection(db, 'chats', userId, 'messages');
       await addDoc(messagesRef, {
         text,
-        sender: 'system',
+        sender: 'system', // Systemmelding
         timestamp: serverTimestamp(),
         userId
       });
@@ -432,6 +614,7 @@ const ChatDashboard = () => {
     }
   };
 
+  // Tar over chatten fra AI
   const takeOverChat = async () => {
     if (!selected) return;
     try {
@@ -443,20 +626,24 @@ const ChatDashboard = () => {
         takenOverAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       }, { merge: true });
-      await addSystemMessage(selected, `A support agent has taken over the conversation.`);
-      // Optional: notify bot backend to stop replying
+      
+      await addSystemMessage(selected, `En supportagent (${auth.currentUser?.email || 'Admin'}) har tatt over samtalen.`);
+      
+      // Eksternt API-kall for å varsle boten
       try {
         await fetch('https://api.vintrastudio.com/api/admin/takeover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: selected, takeover: true, admin: auth.currentUser?.email })
         });
-      } catch (_) {}
+      } catch (err) { console.warn('Failed to notify bot backend of takeover:', err); }
+      
     } catch (err) {
       console.error('takeOverChat error:', err);
     }
   };
 
+  // Frigir chatten tilbake til AI
   const releaseChat = async () => {
     if (!selected) return;
     try {
@@ -466,39 +653,42 @@ const ChatDashboard = () => {
         releasedAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       }, { merge: true });
-      await addSystemMessage(selected, `The conversation has been returned to the AI assistant.`);
-      // Optional: notify bot backend to resume
+      
+      await addSystemMessage(selected, `Samtalen har blitt returnert til AI-assistenten.`);
+      
+      // Eksternt API-kall for å varsle boten
       try {
         await fetch('https://api.vintrastudio.com/api/admin/takeover', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: selected, takeover: false, admin: auth.currentUser?.email })
         });
-      } catch (_) {}
+      } catch (err) { console.warn('Failed to notify bot backend of release:', err); }
+      
     } catch (err) {
       console.error('releaseChat error:', err);
     }
   };
 
-  // Replace entire conversation with a single maintenance message and mark as taken over
+  // Erstatter samtale med vedlikeholdsmelding
   const resetToMaintenanceMessage = async () => {
     if (!selected) return;
-    const confirm = window.confirm('This will delete all messages in this conversation and post a single maintenance message. Continue?');
+    const confirm = window.confirm('Dette vil slette alle meldinger i denne samtalen og legge inn én vedlikeholdsmelding. Fortsett?');
     if (!confirm) return;
 
-    let minutes = window.prompt('Enter expected wait time (minutes):', '15');
+    let minutes = window.prompt('Angi forventet ventetid (minutter):', '15');
     let wait = parseInt(minutes || '15', 10);
     if (isNaN(wait) || wait <= 0) wait = 15;
 
-    const maintenanceText = `⚠️ Our bot is currently under construction. A support advisor will contact you shortly. Estimated wait time: ${wait} minutes.`;
+    const maintenanceText = `⚠️ Vår bot er for øyeblikket under vedlikehold. En supportrådgiver vil kontakte deg snart. Estimert ventetid: ${wait} minutter.`;
 
     try {
-      // Delete all messages
+      // Slett alle meldinger
       const messagesRef = collection(db, 'chats', selected, 'messages');
       const snap = await getDocs(messagesRef);
       await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 
-      // Add single system message
+      // Legg til ny systemmelding
       await addDoc(messagesRef, {
         text: maintenanceText,
         sender: 'bot',
@@ -506,7 +696,7 @@ const ChatDashboard = () => {
         userId: selected
       });
 
-      // Mark chat as taken over and in maintenance
+      // Merk chat som overtatt og i vedlikehold
       await setDoc(doc(db, 'chats', selected), {
         takenOver: true,
         maintenance: true,
@@ -515,44 +705,29 @@ const ChatDashboard = () => {
         takenOverByEmail: auth.currentUser?.email || 'admin'
       }, { merge: true });
 
-      // Update local state immediately
-      setConversations(prev => ({
-        ...prev,
-        [selected]: [{
-          id: Date.now().toString(),
-          from: 'bot',
-          text: maintenanceText,
-          timestamp: new Date(),
-          userId: selected
-        }]
-      }));
     } catch (err) {
       console.error('resetToMaintenanceMessage error:', err);
-      alert('Failed to reset conversation.');
+      alert('Klarte ikke å tilbakestille samtalen.');
     }
   };
 
+  // Slett hele chatten
   const onDelete = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this conversation? This cannot be undone.')) {
+    if (!window.confirm('Er du sikker på at du vil slette denne samtalen? Dette kan ikke angres.')) {
       return;
     }
 
     try {
-      console.log('ChatDashboard: Deleting chat for user:', userId);
-      
-      // Delete all messages first
+      // Slett meldingssamlingen
       const messagesRef = collection(db, 'chats', userId, 'messages');
       const messagesSnapshot = await getDocs(messagesRef);
-      
       const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
       
-      // Delete the chat document
+      // Slett chat-dokumentet
       await deleteDoc(doc(db, 'chats', userId));
       
-      console.log('ChatDashboard: Chat deleted successfully');
-      
-      // Update local state
+      // Oppdater lokal tilstand
       setConversations(prev => {
         const newConvs = { ...prev };
         delete newConvs[userId];
@@ -561,28 +736,38 @@ const ChatDashboard = () => {
       
       if (selected === userId) {
         setSelected(null);
+        setSelectedChatInfo(null);
       }
       
     } catch (error) {
       console.error('ChatDashboard: Error deleting chat:', error);
-      alert('Error deleting chat. Please try again.');
+      alert('Feil ved sletting av chat. Prøv igjen.');
     }
   };
 
+  // Håndterer tastetrykk (Enter for å sende)
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
   };
+  
+  // Filtrering av samtaler (enkel implementering for nå)
+  const filteredConversations = Object.keys(conversations).filter(userId => {
+    // For øyeblikket er det ingen kategoridata i koden, så vi returnerer bare alt.
+    // Hvis chat-dokumentet hadde en 'category' felt, ville logikken vært her.
+    return true; 
+  });
+
 
   if (loading) {
     return (
-      <ChatDashboardContainer>
+      <ChatDashboardContainer style={{ justifyContent: 'center', alignItems: 'center' }}>
         <CompactLoader 
           size="large" 
           text="Laster samtaler..." 
-          color="#99e6ff" 
+          color="#1f6feb" 
         />
       </ChatDashboardContainer>
     );
@@ -590,36 +775,46 @@ const ChatDashboard = () => {
 
   return (
     <ChatDashboardContainer>
-      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem 0' }}>
-        <FiMessageCircle />
-        Live Chat Dashboard ({Object.keys(conversations).length} conversations)
-      </h3>
-      <CategoryFilter
-        value="All"
-        onChange={(e) => console.log(e.target.value)}
-      >
-        <option value="All">All categories</option>
-        <option value="Games">Games</option>
-        <option value="General">General</option>
-        <option value="Work">Work</option>
-        <option value="Billing">Billing</option>
-        <option value="Support">Support</option>
-        <option value="Sales">Sales</option>
-        <option value="Other">Other</option>
-      </CategoryFilter>
-      <ChatListWrapper>
+      <div style={{ padding: '1.5rem', borderBottom: '1px solid #21262d' }}>
+        <HeaderTitle style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FiMessageCircle size={20} />
+          Live Chat Dashboard ({filteredConversations.length} samtaler)
+        </HeaderTitle>
+      </div>
+
+      <ChatContent>
+        {/* Venstre panel: Samtaleliste */}
         <ChatList>
-          {Object.keys(conversations).length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#99e6ff', opacity: 0.7 }}>
+          <div style={{ padding: '0 16px 8px' }}>
+            {/* Filter-dropdown */}
+            <CategoryFilter
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="All">Alle kategorier</option>
+              <option value="Games">Spill</option>
+              <option value="General">Generelt</option>
+              <option value="Work">Arbeid</option>
+              <option value="Billing">Fakturering</option>
+              <option value="Support">Support</option>
+              <option value="Sales">Salg</option>
+              <option value="Other">Annet</option>
+            </CategoryFilter>
+          </div>
+
+          {filteredConversations.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#8b949e' }}>
               <FiUser size={32} style={{ marginBottom: '1rem' }} />
-              <div>No conversations yet</div>
-              <small>Conversations will appear when users start chatting</small>
+              <div>Ingen samtaler enda</div>
+              <small>Samtaler vises her når brukere starter chatten</small>
             </div>
           ) : (
-            Object.keys(conversations).map((userId) => {
+            filteredConversations.map((userId) => {
               const messages = conversations[userId] || [];
               const lastMessage = messages[messages.length - 1];
-              const unreadCount = messages.filter(m => m.from === 'user' && !m.read).length;
+              // Merk: "unread" status er ikke implementert i Firebase-strukturen din,
+              // så vi bruker en enkel teller for bruker-meldinger.
+              const unreadCount = messages.filter(m => m.from === 'user').length; 
               
               return (
                 <ChatListItem
@@ -627,195 +822,161 @@ const ChatDashboard = () => {
                   active={selected === userId}
                   onClick={() => onSelect(userId)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <FiUser size={14} />
-                        User {userId.substring(0, 8)}
-                      </strong>
-                      <small style={{ color: '#99e6ff', display: 'block', marginTop: '0.25rem' }}>
-                        {messages.length} messages
-                      </small>
-                      {lastMessage && (
-                        <div style={{ 
-                          fontSize: '0.8rem', 
-                          color: '#ccc', 
-                          marginTop: '0.25rem',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '200px'
-                        }}>
-                          {lastMessage.from === 'admin' ? '👨‍💼 ' : '👤 '}{lastMessage.text}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                      {unreadCount > 0 && (
-                        <span style={{
-                          background: '#00ddff',
-                          color: '#000',
-                          borderRadius: '50%',
-                          width: '20px',
-                          height: '20px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.7rem',
-                          fontWeight: 'bold'
-                        }}>
-                          {unreadCount}
-                        </span>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(userId);
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "#ff6b6b",
-                          cursor: "pointer",
-                          padding: '0.25rem',
-                          borderRadius: '4px',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.background = 'rgba(255, 107, 107, 0.1)'}
-                        onMouseLeave={(e) => e.target.style.background = 'none'}
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
-                    </div>
+                  <ChatMeta>
+                    <ChatTitle>
+                      <FiUser size={14} />
+                      Bruker {userId.substring(0, 8)}
+                    </ChatTitle>
+                    {lastMessage && (
+                      <LastMessage>
+                        {lastMessage.from === 'admin' ? '👨‍💼 Du: ' : '👤 Bruker: '}
+                        {lastMessage.text}
+                      </LastMessage>
+                    )}
+                  </ChatMeta>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Unread badge (kun for eksempel, siden unread status ikke er i db) */}
+                    {unreadCount > 0 && <UnreadBadge active={selected !== userId}>{unreadCount}</UnreadBadge>}
+                    
+                    <DeleteButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(userId);
+                      }}
+                      title="Slett samtale"
+                    >
+                      <FiTrash2 size={14} />
+                    </DeleteButton>
                   </div>
                 </ChatListItem>
               );
             })
           )}
         </ChatList>
+        
+        {/* Høyre panel: Meldinger og handlinger */}
         <ChatDetails>
           {selected ? (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0 }}>
-                  Chat with User {selected.substring(0, 8)}
-                </h3>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    onClick={() => setSelected(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#99e6ff',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                    title="Close Chat"
-                  >
-                    <FiX size={18} />
-                  </button>
-                  <button
-                    onClick={() => onDelete(selected)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#ff6b6b',
-                      cursor: 'pointer',
-                      padding: '0.5rem',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                    title="Delete Chat"
-                  >
-                    <FiTrash2 size={18} />
-                  </button>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <StatusBadge active={selectedChatInfo?.takenOver}>
-                  {selectedChatInfo?.takenOver ? `Taken over by ${selectedChatInfo?.takenOverByEmail || 'admin'}` : 'AI Assistant Active'}
-                </StatusBadge>
-                {!selectedChatInfo?.takenOver ? (
-                  <ActionButton bgColor="#7c3aed" onClick={takeOverChat} title="Take over this chat">
-                    <FiLock style={{ marginRight: 6 }} /> Take Over
-                  </ActionButton>
-                ) : (
-                  <ActionButton bgColor="#0ea5e9" onClick={releaseChat} title="Release back to AI">
-                    <FiUnlock style={{ marginRight: 6 }} /> Release to AI
-                  </ActionButton>
-                )}
-                <ActionButton bgColor="#f59e0b" onClick={resetToMaintenanceMessage} title="Replace all messages with maintenance notice">
-                  Maintenance Msg
-                </ActionButton>
-              </div>
+            <>
+              {/* Header for valgt chat */}
+              <ChatHeader>
+                <HeaderTitle>
+                  Samtale med Bruker {selected.substring(0, 8)}
+                </HeaderTitle>
+                <HeaderActions>
+                    <ActionButton onClick={() => setSelected(null)} title="Lukk chat">
+                        <FiX size={16} />
+                    </ActionButton>
+                    <ActionButton danger onClick={() => onDelete(selected)} title="Slett hele samtalen">
+                        <FiTrash2 size={16} />
+                    </ActionButton>
+                </HeaderActions>
+              </ChatHeader>
 
+              {/* Status og Overgangshandlinger */}
+              <StatusAndActions>
+                <StatusBadge active={selectedChatInfo?.takenOver}>
+                    {selectedChatInfo?.takenOver ? (
+                        <>
+                            <FiLock size={12} /> Overtatt av {selectedChatInfo?.takenOverByEmail || 'admin'}
+                        </>
+                    ) : (
+                        <>
+                            <FiUnlock size={12} /> AI-assistent Aktiv
+                        </>
+                    )}
+                </StatusBadge>
+                <ActionButtonsGroup>
+                    {!selectedChatInfo?.takenOver ? (
+                        <ActionButton 
+                            primary 
+                            onClick={takeOverChat} 
+                            title="Ta over chatten og deaktiver AI"
+                        >
+                            <FiMinimize2 style={{ marginRight: 6 }} /> Ta Over
+                        </ActionButton>
+                    ) : (
+                        <ActionButton 
+                            onClick={releaseChat} 
+                            title="Frigjør chatten tilbake til AI"
+                        >
+                            <FiMaximize2 style={{ marginRight: 6 }} /> Frigjør til AI
+                        </ActionButton>
+                    )}
+                    <ActionButton 
+                        onClick={resetToMaintenanceMessage} 
+                        title="Erstatt med vedlikeholdsmelding"
+                    >
+                        <FiAlertTriangle style={{ marginRight: 6 }} /> Vedlikehold
+                    </ActionButton>
+                </ActionButtonsGroup>
+              </StatusAndActions>
+
+              {/* Meldinger-boks */}
               <MessagesContainer>
-                {conversations[selected].map((msg, index) => (
-                  <MessageBubble key={index} variant={msg.from}>
-                    {msg.text}
+                {(conversations[selected] || []).map((msg, index) => (
+                  <MessageBubble 
+                    key={index} 
+                    variant={msg.from}
+                  >
+                    {msg.from === 'admin' ? `(Admin) ${msg.text}` : msg.text}
                   </MessageBubble>
                 ))}
+                <div ref={messagesEndRef} /> {/* For å scrolle til bunnen */}
               </MessagesContainer>
-              <AdminTextArea
-                ref={adminInputRef}
-                rows="3"
-                placeholder="Write a reply..."
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  // typing indicator with debounce
-                  try { setAdminTyping(true); } catch { /* ignore */ }
-                  // Throttle Firestore writes to avoid lag
-                  if (selected && !adminTypingActiveRef.current) {
-                    adminTypingActiveRef.current = true;
-                    try { updateDoc(doc(db, 'chats', selected), { adminTyping: true }); } catch { /* ignore */ }
-                  }
-                  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-                  typingTimeoutRef.current = setTimeout(() => {
-                    try { setAdminTyping(false); } catch { /* ignore */ }
-                    if (selected && adminTypingActiveRef.current) {
-                      try { updateDoc(doc(db, 'chats', selected), { adminTyping: false }); } catch { /* ignore */ }
-                      adminTypingActiveRef.current = false;
-                    }
-                  }, 1500);
-                }}
-                onKeyDown={handleKeyPress}
-                autoFocus
-              />
-              <div style={{ color: '#9aaecf', fontSize: 12, marginTop: 4, opacity: 0.75 }}>
-                Press Enter to send • Shift+Enter for a new line
-              </div>
-              <ActionButtons>
-                <ActionButton
-                  bgColor="#2563eb"
-                  onClick={onSend}
-                  disabled={sending || !input.trim()}
-                >
-                  {sending ? 'Sending...' : 'Send Reply'}
-                </ActionButton>
-                <ActionButton
-                  bgColor="#dc3545"
-                  onClick={() => onDelete(selected)}
-                >
-                  Delete <FiTrash2 style={{ marginLeft: "4px" }} />
-                </ActionButton>
-              </ActionButtons>
-            </div>
+
+              {/* Input og Send-handling */}
+              <AdminInputArea>
+                <InputWrapper>
+                  <AdminTextArea
+                    ref={adminInputRef}
+                    rows="4"
+                    placeholder="Skriv et svar (Enter for å sende)..."
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      // Håndtering av skriveindikator (samme logikk som før)
+                      try { setAdminTyping(true); } catch { /* ignore */ }
+                      if (selected && !adminTypingActiveRef.current) {
+                        adminTypingActiveRef.current = true;
+                        try { updateDoc(doc(db, 'chats', selected), { adminTyping: true }); } catch { /* ignore */ }
+                      }
+                      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                      typingTimeoutRef.current = setTimeout(() => {
+                        try { setAdminTyping(false); } catch { /* ignore */ }
+                        if (selected && adminTypingActiveRef.current) {
+                          try { updateDoc(doc(db, 'chats', selected), { adminTyping: false }); } catch { /* ignore */ }
+                          adminTypingActiveRef.current = false;
+                        }
+                      }, 1500);
+                    }}
+                    onKeyDown={handleKeyPress}
+                    disabled={sending}
+                  />
+                  <SendButton
+                    primary
+                    onClick={onSend}
+                    disabled={sending || !input.trim()}
+                    title="Send melding (Enter)"
+                  >
+                    <FiSend size={18} />
+                  </SendButton>
+                </InputWrapper>
+                <UtilityText>
+                  Trykk **Enter** for å sende • **Shift+Enter** for ny linje
+                </UtilityText>
+              </AdminInputArea>
+            </>
           ) : (
-            <div style={{ textAlign: 'center', padding: '4rem', color: '#99e6ff' }}>
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#8b949e', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
               <FiMessageCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-              <h4>Select a conversation</h4>
-              <p>Choose a user from the list to view and reply to their messages</p>
+              <h4>Velg en samtale</h4>
+              <p>Velg en bruker fra listen til venstre for å se og svare på meldingene deres.</p>
             </div>
           )}
         </ChatDetails>
-      </ChatListWrapper>
+      </ChatContent>
     </ChatDashboardContainer>
   );
 };

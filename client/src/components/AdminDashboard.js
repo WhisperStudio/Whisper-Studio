@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { 
+import {
   db, collection, getDocs
 } from '../firebase';
 import { CompactLoader } from './LoadingComponent';
@@ -10,6 +10,32 @@ import {
 } from 'react-icons/fi';
 import { BsSpeedometer2 } from 'react-icons/bs';
 import { IoPulse } from 'react-icons/io5';
+
+// ===================== CHART.JS IMPORTER =====================
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title as ChartTitleElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  ChartTitleElement,
+  Tooltip,
+  Legend
+);
+// ==============================================================
 
 /* ===================== Styled Components ===================== */
 const DashboardContainer = styled.div`
@@ -30,11 +56,11 @@ const HeaderSection = styled.div`
   align-items: center;
   margin-bottom: 40px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.05); /* Dypere base */
+  backdrop-filter: blur(30px); /* Mer blur */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Tydeligere kant */
+  border-radius: 28px; /* Mer avrundet */
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5); /* Dypere skygge */
 `;
 
 const Title = styled.h1`
@@ -85,19 +111,21 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.02); /* Litt lysere base */
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.06); 
+  border-radius: 28px; /* Mer avrundet */
   padding: 32px;
   position: relative;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Lett initial skygge */
+
 
   &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
-    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-12px) scale(1.02); /* Mer dramatisk løft */
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.08); /* Lysere ved hover */
   }
 
   &::before {
@@ -108,7 +136,7 @@ const StatCard = styled.div`
     right: 0;
     height: 4px;
     background: ${props => props.color || 'linear-gradient(90deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)'};
-    border-radius: 24px 24px 0 0;
+    border-radius: 28px 28px 0 0;
   }
 `;
 
@@ -141,14 +169,15 @@ const StatLabel = styled.div`
   font-weight: 500;
 `;
 
+// Oppdatert StatChange for å støtte negative/positive props
 const StatChange = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: ${props => props.positive ? '#34d399' : '#f87171'};
-  background: ${props => props.positive ? 'rgba(52, 211, 153, 0.1)' : 'rgba(248, 113, 113, 0.1)'};
+  color: ${props => (props.positive ? '#34d399' : props.negative ? '#f87171' : 'rgba(255,255,255,0.7)')};
+  background: ${props => (props.positive ? 'rgba(52, 211, 153, 0.1)' : props.negative ? 'rgba(248, 113, 113, 0.1)' : 'rgba(255,255,255,0.1)')};
   padding: 6px 12px;
   border-radius: 12px;
 
@@ -157,7 +186,7 @@ const StatChange = styled.div`
 
 const ChartsSection = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 
@@ -168,15 +197,19 @@ const ChartsSection = styled.div`
 
 const ChartCard = styled.div`
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  border-radius: 28px; /* Mer avrundet */
   padding: 32px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 400px; 
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-6px); 
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
     background: rgba(255, 255, 255, 0.06);
   }
 
@@ -220,19 +253,21 @@ const ActivityFeed = styled.div`
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  border-radius: 28px;
   padding: 32px;
   max-height: 600px;
   overflow-y: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+
 
   &:hover { background: rgba(255, 255, 255, 0.06); }
 
-  &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px; }
+  &::-webkit-scrollbar { width: 8px; }
+  &::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
   &::-webkit-scrollbar-thumb {
     background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-    border-radius: 3px;
+    border-radius: 4px;
   }
 `;
 
@@ -294,6 +329,8 @@ const GaugeCard = styled.div`
   align-items: center;
   justify-content: center;
   min-height: 240px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+
 
   &:hover {
     transform: translateY(-2px);
@@ -321,7 +358,7 @@ const GaugeCaption = styled.div`
   text-align: center;
 `;
 
-/* ===================== EGEN GAUGE (SVG) – FIXED NEEDLE ===================== */
+/* ===================== EGEN GAUGE (SVG) – UENDRET ===================== */
 
 const GaugeWrap = styled.div`
   width: ${p => p.$size || 260}px;
@@ -332,9 +369,9 @@ const GaugeWrap = styled.div`
 `;
 
 const defaultZones = [
-  { from: 0,   to: 60,  color: "#22c55e" },
-  { from: 60,  to: 85,  color: "#f59e0b" },
-  { from: 85,  to: 100, color: "#ef4444" },
+  { from: 0,   to: 60,  color: "#22c55e" },
+  { from: 60,  to: 85,  color: "#f59e0b" },
+  { from: 85,  to: 100, color: "#ef4444" },
 ];
 
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
@@ -346,7 +383,7 @@ const Gauge = ({
   max = 100,
   size = 260,
   faceColor = "#2b2450",
-  rimColor  = "#3a2f56",
+  rimColor  = "#3a2f56",
   trackColor = "rgba(255,255,255,0.08)",
   tickColor = "#d9d6ff",
   needleColor = "#7c3aed",
@@ -373,7 +410,6 @@ const Gauge = ({
   const angle = lerp(startAngle, endAngle, norm);
 
   const toXY = (ang, r) => {
-    // her er 0° = opp; positivt med klokka (matcher øvrig tegning)
     const t = (ang - 90) * (Math.PI / 180);
     return [cx + r * Math.cos(t), cy + r * Math.sin(t)];
   };
@@ -403,7 +439,7 @@ const Gauge = ({
   const zonePaths = React.useMemo(() => {
     return (zones || defaultZones).map((z, i) => {
       const a0 = lerp(startAngle, endAngle, clamp((z.from - min) / (max - min), 0, 1));
-      const a1 = lerp(startAngle, endAngle, clamp((z.to   - min) / (max - min), 0, 1));
+      const a1 = lerp(startAngle, endAngle, clamp((z.to   - min) / (max - min), 0, 1));
       return { d: ringSlice(a0, a1), color: z.color, key: i };
     });
   }, [zones, min, max, size]);
@@ -423,13 +459,12 @@ const Gauge = ({
     return arr;
   }, [showTicks, majorTicks, min, max, size, format]);
 
-  // Nåla lages i LOKALE koordinater rundt (0,0) og roteres/translator som gruppe
   const needleLength = rRingInner - 12;
   const needleWidth = 6;
   const needlePoints = [
-    [-needleWidth, 0],          // venstre ved senter
-    [0, -needleLength],         // spiss oppover (0°)
-    [needleWidth, 0],           // høyre ved senter
+    [-needleWidth, 0],
+    [0, -needleLength],
+    [needleWidth, 0],
   ].map(([x,y]) => `${x},${y}`).join(' ');
 
   return (
@@ -480,12 +515,13 @@ export const DashboardOverview = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeChats: 0,
-    revenue: 0,
-    serverUptime: '99.9%',
-    userGrowth: '+12.5%',
-    chatGrowth: '+8.2%',
-    revenueGrowth: '+25.4%',
-    uptimeStatus: 'Excellent'
+    totalTickets: 0, // Nytt felt
+    totalBugs: 0,    // Nytt felt
+    recentBugs: 0,   // Nytt felt
+    
+    userGrowth: '+0.0%',
+    chatGrowth: '+0.0%',
+    ticketGrowth: '+0.0%', // Nytt vekstfelt
   });
 
   const [activities, setActivities] = useState([]);
@@ -494,7 +530,7 @@ export const DashboardOverview = () => {
 
   useEffect(() => {
     loadDashboardData();
-    const interval = setInterval(loadDashboardData, 30000);
+    const interval = setInterval(loadDashboardData, 60000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -504,33 +540,58 @@ export const DashboardOverview = () => {
       const chatsSnapshot = await getDocs(collection(db, 'chats'));
       const bugsSnapshot = await getDocs(collection(db, 'bugs'));
       const ticketsSnapshot = await getDocs(collection(db, 'tickets'));
-      const visitorsSnapshot = await getDocs(collection(db, 'visitors'));
 
       const totalUsers = usersSnapshot.size;
       const activeChats = chatsSnapshot.size;
       const totalTickets = ticketsSnapshot.size;
-      const totalVisitors = visitorsSnapshot.size;
+      const totalBugs = bugsSnapshot.size;
 
       const now = new Date();
-      const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const recentUsers = usersSnapshot.docs.filter(doc => {
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      
+      // Brukervekst
+      const currentPeriodUsers = usersSnapshot.docs.filter(doc => {
         const createdAt = doc.data().createdAt;
-        return createdAt && createdAt.toDate() > lastWeek;
+        return createdAt && createdAt.toDate() > oneWeekAgo;
+      }).length;
+      const previousPeriodUsers = usersSnapshot.docs.filter(doc => {
+        const createdAt = doc.data().createdAt;
+        return createdAt && createdAt.toDate() > twoWeeksAgo && createdAt.toDate() <= oneWeekAgo;
       }).length;
 
-      const userGrowth = totalUsers > 0 ? ((recentUsers / totalUsers) * 100).toFixed(1) : '0';
+      let userGrowth = 0;
+      if (previousPeriodUsers > 0) {
+        userGrowth = ((currentPeriodUsers - previousPeriodUsers) / previousPeriodUsers) * 100;
+      } else if (currentPeriodUsers > 0) {
+        userGrowth = 100;
+      }
+      const userGrowthString = `${userGrowth >= 0 ? '+' : ''}${userGrowth.toFixed(1)}%`;
+      
+      // Bugs som krever oppmerksomhet (siste 24 timer)
+      const recentBugs = bugsSnapshot.docs.filter(doc => {
+          const timestamp = doc.data().timestamp;
+          // Sjekker om tidsstempelet er nyere enn 24 timer siden
+          return timestamp && timestamp.toDate().getTime() > (now.getTime() - 24 * 60 * 60 * 1000);
+      }).length;
+
+      // Simulerer vekst for tickets og chats
+      const randomChatGrowth = (Math.random() * 10 - 2).toFixed(1); 
+      const randomTicketGrowth = (Math.random() * 15 - 5).toFixed(1); 
 
       setStats({
         totalUsers,
         activeChats,
-        revenue: totalTickets * 150,
-        serverUptime: '99.9%',
-        userGrowth: `+${userGrowth}%`,
-        chatGrowth: `+${Math.floor(Math.random() * 15) + 5}%`,
-        revenueGrowth: `+${Math.floor(Math.random() * 30) + 10}%`,
-        uptimeStatus: 'Excellent'
+        totalTickets, 
+        totalBugs,
+        recentBugs,
+        
+        userGrowth: userGrowthString,
+        chatGrowth: `${randomChatGrowth >= 0 ? '+' : ''}${randomChatGrowth}%`,
+        ticketGrowth: `${randomTicketGrowth >= 0 ? '+' : ''}${randomTicketGrowth}%`,
       });
 
+      // Aktivitetssimulering (uendret)
       const recentActivities = [];
       let activityId = 1;
 
@@ -558,7 +619,7 @@ export const DashboardOverview = () => {
         recentActivities.push({
           id: activityId++,
           type: 'ticket',
-          title: `New support ticket: ${doc.data().title}`,
+          title: `New support ticket: ${doc.data().title || 'Support issue'}`,
           time: doc.data().createdAt.toDate(),
           icon: <FiFileText />
         });
@@ -582,8 +643,8 @@ export const DashboardOverview = () => {
       recentActivities.push({
         id: activityId++,
         type: 'system',
-        title: 'Database backup completed',
-        time: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        title: 'System check completed',
+        time: new Date(Date.now() - 2 * 60 * 60 * 1000), 
         icon: <FiCheckCircle />
       });
 
@@ -599,22 +660,71 @@ export const DashboardOverview = () => {
     }
   };
 
-  const chartData = {
-    labels: chartPeriod === 'day' 
+  const lineChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+      y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+    },
+    plugins: {
+      legend: { labels: { color: '#fff', boxWidth: 12, padding: 20 } },
+      tooltip: { bodyColor: '#fff', titleColor: '#fff', backgroundColor: 'rgba(0,0,0,0.8)', padding: 10 },
+    },
+  }), []);
+  
+  const doughnutOptions = useMemo(() => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+          legend: { position: 'right', labels: { color: '#fff', padding: 20, boxWidth: 12 } },
+          tooltip: { bodyColor: '#fff', titleColor: '#fff', backgroundColor: 'rgba(0,0,0,0.8)', padding: 10 },
+      },
+      cutout: '70%',
+  }), []);
+
+
+  const chartData = useMemo(() => {
+    const labels = chartPeriod === 'day'
       ? ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']
       : chartPeriod === 'week'
       ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      : ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-    datasets: [
-      { label: 'Users', data: chartPeriod === 'day' ? [65,59,80,81,56,95] : chartPeriod === 'week' ? [120,150,180,220,280,350,400] : [1200,1500,1800,2200] },
-      { label: 'Chats', data: chartPeriod === 'day' ? [28,48,40,19,86,27] : chartPeriod === 'week' ? [80,100,120,140,180,200,250] : [800,1000,1200,1400] }
-    ]
-  };
+      : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
 
-  const doughnutData = {
+    const datasets = [
+      {
+        label: 'Users',
+        data: chartPeriod === 'day' ? [65, 59, 80, 81, 56, 95] : chartPeriod === 'week' ? [120, 150, 180, 220, 280, 350, 400] : [1200, 1500, 1800, 2200],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#6366f1',
+      },
+      {
+        label: 'Chats',
+        data: chartPeriod === 'day' ? [28, 48, 40, 19, 86, 27] : chartPeriod === 'week' ? [80, 100, 120, 140, 180, 200, 250] : [800, 1000, 1200, 1400],
+        borderColor: '#ec4899',
+        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#ec4899',
+      }
+    ];
+
+    return { labels, datasets };
+  }, [chartPeriod]);
+
+  const doughnutData = useMemo(() => ({
     labels: ['Desktop', 'Mobile', 'Tablet'],
-    datasets: [{ data: [65,30,5], backgroundColor: ['rgba(99,102,241,0.8)','rgba(236,72,153,0.8)','rgba(34,197,94,0.8)'], borderWidth: 0 }]
-  };
+    datasets: [{ 
+      data: [65, 30, 5], 
+      backgroundColor: ['#6366f1', '#ec4899', '#22c55e'], 
+      borderColor: 'rgba(255, 255, 255, 0.1)', 
+      borderWidth: 1 
+    }]
+  }), []);
+
 
   if (loading) {
     return (
@@ -631,58 +741,6 @@ export const DashboardOverview = () => {
     );
   }
 
-  // Enkle fallback-graf-komponenter (uten chart.js)
-  const SimpleChart = ({ data }) => {
-    const maxValue = Math.max(...data.datasets[0].data);
-    return (
-      <div style={{ padding: '20px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '200px' }}>
-          {data.labels.map((label, index) => (
-            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-              <div style={{
-                width: '30px',
-                height: `${(data.datasets[0].data[index] / maxValue) * 150}px`,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '4px 4px 0 0',
-                transition: 'height 0.3s'
-              }} />
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '10px' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const SimplePieChart = ({ data }) => {
-    const total = data.datasets[0].data.reduce((a,b)=>a+b,0);
-    const colors = ['#667eea','#ec4899','#22c55e'];
-    return (
-      <div style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-          <div style={{
-            width: '150px', height: '150px', borderRadius: '50%',
-            background: `conic-gradient(
-              ${colors[0]} 0deg ${(data.datasets[0].data[0] / total) * 360}deg,
-              ${colors[1]} ${(data.datasets[0].data[0] / total) * 360}deg ${((data.datasets[0].data[0] + data.datasets[0].data[1]) / total) * 360}deg,
-              ${colors[2]} ${((data.datasets[0].data[0] + data.datasets[0].data[1]) / total) * 360}deg 360deg
-            )`,
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-          }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
-          {data.labels.map((label, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: colors[index] }} />
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-                {label} ({Math.round((data.datasets[0].data[index] / total) * 100)}%)
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <DashboardContainer>
@@ -695,32 +753,40 @@ export const DashboardOverview = () => {
       </HeaderSection>
 
       <StatsGrid>
+        {/* KORT 1: Total Users (Beholdt) */}
         <StatCard color="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
           <StatIcon color="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"><FiUsers /></StatIcon>
           <StatValue>{stats.totalUsers.toLocaleString()}</StatValue>
           <StatLabel>Total Users</StatLabel>
-          <StatChange positive><FiTrendingUp /> {stats.userGrowth}</StatChange>
+          <StatChange positive={stats.userGrowth.charAt(0) === '+'}>{stats.userGrowth.charAt(0) === '+' ? <FiTrendingUp /> : <FiTrendingUp style={{ transform: 'rotate(180deg)' }} />} {stats.userGrowth}</StatChange>
         </StatCard>
 
+        {/* KORT 2: Active Chats (Beholdt) */}
         <StatCard color="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
           <StatIcon color="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"><FiMessageSquare /></StatIcon>
           <StatValue>{stats.activeChats}</StatValue>
           <StatLabel>Active Chats</StatLabel>
-          <StatChange positive><FiTrendingUp /> {stats.chatGrowth}</StatChange>
+          <StatChange positive={stats.chatGrowth.charAt(0) === '+'}>{stats.chatGrowth.charAt(0) === '+' ? <FiTrendingUp /> : <FiTrendingUp style={{ transform: 'rotate(180deg)' }} />} {stats.chatGrowth}</StatChange>
+        </StatCard>
+        
+        {/* NYTT KORT 3: Total Tickets (Erstatter Revenue) */}
+        <StatCard color="linear-gradient(135deg, #f59e0b 0%, #fcd34d 100%)">
+          <StatIcon color="linear-gradient(135deg, #f59e0b 0%, #fcd34d 100%)"><FiFileText /></StatIcon>
+          <StatValue>{stats.totalTickets.toLocaleString()}</StatValue>
+          <StatLabel>Total Support Tickets</StatLabel>
+          <StatChange positive={stats.ticketGrowth.charAt(0) === '+'}>{stats.ticketGrowth.charAt(0) === '+' ? <FiTrendingUp /> : <FiTrendingUp style={{ transform: 'rotate(180deg)' }} />} {stats.ticketGrowth}</StatChange>
         </StatCard>
 
-        <StatCard color="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-          <StatIcon color="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"><FiDollarSign /></StatIcon>
-          <StatValue>${stats.revenue.toLocaleString()}</StatValue>
-          <StatLabel>Revenue</StatLabel>
-          <StatChange positive><FiTrendingUp /> {stats.revenueGrowth}</StatChange>
-        </StatCard>
-
-        <StatCard color="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
-          <StatIcon color="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"><FiActivity /></StatIcon>
-          <StatValue>{stats.serverUptime}</StatValue>
-          <StatLabel>Server Uptime</StatLabel>
-          <StatChange positive><FiCheckCircle /> {stats.uptimeStatus}</StatChange>
+        {/* NYTT KORT 4: Bug Reports (Erstatter Server Uptime) */}
+        <StatCard color="linear-gradient(135deg, #ef4444 0%, #f97316 100%)">
+          <StatIcon color="linear-gradient(135deg, #ef4444 0%, #f97316 100%)"><FiAlertCircle /></StatIcon>
+          <StatValue>{stats.totalBugs}</StatValue>
+          <StatLabel>Total Bug Reports</StatLabel>
+          {/* Positiv når det ikke er nye bugs, negativ når det er nye bugs */}
+          <StatChange positive={stats.recentBugs === 0} negative={stats.recentBugs > 0}>
+              {stats.recentBugs > 0 ? <FiAlertCircle /> : <FiCheckCircle />} 
+              {stats.recentBugs} issues (24h)
+          </StatChange>
         </StatCard>
       </StatsGrid>
 
@@ -734,12 +800,18 @@ export const DashboardOverview = () => {
               <TabButton active={chartPeriod === 'month'} onClick={() => setChartPeriod('month')}>Month</TabButton>
             </TabButtons>
           </ChartHeader>
-          <SimpleChart data={chartData} />
+          <div style={{ flexGrow: 1, minHeight: '280px' }}>
+            <Line options={lineChartOptions} data={chartData} />
+          </div>
         </ChartCard>
 
         <ChartCard>
           <ChartHeader><ChartTitle>Device Distribution</ChartTitle></ChartHeader>
-          <SimplePieChart data={doughnutData} />
+          <div style={{ flexGrow: 1, minHeight: '280px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: '300px', height: '100%' }}>
+              <Doughnut options={doughnutOptions} data={doughnutData} />
+            </div>
+          </div>
         </ChartCard>
       </ChartsSection>
 
@@ -750,10 +822,9 @@ export const DashboardOverview = () => {
         </ChartHeader>
         {activities.map(activity => (
           <ActivityItem key={activity.id}>
-            <ActivityIcon 
+            <ActivityIcon
               color={
                 activity.type === 'user' ? 'rgba(99, 102, 241, 0.2)' :
-                activity.type === 'chat' ? 'rgba(236, 72, 153, 0.2)' :
                 activity.type === 'ticket' ? 'rgba(245, 158, 11, 0.2)' :
                 activity.type === 'bug' ? 'rgba(239, 68, 68, 0.2)' :
                 activity.type === 'system' ? 'rgba(34, 197, 94, 0.2)' :
@@ -761,7 +832,6 @@ export const DashboardOverview = () => {
               }
               iconColor={
                 activity.type === 'user' ? '#6366f1' :
-                activity.type === 'chat' ? '#ec4899' :
                 activity.type === 'ticket' ? '#f59e0b' :
                 activity.type === 'bug' ? '#ef4444' :
                 activity.type === 'system' ? '#22c55e' :
@@ -781,7 +851,7 @@ export const DashboardOverview = () => {
   );
 };
 
-/* ===================== Realtime Monitor (Custom SVG Gauges) ===================== */
+/* ===================== Realtime Monitor (Custom SVG Gauges) - UENDRET ===================== */
 export const RealtimeMonitor = () => {
   const [systemStats, setSystemStats] = useState({
     cpuUsage: 45,
@@ -792,19 +862,20 @@ export const RealtimeMonitor = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSystemStats({
-        cpuUsage: Math.floor(Math.random() * 100),
-        memoryUsage: Math.floor(Math.random() * 100),
-        diskUsage: Math.floor(Math.random() * 100),
-        networkTraffic: Math.floor(Math.random() * 500),
-      });
-    }, 1500);
+      setSystemStats(prevStats => ({
+        // Små tilfeldige svingninger for å simulere sanntid, klamper for å holde i realistisk område (0-100 eller 0-500)
+        cpuUsage: clamp(prevStats.cpuUsage + Math.floor(Math.random() * 10 - 5), 0, 100),
+        memoryUsage: clamp(prevStats.memoryUsage + Math.floor(Math.random() * 8 - 4), 0, 100),
+        diskUsage: clamp(prevStats.diskUsage + Math.floor(Math.random() * 6 - 3), 0, 100),
+        networkTraffic: clamp(prevStats.networkTraffic + Math.floor(Math.random() * 50 - 25), 0, 500),
+      }));
+    }, 1500); 
     return () => clearInterval(interval);
   }, []);
 
   const netPct = clamp((systemStats.networkTraffic / 500) * 100, 0, 100);
 
-  const gaugeProps = {
+  const gaugeProps = useMemo(() => ({
     size: 260,
     faceColor: "#2b2450",
     rimColor: "#3a2f56",
@@ -815,7 +886,7 @@ export const RealtimeMonitor = () => {
     zones: defaultZones,
     majorTicks: 5,
     animate: true,
-  };
+  }), []);
 
   return (
     <DashboardContainer>
@@ -826,21 +897,21 @@ export const RealtimeMonitor = () => {
           <GaugeHolder>
             <Gauge {...gaugeProps} value={systemStats.memoryUsage} label="Memory" />
           </GaugeHolder>
-          <GaugeCaption>Memory Usage</GaugeCaption>
+          <GaugeCaption>Memory Usage ({systemStats.memoryUsage.toFixed(0)}%)</GaugeCaption>
         </GaugeCard>
 
         <GaugeCard>
           <GaugeHolder>
             <Gauge {...gaugeProps} value={systemStats.cpuUsage} label="CPU" />
           </GaugeHolder>
-          <GaugeCaption>CPU Usage</GaugeCaption>
+          <GaugeCaption>CPU Usage ({systemStats.cpuUsage.toFixed(0)}%)</GaugeCaption>
         </GaugeCard>
 
         <GaugeCard>
           <GaugeHolder>
             <Gauge {...gaugeProps} value={systemStats.diskUsage} label="Disk" />
           </GaugeHolder>
-          <GaugeCaption>Disk Usage</GaugeCaption>
+          <GaugeCaption>Disk Usage ({systemStats.diskUsage.toFixed(0)}%)</GaugeCaption>
         </GaugeCard>
 
         <GaugeCard>
@@ -849,10 +920,17 @@ export const RealtimeMonitor = () => {
               {...gaugeProps}
               value={netPct}
               label="Network"
-              format={(v) => `${Math.round((v/100)*500)} MB/s`}
+              min={0}
+              max={100}
+              format={(v) => `${systemStats.networkTraffic.toFixed(0)} MB/s`}
+              zones={[
+                { from: 0,   to: 50,  color: "#22c55e" }, 
+                { from: 50,  to: 80,  color: "#f59e0b" }, 
+                { from: 80,  to: 100, color: "#ef4444" }, 
+              ]}
             />
           </GaugeHolder>
-          <GaugeCaption>Network (0–500 MB/s)</GaugeCaption>
+          <GaugeCaption>Network Traffic (0–500 MB/s)</GaugeCaption>
         </GaugeCard>
       </GaugeGrid>
     </DashboardContainer>

@@ -18,10 +18,9 @@ import AdminManagement from '../components/AdminManagement';
 import RoleManagement from '../components/RoleManagement/RoleManagement';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
-import AdminTeamChat from '../components/AdminTeamChat';
 import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard';
 import { 
-  ServerStatus, DatabaseManager, SecurityCenter,
+  ServerStatus, DatabaseManager,
   UserManagement, SystemSettings, AdvancedAnalytics,
   TicketsView
 } from '../components/AdminComponents';
@@ -696,7 +695,6 @@ export default function AdminPanel() {
       ]},
       { section: "💬 Communication", items: [
         { key: "chat", label: "Chat Dashboard", icon: <FiMessageSquare />, permission: 'chat' },
-        { key: "teamChat", label: "Admin Team Chat", icon: <FiMessageCircle />, permission: 'teamChat' },
         { key: "tickets", label: "Support Tickets", icon: <FiFileText />, permission: 'tickets' }
       ]},
       { section: "🤖 AI Configuration", items: [
@@ -709,8 +707,7 @@ export default function AdminPanel() {
       ]},
       { section: "🛠️ System", items: [
         { key: "server", label: "Server Status", icon: <FiServer />, permission: 'server' },
-        { key: "database", label: "Database", icon: <FiDatabase />, permission: 'database' },
-        { key: "security", label: "Security", icon: <BsShieldCheck />, permission: 'security' }
+        { key: "database", label: "Database", icon: <FiDatabase />, permission: 'database' }
       ]},
       { section: "⚙️ Management", items: [
         { key: "taskManagement", label: "Oppgavebehandling", icon: <BsKanban />, permission: 'tasks' },
@@ -752,9 +749,9 @@ export default function AdminPanel() {
   const getDefaultPermissions = (role) => {
     switch (role) {
       case 'owner':
-        return ['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings'];
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'tasks', 'bugs', 'admins', 'users', 'settings'];
       case 'admin':
-        return ['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings'];
+        return ['dashboard', 'realtime', 'analytics', 'chat', 'aiBot', 'tickets', 'server', 'database', 'tasks', 'bugs', 'users', 'settings'];
       case 'support':
         return []; // Support får INGEN tilgang som standard - admin må eksplisitt gi tilgang
       case 'user':
@@ -771,7 +768,6 @@ export default function AdminPanel() {
     realtime: <RealtimeMonitor />,
     analytics: <AdvancedAnalytics />,
     chat: <ChatDashboard />,
-    teamChat: <AdminTeamChat currentUser={currentUser} role={currentUserRole} />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,
     pieChart: <ChatPieChart />,
@@ -783,7 +779,6 @@ export default function AdminPanel() {
     ),
     server: <ServerStatus />,
     database: <DatabaseManager />,
-    security: <SecurityCenter />,
     taskManagement: <TaskManagement />,
     bugDashboard: <BugDashboard />,
     adminManagement: <AdminSupportManagement />,
