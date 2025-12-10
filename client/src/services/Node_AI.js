@@ -1,8 +1,7 @@
 // chatbotCore.js
 // Node.js-versjon av chatbot_core.py
 
-// ===================== IMPORTS / KONFIG =====================
-import { translate } from '@vitalets/google-translate-api';
+
 
 // ===================== TEKST-HJELPERE =====================
 
@@ -393,13 +392,16 @@ function autocorrectText(text) {
       }
     }
 
-    if (
-      best !== tok &&
-      (
-        (tok.length >= 6 && bestDist <= 2) ||
-        (tok.length >= 4 && tok.length < 6 && bestDist <= 1)
-      )
-    ) {
+    // Kort fortalt:
+    // - lange ord: litt mer fleksible
+    // - mellomlange ord: 1 tegn feil
+    // - veldig korte ord (2–3 tegn): NØYAKTIG 1 tegn feil (f.eks. "va" -> "hva")
+    const shouldCorrect =
+      (tok.length >= 6 && bestDist <= 2) ||
+      (tok.length >= 4 && tok.length < 6 && bestDist <= 1) ||
+      (tok.length >= 2 && tok.length < 4 && bestDist === 1);
+
+    if (best !== tok && shouldCorrect) {
       corrected.push(best);
     } else {
       corrected.push(tok);
@@ -711,19 +713,36 @@ const PROTECTED_DOMAINS = DOMAIN_WORDS.reduce((acc, w) => {
 
 async function translateText(text, sourceLang, targetLang) {
   if (!text) return '';
+
   try {
-    const res = await translate(text, { 
-      from: sourceLang, 
-      to: targetLang,
-      forceFrom: true,
-      forceTo: true
+    const res = await fetch('https://libretranslate.de/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        q: text,
+        // LibreTranslate krever konkrete koder, men støtter "auto"
+        source: sourceLang || 'auto',   // f.eks. "auto" eller "en"
+        target: targetLang || 'no',     // f.eks. "no", "en", "de"
+        format: 'text',
+      }),
     });
-    return res.text || text;
+
+    if (!res.ok) {
+      throw new Error('Translate HTTP ' + res.status);
+    }
+
+    const data = await res.json();
+    // LibreTranslate returnerer { translatedText: '...' }
+    return data.translatedText || text;
   } catch (e) {
     console.error('Translation failed:', e);
+    // Hvis oversettelsen feiler, returner originaltekst
     return text;
   }
 }
+
 
 async function normalizeToNorwegian(text, detectedLang) {
   // Ensure text is a string
