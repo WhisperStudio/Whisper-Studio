@@ -499,6 +499,36 @@ const EnhancedChatBot = () => {
   // UI chrome uses static labels; all bot text comes from Python backend
 
   /* ===================== INIT & SUBSCRIPTIONS ===================== */
+  // Sync global AI settings (theme, avatar skin, maintenance) from Firestore
+  useEffect(() => {
+    const settingsRef = doc(db, 'system', 'aiSettings');
+    const unsub = onSnapshot(settingsRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data() || {};
+
+      // Theme / appearance
+      if (data.theme && data.theme !== theme && themes[data.theme]) {
+        setTheme(data.theme);
+        document.documentElement.setAttribute('data-theme', data.theme);
+      }
+      if (data.avatarSkin && data.avatarSkin !== skin) {
+        setSkin(data.avatarSkin);
+      }
+
+      // Maintenance mode: when bot is disabled globally, chat goes into maintenance
+      const enabled = data.isEnabled !== false; // default true
+      const globalMaintenance = !enabled;
+      maintenanceRef.current = globalMaintenance;
+      setMaintenance(globalMaintenance);
+
+      if (typeof data.expectedWait === 'number') {
+        setExpectedWait(data.expectedWait);
+      }
+    });
+
+    return () => unsub();
+  }, [theme, skin]);
+
   // Handle keyboard events for direct typing when chat is open
   useEffect(() => {
     if (!isOpen) return;
@@ -582,9 +612,11 @@ const EnhancedChatBot = () => {
       const data = snap.data() || {};
       setTakenOver(!!data.takenOver);
       takenOverRef.current = !!data.takenOver;
-      maintenanceRef.current = !!data.maintenance;
-      setMaintenance(!!data.maintenance);
-      setExpectedWait(typeof data.expectedWait === 'number' ? data.expectedWait : null);
+      // Maintenance is now driven by global AI settings (system/aiSettings)
+      // but we still respect any expectedWait stored per chat
+      if (typeof data.expectedWait === 'number') {
+        setExpectedWait(data.expectedWait);
+      }
       setAdminTyping(!!data.adminTyping);
     });
 

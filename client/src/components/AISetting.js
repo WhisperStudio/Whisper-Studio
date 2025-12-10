@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiCheckCircle, FiAlertTriangle, FiSave, FiX } from 'react-icons/fi';
 import { BsRobot } from 'react-icons/bs';
+import { db, doc, getDoc, setDoc, serverTimestamp } from '../firebase';
 
 const Container = styled.div`
   padding: 2rem;
@@ -94,26 +95,55 @@ const AISettings = () => {
     avatarSkin: 'default'
   });
 
-  // Load settings from localStorage on component mount
+  // Load settings from Firestore (with localStorage fallback) on component mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Load AI settings
-        const savedSettings = localStorage.getItem('aiSettings');
-        if (savedSettings) {
-          const { isEnabled, message } = JSON.parse(savedSettings);
-          setIsBotEnabled(isEnabled);
-          setStatus(isEnabled ? 'Operational' : 'Maintenance');
-          if (message) setMaintenanceMessage(message);
+        // First try to load from Firestore
+        const settingsRef = doc(db, 'system', 'aiSettings');
+        const snap = await getDoc(settingsRef);
+
+        if (snap.exists()) {
+          const data = snap.data() || {};
+          const enabled = data.isEnabled !== false;
+
+          setIsBotEnabled(enabled);
+          setStatus(enabled ? 'Operational' : 'Maintenance');
+          if (data.maintenanceMessage) {
+            setMaintenanceMessage(data.maintenanceMessage);
+          }
+
+          setSettings(prev => ({
+            ...prev,
+            theme: data.theme || prev.theme,
+            avatarSkin: data.avatarSkin || prev.avatarSkin
+          }));
+
+          // Apply theme from Firestore
+          if (data.theme) {
+            document.documentElement.setAttribute('data-theme', data.theme);
+          }
+        } else {
+          // Fallback to previous localStorage-based settings
+          const savedSettings = localStorage.getItem('aiSettings');
+          if (savedSettings) {
+            const { isEnabled, message } = JSON.parse(savedSettings);
+            setIsBotEnabled(isEnabled);
+            setStatus(isEnabled ? 'Operational' : 'Maintenance');
+            if (message) setMaintenanceMessage(message);
+          }
+
+          const adminSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+          setSettings(prev => ({
+            ...prev,
+            theme: adminSettings.theme || 'dark',
+            avatarSkin: adminSettings.avatarSkin || 'default'
+          }));
+
+          if (adminSettings.theme) {
+            document.documentElement.setAttribute('data-theme', adminSettings.theme);
+          }
         }
-        
-        // Load theme and avatar settings
-        const adminSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
-        setSettings(prev => ({
-          ...prev,
-          theme: adminSettings.theme || 'dark',
-          avatarSkin: adminSettings.avatarSkin || 'default'
-        }));
       } catch (error) {
         console.error('Error loading AI settings:', error);
       } finally {
@@ -128,12 +158,21 @@ const AISettings = () => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     
-    // Save to localStorage
+    // Save to localStorage (legacy behaviour)
     const currentSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
     const updatedSettings = { ...currentSettings, ...updated };
     localStorage.setItem('adminSettings', JSON.stringify(updatedSettings));
     
-    // Apply theme
+    // Persist to Firestore so chat + other clients stay in sync
+    setDoc(doc(db, 'system', 'aiSettings'), {
+      theme: updated.theme,
+      avatarSkin: updated.avatarSkin,
+      updatedAt: serverTimestamp(),
+    }, { merge: true }).catch((error) => {
+      console.error('Error saving AI appearance settings to Firestore:', error);
+    });
+
+    // Apply theme to document
     if (newSettings.theme) {
       document.documentElement.setAttribute('data-theme', newSettings.theme);
     }
@@ -145,8 +184,15 @@ const AISettings = () => {
     
     try {
       updateSettings({ isEnabled: newState });
-      
-      // In a real app, you would save this to your backend
+
+      // Persist bot enabled/maintenance state to Firestore
+      await setDoc(doc(db, 'system', 'aiSettings'), {
+        isEnabled: newState,
+        maintenanceMessage,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
+
+      // Legacy localStorage persistence
       const settings = {
         isEnabled: newState,
         message: maintenanceMessage,
@@ -173,6 +219,14 @@ const AISettings = () => {
         lastUpdated: new Date().toISOString()
       };
       
+      // Persist maintenance message to Firestore
+      await setDoc(doc(db, 'system', 'aiSettings'), {
+        isEnabled: isBotEnabled,
+        maintenanceMessage,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
+
+      // Legacy localStorage persistence
       localStorage.setItem('aiSettings', JSON.stringify(settings));
       
       // Show success message
@@ -192,7 +246,16 @@ const AISettings = () => {
         message: maintenanceMessage,
         lastUpdated: new Date().toISOString()
       };
-      
+
+      // Persist full settings snapshot to Firestore
+      await setDoc(doc(db, 'system', 'aiSettings'), {
+        isEnabled: isBotEnabled,
+        maintenanceMessage,
+        theme: settings.theme || settings.theme === '' ? settings.theme : undefined,
+        lastUpdated: serverTimestamp(),
+      }, { merge: true });
+
+      // Legacy localStorage persistence
       localStorage.setItem('aiSettings', JSON.stringify(settings));
       localStorage.setItem('aiMaintenanceMode', !isBotEnabled);
       
