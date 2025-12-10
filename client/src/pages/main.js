@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Header from '../components/header';
@@ -12,20 +12,25 @@ import voteO from '../images/Vote_O.png';
 import voteT from '../images/Vote_T.png';
 import voteE from '../images/Vote_E.png';
 
-/* ---------- Utils ---------- */
+/* ---------- Utils (Optimized) ---------- */
+
+// Standard klemme-funksjon
 const clamp = (n, a, b) => Math.min(Math.max(n, a), b);
-const lerp = (a, b, t) => a + (b - a) * t;
+
+// Standard easing-funksjon (Cubic EaseInOut)
 const ease = t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
 
+// Sjekker hvor synlig et element er i viewporten (0 til 1)
 const visibleProgress = (el) => {
   const r = el.getBoundingClientRect();
   const vh = window.innerHeight || 1;
-  const start = vh * 0.8;
-  const end = -r.height * 0.2;
+  // Starter animasjon når elementet er 80% opp fra bunnen, ferdig når det er 20% over toppen
+  const start = vh * 0.8; 
+  const end = -r.height * 0.2; 
   return clamp((start - r.top) / (start - end), 0, 1);
 };
 
-// Throttle funksjon for bedre ytelse
+// Throttle-funksjon for å begrense kallfrekvensen til en funksjon
 const throttle = (func, limit) => {
   let inThrottle;
   return function() {
@@ -36,26 +41,39 @@ const throttle = (func, limit) => {
       inThrottle = true;
       setTimeout(() => inThrottle = false, limit);
     }
-  }
+  };
 };
 
-/* ---------- Global ---------- */
+/* ---------- Global Styles (Forbedret) ---------- */
 const GlobalStyle = createGlobalStyle`
+  :root {
+    --color-dark: #0e0c0d;
+    --color-light-text: #fff;
+    --color-accent: #4a86ff;
+    --header-height: 60px;
+    
+    @media (max-width: 768px) {
+      --header-height: 50px;
+    }
+  }
+
   * {
     box-sizing: border-box;
   }
   
+  html {
+    scroll-behavior: auto;
+    font-size: 16px; 
+  }
+  
   body {
-    cursor: none;
+    cursor: default; 
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    background: #0e0c0d;
+    background: var(--color-dark);
+    color: var(--color-light-text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  }
-
-  html {
-    scroll-behavior: auto; /* Disable smooth scrolling to avoid conflicts */
   }
 `;
 
@@ -66,26 +84,10 @@ const heroIn = keyframes`
     transform: translate3d(0, 40px, 0) scale(0.95); 
     filter: blur(8px); 
   }
-  50% { 
-    opacity: 0.8; 
-    transform: translate3d(0, 10px, 0) scale(0.98); 
-    filter: blur(2px); 
-  }
   100% { 
     opacity: 1; 
     transform: translate3d(0, 0, 0) scale(1.0); 
     filter: blur(0); 
-  }
-`;
-
-const slideInUp = keyframes`
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 60px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 `;
 
@@ -105,7 +107,10 @@ const StyledHeader = styled.header`
   left: 0; 
   right: 0; 
   z-index: 1000;
+  background: rgba(14, 12, 13, 0.7); 
   backdrop-filter: blur(10px);
+  transition: background 0.3s ease;
+  height: var(--header-height);
 `;
 
 /* ---------- Fixed bakgrunnsvideo ---------- */
@@ -116,6 +121,12 @@ const FixedBackground = styled.div`
   overflow: hidden;
   pointer-events: none;
   background: #000;
+  
+  @media (max-width: 500px) {
+    background-image: url(${p => p.$fallbackImage}); 
+    background-size: cover;
+    background-position: center;
+  }
 `;
 
 const BackgroundVideo = styled.video`
@@ -132,9 +143,13 @@ const BackgroundVideo = styled.video`
   backface-visibility: hidden;
   filter: brightness(0.9) contrast(1.1) saturate(1.2);
   transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
+  @media (max-width: 500px) {
+    display: none;
+  }
 `;
 
-/* ---------- Hero ---------- */
+/* ---------- Hero (Forbedret responsivitet) ---------- */
 const ContentContainer = styled.div`
   position: relative;
   z-index: 1;
@@ -145,14 +160,12 @@ const ContentContainer = styled.div`
   justify-content: center; 
   align-items: flex-start;
   padding-left: 5%; 
-  padding-top: 60px;
+  padding-top: var(--header-height); 
   
   @media (max-width: 768px) {
     align-items: center;
-    padding-left: 5%;
-    padding-right: 5%;
-    padding-top: 80px;
-    justify-content: center;
+    padding: var(--header-height) 5% 0;
+    text-align: center;
   }
 `;
 
@@ -160,90 +173,89 @@ const TitleContainer = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
-  gap: 0;
+  gap: clamp(0px, 0.5vw, 5px); 
   opacity: ${p => p.$opacity};
   transform: translateY(${p => p.$shift}px) scale(${p => p.$scale});
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   animation: ${heroIn} 1000ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
   filter: drop-shadow(0 8px 30px rgba(0,0,0,0.55));
-  width: 100%;
-  padding: 0;
-  padding-left: 0;
-  margin-left: 0;
-  box-sizing: border-box;
-  margin-bottom: 20px;
   position: relative;
-  left: -90px;
-  padding-right: 50px;
-  width: calc(100% + 90px);
-
-  @media (max-width: 768px) {
-    left: -45px;
-    padding-right: 30px;
-    width: calc(100% + 45px);
-  }`;
-
-const TitleLetter = styled.img`
-  --letter-size: 120px;
-  width: var(--letter-size);
-  height: var(--letter-size);
-  object-fit: contain;
-  object-position: center;
-  pointer-events: none;
-  user-select: none;
-  flex: 0 0 auto;
-  margin: 0 5px;
-  
-  ${props => props.$letter === 'V' && `
-    --letter-size: 160px;
-    margin-right: -10px;
-  `}
-  
-  ${props => props.$letter === 'E' && `
-    --letter-size: 163px;
-    margin-left: -5px;
-  `}
-  
-  ${props => props.$letter === 'O' && `
-    --letter-size: 142px;
-    margin-bottom: -5px;
-  `}
   
   @media (max-width: 768px) {
-    --letter-size: 70px;
-    
-    ${props => props.$letter === 'V' && `
-      --letter-size: 90px;
-      margin-right: -5px;
-    `}
-    
-    ${props => props.$letter === 'E' && `
-      --letter-size: 92px;
-      margin-left: -3px;
-    `}
-    
-    ${props => props.$letter === 'O' && `
-      --letter-size: 80px;
-      margin-bottom: -3px;
-    `}
+    justify-content: center;
+    left: 0;
+    width: auto;
+    padding: 0;
+    margin-bottom: 25px;
+  }
+
+  @media (min-width: 769px) {
+    left: -90px;
+    padding-right: 50px;
+    width: calc(100% + 90px);
+    margin-bottom: 20px;
   }
 `;
 
+const TitleLetter = styled.img`
+  /* Standard/Basis størrelse for T og andre bokstaver uten spesifikk override */
+  --letter-size: clamp(75px, 10vw, 110px); 
+  width: var(--letter-size);
+  height: var(--letter-size);
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  flex: 0 0 auto;
+  margin: 0 clamp(1px, 0.5vw, 4px); /* Redusert margin */
+
+  /* Spesifikke justeringer for V */
+  ${props => props.$letter === 'V' && `
+    --letter-size: clamp(85px, 12vw, 140px); /* Litt større V */
+    margin-right: clamp(-3px, -1vw, -8px); /* Trekker O nærmere V */
+  `}
+  
+  /* Spesifikke justeringer for E */
+  ${props => props.$letter === 'E' && `
+    --letter-size: clamp(87px, 12.5vw, 143px); /* Litt større E */
+    margin-left: clamp(-2px, -0.5vw, -4px);
+  `}
+  
+  /* Spesifikke justeringer for O (mindre enn standard for bedre balanse) */
+  ${props => props.$letter === 'O' && `
+    --letter-size: clamp(70px, 9vw, 120px); /* Mindre O */
+    margin-bottom: clamp(-3px, -0.5vw, -5px);
+  `}
+`;
+
 const TitleDot = styled.span`
-  width: clamp(6px, 0.8vw, 10px);
-  height: clamp(6px, 0.8vw, 10px);
+  width: clamp(4px, 0.8vw, 10px);
+  height: clamp(4px, 0.8vw, 10px);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.65);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
   display: inline-block;
   align-self: flex-end;
-  transform: translateY(36%);
+  transform: translateY(30%); 
   flex-shrink: 0;
+`;
+
+const BaseButton = styled.button`
+  padding: 16px 32px; 
+  font-size: 1.3rem;
+  font-weight: 700;
+  border: 2px solid;
+  border-radius: 50px;
+  cursor: pointer; 
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   
-  @media (max-width: 768px) {
-    width: clamp(4px, 1vw, 7px);
-    height: clamp(4px, 1vw, 7px);
-    transform: translateY(30%);
+  &:active {
+    transform: translateY(-1px) scale(1.02);
+  }
+
+  @media (max-width: 768px) { 
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 14px 28px;
   }
 `;
 
@@ -260,54 +272,33 @@ const ButtonContainer = styled.div`
   @media (max-width: 768px) { 
     flex-direction: column; 
     gap: 15px;
-    width: 100%;
-    max-width: 320px;
+    width: 90%;
+    max-width: 380px; 
     align-self: center;
   }
 `;
 
-const PlayButton = styled.button`
-  padding: 16px 32px; 
-  font-size: 1.3rem;
-  font-weight: 700;
+const PlayButton = styled(BaseButton)`
   background: white;
   color: #333;
-  border: 2px solid white;
-  border-radius: 50px;
-  cursor: pointer; 
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: white;
   box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
   
   &:hover { 
-    background: #666;
+    background: #555;
     color: white;
     border-color: white;
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
   }
-  
-  &:active {
-    transform: translateY(-1px) scale(1.02);
-  }
-  
-  @media (max-width: 768px) { 
-    width: 100%;
-    font-size: 1.2rem;
-    padding: 14px 28px;
-  }
 `;
 
-const WatchTrailerButton = styled.button`
-  padding: 16px 32px; 
-  font-size: 1.3rem;
-  font-weight: 600;
+const WatchTrailerButton = styled(BaseButton)`
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  border-radius: 50px;
-  cursor: pointer; 
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
+  font-weight: 600;
   
   &:hover { 
     background: white; 
@@ -315,84 +306,65 @@ const WatchTrailerButton = styled.button`
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 15px 40px rgba(255, 255, 255, 0.3);
   }
-  
-  &:active {
-    transform: translateY(-1px) scale(1.02);
-  }
-  
-  @media (max-width: 768px) {
-    width: 100%;
-    font-size: 1.2rem;
-    padding: 14px 28px;
-  }
 `;
 
-/* ---------- News + Cards ---------- */
+/* ---------- News + Cards (Ekstremt forbedret responsivitet) ---------- */
 const NewsSection = styled.section`
   position: relative;
   width: 100%;
-  padding: 120px 5% 100px;
+  padding: clamp(60px, 10vw, 120px) 5% clamp(40px, 8vw, 100px); 
   box-sizing: border-box;
-  background: linear-gradient(180deg, rgba(14, 12, 13, 0.9) 0%, rgba(14, 12, 13, 0.95) 100%);
-  backdrop-filter: blur(20px);
-  
-  @media (max-width: 768px) {
-    padding: 80px 5% 60px;
-  }
+  background: var(--color-dark); 
+  z-index: 10;
 `;
 
 const NewsSectionTitle = styled.h2`
   font-size: clamp(2.5rem, 6vw, 5rem); 
-  margin-bottom: 80px; 
+  margin-bottom: clamp(40px, 8vw, 80px); 
   color: white;
   text-align: center; 
   font-weight: 900; 
   letter-spacing: 3px;
   text-transform: uppercase;
-  opacity: 0; 
-  transform: translateY(40px);
-  will-change: transform, opacity;
-  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-shadow: 0 4px 20px rgba(0,0,0,0.5);
   
-  @media (max-width: 768px) {
-    margin-bottom: 50px;
-    font-size: clamp(2rem, 8vw, 3rem);
-    letter-spacing: 2px;
-  }
+  will-change: transform, opacity;
 `;
 
 const CardContainer = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr;
   grid-template-rows: repeat(2, auto);
-  gap: 40px; 
+  gap: clamp(20px, 4vw, 40px); 
   max-width: 1600px; 
   margin: 0 auto;
   
   @media (max-width: 1024px) { 
     grid-template-columns: 1fr; 
-    gap: 30px;
   }
 `;
 
-const Card = styled.div`
-  background: linear-gradient(145deg, rgba(26, 26, 26, 0.9), rgba(40, 40, 40, 0.9));
+const Card = styled(Link)`
+  text-decoration: none; 
+  background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(40, 40, 40, 0.95));
   color: white;
   border-radius: 25px; 
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-  opacity: 0; 
-  transform: translateY(40px);
-  will-change: transform, opacity;
-  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  will-change: transform, box-shadow, border-color; 
+  will-change: transform, opacity;
   
   &:hover { 
-    transform: translateY(-15px) scale(1.02);
-    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    transform: translateY(-10px) scale(1.01); 
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
     border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  &:active {
+    transform: translateY(-5px) scale(1.0);
   }
 `;
 
@@ -400,7 +372,7 @@ const LargeCard = styled(Card)`
   grid-row: span 2; 
   display: flex; 
   flex-direction: column; 
-  height: 100%;
+  height: auto; 
   
   @media (max-width: 1024px) { 
     grid-row: auto; 
@@ -410,22 +382,21 @@ const LargeCard = styled(Card)`
 const SmallCardContainer = styled.div`
   display: grid; 
   grid-template-rows: repeat(2, 1fr); 
-  gap: 40px;
+  gap: clamp(20px, 4vw, 40px);
   
   @media (max-width: 1024px) { 
     grid-template-rows: auto; 
-    gap: 30px;
+  }
+  @media (max-width: 500px) {
+    grid-template-rows: auto;
   }
 `;
 
-const SmallCard = styled(Card)` 
-  display: flex; 
-  flex-direction: column; 
-`;
+const SmallCard = styled(Card)``;
 
 const CardImage = styled.div`
   width: 100%;
-  padding-top: ${p => (p.large ? '60%' : '65%')};
+  padding-top: ${p => (p.$large ? 'clamp(40%, 30vw, 60%)' : 'clamp(50%, 40vw, 65%)')}; 
   background-image: url(${p => p.image});
   background-size: cover; 
   background-position: center;
@@ -435,64 +406,42 @@ const CardImage = styled.div`
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%);
-  }
-  
-  @media (max-width: 768px) {
-    padding-top: ${p => (p.large ? '55%' : '60%')};
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%);
   }
 `;
 
 const CardContent = styled.div`
-  padding: ${p => (p.large ? '50px' : '35px')};
+  padding: ${p => (p.$large ? 'clamp(25px, 5vw, 50px)' : 'clamp(20px, 4vw, 35px)')}; 
   display: flex; 
   flex-direction: column; 
   justify-content: space-between; 
   flex-grow: 1;
-  
-  @media (max-width: 768px) {
-    padding: ${p => (p.large ? '30px' : '25px')};
-  }
 `;
 
 const CardTitle = styled.h3`
-  font-size: ${p => (p.large ? '3.2rem' : '2.4rem')};
+  font-size: ${p => (p.$large ? 'clamp(2rem, 4vw, 3.2rem)' : 'clamp(1.5rem, 3vw, 2.4rem)')}; 
   font-weight: 900; 
   color: #fff; 
-  margin-bottom: 25px; 
+  margin-bottom: clamp(15px, 2vw, 25px); 
   line-height: 1.1;
   letter-spacing: -0.02em;
-  
-  @media (max-width: 768px) {
-    font-size: ${p => (p.large ? '2.2rem' : '1.8rem')};
-    margin-bottom: 18px;
-  }
 `;
 
 const CardDescription = styled.p`
-  font-size: ${p => (p.large ? '1.5rem' : '1.2rem')};
+  font-size: ${p => (p.$large ? 'clamp(1rem, 1.5vw, 1.5rem)' : 'clamp(0.9rem, 1.2vw, 1.2rem)')}; 
   color: rgba(255,255,255,0.85); 
   line-height: 1.6; 
-  margin-bottom: 35px;
+  margin-bottom: clamp(20px, 3vw, 35px);
   font-weight: 400;
-  
-  @media (max-width: 768px) {
-    font-size: ${p => (p.large ? '1.1rem' : '1rem')};
-    margin-bottom: 25px;
-    line-height: 1.5;
-  }
 `;
 
-const CardButton = styled.button`
-  padding: 18px 36px; 
+const CardButton = styled(BaseButton)`
+  padding: 16px 32px; 
   background: linear-gradient(135deg, #4a86ff, #6c5ce7);
   color: white;
   border: none; 
-  border-radius: 50px; 
-  font-size: 1.2rem; 
+  font-size: 1.1rem; 
   font-weight: 700;
-  cursor: pointer; 
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-transform: uppercase; 
   letter-spacing: 1px;
   align-self: flex-start;
@@ -500,112 +449,111 @@ const CardButton = styled.button`
   
   &:hover { 
     background: linear-gradient(135deg, #3a76e8, #5b4cdb);
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(74, 134, 255, 0.6);
-  }
-  
-  &:active {
-    transform: translateY(-1px) scale(1.02);
   }
   
   @media (max-width: 768px) {
-    padding: 14px 28px;
-    font-size: 1rem;
-    width: 100%;
+    padding: 12px 24px;
+    font-size: 0.9rem;
     align-self: stretch;
   }
 `;
 
 const CardDate = styled.span`
-  font-size: 1.1rem; 
+  font-size: clamp(0.9rem, 1vw, 1.1rem); 
   color: rgba(255,255,255,0.7); 
   margin-bottom: 20px; 
   display: block; 
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-    margin-bottom: 15px;
-  }
 `;
 
 /* ---------- Component ---------- */
 function App() {
   const vidRef = useRef(null);
-  const [vidDur, setVidDur] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   
-  // Animation state
-  const [heroOpacity, setHeroOpacity] = useState(1);
-  const [heroShift, setHeroShift] = useState(0);
-  const [heroScale, setHeroScale] = useState(1);
-  const [parallax, setParallax] = useState(0);
-  const [videoScale, setVideoScale] = useState(1.05);
+  // Animation state (bruker setState kun i throttlet funksjon)
+  const [heroState, setHeroState] = useState({
+    opacity: 1,
+    shift: 0,
+    scale: 1,
+    parallax: 0,
+    videoScale: 1.05,
+  });
 
   // Element refs
-  const newsRef = useRef(null);
   const titleRef = useRef(null);
   const largeRef = useRef(null);
   const smallRefs = useRef([]);
+  // Liste over alle elementer som skal scroll-animeres
+  const animatedRefs = useRef([]);
 
-  const getMaxScroll = () =>
-    Math.max(0, (document.documentElement?.scrollHeight || 0) - window.innerHeight);
+  const getMaxScroll = useCallback(() =>
+    Math.max(0, (document.documentElement?.scrollHeight || 0) - window.innerHeight),
+    []
+  );
 
-  /* Video setup - Modified for continuous loop playback */
+  /* Video setup */
   useEffect(() => {
     const v = vidRef.current;
     if (!v) return;
 
-    const onLoaded = () => {
-      v.loop = true; // Enable looping
-      v.play().catch(e => console.log('Autoplay was prevented:', e));
+    const attemptPlay = () => {
+      v.loop = true;
+      v.muted = true;
+      v.playsInline = true;
       v.preload = 'auto';
+      v.play().catch(e => {
+        v.pause();
+      });
     };
 
-    v.addEventListener('loadedmetadata', onLoaded);
-    v.addEventListener('loadeddata', onLoaded);
+    v.addEventListener('loadedmetadata', attemptPlay);
+    v.addEventListener('loadeddata', attemptPlay);
+    v.addEventListener('canplaythrough', attemptPlay);
+
+    attemptPlay();
 
     return () => {
-      v.removeEventListener('loadedmetadata', onLoaded);
-      v.removeEventListener('loadeddata', onLoaded);
+      v.removeEventListener('loadedmetadata', attemptPlay);
+      v.removeEventListener('loadeddata', attemptPlay);
+      v.removeEventListener('canplaythrough', attemptPlay);
     };
   }, []);
 
-  /* Scroll handler with throttling */
+  /* Scroll handler med throttling og requestAnimationFrame */
   useEffect(() => {
-    const handleScroll = throttle(() => {
-      const maxScroll = getMaxScroll();
+    // 1. Scroll State Update (Throttled)
+    const handleScrollThrottled = throttle(() => {
       const scrollY = window.scrollY || 0;
+      const maxScroll = getMaxScroll();
       const progress = maxScroll > 0 ? clamp(scrollY / maxScroll, 0, 1) : 0;
-
-      setScrollProgress(progress);
-
-      // Smooth easing for better visual effect
+      
       const easedProgress = ease(progress);
 
-      // Hero animations
-      setHeroOpacity(Math.max(0, 1 - progress * 1.5));
-      setHeroShift(progress * 60);
-      setHeroScale(Math.max(0.9, 1 - progress * 0.1));
+      setHeroState({
+        opacity: Math.max(0, 1 - progress * 1.8), 
+        shift: progress * 80, 
+        scale: Math.max(0.9, 1 - progress * 0.15),
+        parallax: easedProgress * 50, 
+        videoScale: 1.05 + easedProgress * 0.1,
+      });
 
-      // Video effects (parallax and scale only, no time control)
-      setParallax(easedProgress * 40);
-      setVideoScale(1.05 + easedProgress * 0.08);
+      setScrollProgress(progress); 
+    }, 16); 
 
-      // Removed video time control - video now loops continuously
-    }, 16); // ~60fps throttling
-
-    // Animate scroll-linked elements
+    // 2. Element Animation (RequestAnimationFrame)
     const animateElements = () => {
-      const elements = [
-        titleRef.current,
-        largeRef.current,
-        ...smallRefs.current.filter(Boolean)
-      ].filter(Boolean);
+      if (animatedRefs.current.length === 0) {
+        animatedRefs.current = [
+          titleRef.current,
+          largeRef.current,
+          ...smallRefs.current.filter(Boolean)
+        ].filter(Boolean);
+      }
 
-      elements.forEach(el => {
+      animatedRefs.current.forEach(el => {
         const progress = visibleProgress(el);
         const easedProgress = ease(progress);
         
@@ -616,17 +564,18 @@ function App() {
       requestAnimationFrame(animateElements);
     };
 
-    handleScroll(); // Initial call
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScrollThrottled(); 
+    window.addEventListener('scroll', handleScrollThrottled, { passive: true });
+    window.addEventListener('resize', handleScrollThrottled, { passive: true });
     
-    animateElements(); // Start element animation loop
+    const animFrame = requestAnimationFrame(animateElements);
     
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('scroll', handleScrollThrottled);
+      window.removeEventListener('resize', handleScrollThrottled);
+      cancelAnimationFrame(animFrame);
     };
-  }, [vidDur]);
+  }, [getMaxScroll]);
 
   const handlePlayNowClick = () => {
     window.location.href = '/vote';
@@ -636,15 +585,15 @@ function App() {
     <>
       <GlobalStyle />
 
-      <FixedBackground>
+      <FixedBackground $fallbackImage={placeholderImage1}>
         <BackgroundVideo
           ref={vidRef}
           src={backgroundImage}
           muted
           playsInline
           preload="auto"
-          $parallax={parallax}
-          $scale={videoScale}
+          $parallax={heroState.parallax}
+          $scale={heroState.videoScale}
         />
       </FixedBackground>
 
@@ -653,54 +602,61 @@ function App() {
       </StyledHeader>
 
       <AppContainer>
+        {/* --- Hero Section --- */}
         <ContentContainer>
           <TitleContainer
-            $opacity={heroOpacity}
-            $shift={heroShift}
-            $scale={heroScale}
+            $opacity={heroState.opacity}
+            $shift={heroState.shift}
+            $scale={heroState.scale}
           >
-            <TitleLetter src={voteV} alt="V" $letter="V" style={{ marginBottom: '-20px' }}/>
+            {/* Justerte margin-bottom for visuell balanse */}
+            <TitleLetter src={voteV} alt="V" $letter="V" style={{ marginBottom: '-10px' }}/>
             <TitleDot />
-            <TitleLetter src={voteO} alt="O" $letter="O" style={{ marginBottom: '-10px' }}/>
+            <TitleLetter src={voteO} alt="O" $letter="O" style={{ marginBottom: '-5px' }}/>
             <TitleDot />
-            <TitleLetter src={voteT} alt="T" />
+            <TitleLetter src={voteT} alt="T" /> {/* T bruker nå den mindre standardstørrelsen */}
             <TitleDot />
-            <TitleLetter src={voteE} alt="E" $letter="E" style={{ marginBottom: '-18px' }}/>
+            <TitleLetter src={voteE} alt="E" $letter="E" style={{ marginBottom: '-10px' }}/>
           </TitleContainer>
 
           <ButtonContainer
-            $opacity={heroOpacity}
-            $shift={heroShift}
-            $scale={heroScale}
+            $opacity={heroState.opacity}
+            $shift={heroState.shift}
+            $scale={heroState.scale}
           >
             <PlayButton onClick={handlePlayNowClick}>Play Now</PlayButton>
             <WatchTrailerButton>Watch Trailer</WatchTrailerButton>
           </ButtonContainer>
         </ContentContainer>
 
-        <NewsSection ref={newsRef}>
+        {/* --- News Section --- */}
+        <NewsSection>
           <NewsSectionTitle ref={titleRef}>Latest Updates</NewsSectionTitle>
 
           <CardContainer>
-            <LargeCard ref={largeRef}>
-              <CardImage large image={placeholderImage1} />
-              <CardContent large>
+            {/* Large Card (Første kort i kolonnen) */}
+            <LargeCard ref={largeRef} to="/update-vintra-vote">
+              <CardImage $large image={placeholderImage1} />
+              <CardContent $large>
                 <div>
                   <CardDate>August 22, 2025</CardDate>
-                  <CardTitle large>V.O.T.E Update</CardTitle>
-                  <CardDescription large>
+                  <CardTitle $large>V.O.T.E Update</CardTitle>
+                  <CardDescription $large>
                     The Vintra/Vote website is under construction.
                     <br /><br />
                     The game Vote is well underway, two of the maps are under construction,
                     characters are being created, and the story of the game is being created bit by bit.
-                    Check out our Art Gallery where you can see some of the creatures we are planning to add.
                   </CardDescription>
                 </div>
               </CardContent>
             </LargeCard>
 
             <SmallCardContainer>
-              <SmallCard ref={el => (smallRefs.current[0] = el)}>
+              {/* Small Card 1 (Art Gallery) */}
+              <SmallCard 
+                ref={el => (smallRefs.current[0] = el)} 
+                to="/artwork" 
+                >
                 <CardImage image={placeholderImage2} />
                 <CardContent>
                   <div>
@@ -710,13 +666,12 @@ function App() {
                       Check out our art gallery of the landscape and creatures you might see in the game.
                     </CardDescription>
                   </div>
-                  <Link to="/artwork" style={{ textDecoration: 'none' }}>
-                    <CardButton>Explore</CardButton>
-                  </Link>
+                  <CardButton as="div">Explore</CardButton>
                 </CardContent>
               </SmallCard>
 
-              <SmallCard ref={el => (smallRefs.current[1] = el)}>
+              {/* Small Card 2 (Community Event) */}
+              <SmallCard ref={el => (smallRefs.current[1] = el)} to="/events">
                 <CardImage image={placeholderImage3} />
                 <CardContent>
                   <div>
@@ -727,9 +682,9 @@ function App() {
                       Don't miss this chance to showcase your skills!
                     </CardDescription>
                   </div>
-                  <CardButton>Join Now</CardButton>
+                  <CardButton as="div">Join Now</CardButton> 
                 </CardContent>
-                </SmallCard>
+              </SmallCard>
             </SmallCardContainer>
           </CardContainer>
         </NewsSection>
