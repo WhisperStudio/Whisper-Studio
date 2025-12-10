@@ -477,6 +477,7 @@ const EnhancedChatBot = () => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
   const [hasNotification] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false);
   const [expectedWait, setExpectedWait] = useState(null);
   const [showTicketForm, setShowTicketForm] = useState(false); // kept for potential popup form usage
   const [ticketData, setTicketData] = useState({ title: '', description: '', category: 'general', priority: 'medium' });
@@ -498,6 +499,25 @@ const EnhancedChatBot = () => {
   // UI chrome uses static labels; all bot text comes from Python backend
 
   /* ===================== INIT & SUBSCRIPTIONS ===================== */
+  // Handle keyboard events for direct typing when chat is open
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e) => {
+      // If user is already focused on input, let it handle the event
+      if (document.activeElement === inputRef.current) return;
+      
+      // If it's a printable character or space, focus the input
+      if (e.key.length === 1 || e.key === ' ' || e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   useEffect(() => {
     let id = localStorage.getItem('enhancedChatUserId');
     if (!id) {
@@ -584,27 +604,29 @@ const EnhancedChatBot = () => {
 
       // Request welcome from Python bot once when chat opens and no messages exist
       if (list.length === 0 && isOpen && !welcomeRequestedRef.current) {
-        welcomeRequestedRef.current = true;
-        const greetInput = 'hello';
-        (async () => {
-          try {
-            const data = await generateAIResponse({ message: greetInput, userId });
-            if (data?.lang) {
-              setLanguage(data.lang);
-              localStorage.setItem('chatLanguage', data.lang);
-            }
-            if (data?.reply) {
-              await addDoc(msgsRef, {
-                text: data.reply,
-                sender: 'bot',
-                timestamp: serverTimestamp(),
-              });
-            }
-          } catch (err) {
-            console.error('Error fetching welcome from Python bot:', err);
-          }
-        })();
+  welcomeRequestedRef.current = true;
+  const greetInput = 'hello';
+  (async () => {
+    try {
+      const data = await generateAIResponse(greetInput, userId);
+      // data = { reply, lang, intent, awaiting_ticket_confirm, active_view, last_topic, state }
+      if (data?.lang) {
+        setLanguage(data.lang);
+        localStorage.setItem('chatLanguage', data.lang);
       }
+      if (data?.reply) {
+        await addDoc(msgsRef, {
+          text: data.reply,
+          sender: 'bot',
+          timestamp: serverTimestamp(),
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching welcome from bot:', err);
+    }
+  })();
+}
+
     });
 
     return () => { unsubChat(); unsubMsgs(); };
@@ -729,24 +751,48 @@ const EnhancedChatBot = () => {
     } catch {}
   };
 
+  // Input handlers for chat input
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+    setIsUserTyping(value.length > 0);
+  };
+
+  const handleInputFocus = () => {
+    if (input.length > 0) {
+      setIsUserTyping(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    setIsUserTyping(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || !userId) return;
     if (maintenanceRef.current && !takenOverRef.current) return;
 
-
     setInput('');
+    setIsUserTyping(false); // Reset user typing state when submitting
     setIsTyping(true);
 
     try {
+      // Add user message to chat
       await addDoc(collection(db, 'chats', userId, 'messages'), {
         text,
         sender: 'user',
         timestamp: serverTimestamp(),
       });
-      try { await updateDoc(doc(db, 'chats', userId), { lastUpdated: serverTimestamp() }); } catch {}
+      
+      try { 
+        await updateDoc(doc(db, 'chats', userId), { lastUpdated: serverTimestamp() }); 
+      } catch (error) {
+        console.error('Error updating chat timestamp:', error);
+      }
 
+      // Handle maintenance mode
       if ((messages?.length || 0) === 0 && maintenanceRef.current) {
         const eta = await estimateWaitMinutes();
         try {
@@ -757,42 +803,89 @@ const EnhancedChatBot = () => {
             sender: 'bot',
             timestamp: serverTimestamp(),
           });
-        } catch {}
+        } catch (error) {
+          console.error('Error sending maintenance message:', error);
+        }
+        
         try {
-          await setDoc(doc(db, 'chats', userId), { maintenance: true, expectedWait: eta, lastUpdated: serverTimestamp() }, { merge: true });
-        } catch {}
+          await setDoc(
+            doc(db, 'chats', userId), 
+            { 
+              maintenance: true, 
+              expectedWait: eta, 
+              lastUpdated: serverTimestamp() 
+            }, 
+            { merge: true }
+          );
+        } catch (error) {
+          console.error('Error updating maintenance status:', error);
+        }
+        
         setIsTyping(false);
         return;
       }
 
-      if (takenOverRef.current) { setIsTyping(false); return; }
+      if (takenOverRef.current) { 
+        setIsTyping(false); 
+        return; 
+      }
 
-      // ---- CALL PYTHON BOT BACKEND ----
+      // Call Node_AI handler
       try {
-        const data = await generateAIResponse({ message: text, userId });
-        if (data?.lang) {
-          setLanguage(data.lang);
-          localStorage.setItem('chatLanguage', data.lang);
-        }
-        setAwaitingTicketConfirm(!!data?.awaiting_ticket_confirm);
-        if (data?.active_view) setActiveView(data.active_view);
-        if (data?.reply) {
-          await onBotReply(data.reply);
-        }
-        setIsTyping(false);
-        return;
-      } catch (err) {
-        console.error('Python bot call failed:', err);
+        // Call Node_AI handler (JS-bot)
+      const response = await generateAIResponse(text, userId);
+
+      // Update language if needed
+      if (response?.lang) {
+        setLanguage(response.lang);
+        localStorage.setItem('chatLanguage', response.lang);
       }
 
-      // No local fallback; Python backend is the single source of truth
-      setIsTyping(false);
+      setAwaitingTicketConfirm(!!response.awaiting_ticket_confirm);
+
+      if (response.active_view) {
+        setActiveView(response.active_view);
+      }
+
+      if (response.reply) {
+        // Add a small delay to ensure the typing indicator is visible
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await addDoc(collection(db, 'chats', userId, 'messages'), {
+          text: response.reply,
+          sender: 'bot',
+          timestamp: serverTimestamp(),
+        });
+      }
+} catch (error) {
+        console.error('Error getting AI response:', error);
+        // Fallback response if AI service fails
+        await addDoc(collection(db, 'chats', userId, 'messages'), {
+          text: language === 'no' 
+            ? 'Beklager, det oppsto en feil. Vennligst prøv igjen.' 
+            : 'Sorry, something went wrong. Please try again.',
+          sender: 'bot',
+          timestamp: serverTimestamp(),
+        });
+      } finally {
+        setIsTyping(false);
+      }
+      
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error in message handling:', error);
       setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: `err_${Date.now()}`, text: 'Sorry, something went wrong. Please try again.', sender: 'bot', timestamp: new Date(),
-      }]);
+      
+      // Add error message to chat
+      try {
+        await addDoc(collection(db, 'chats', userId, 'messages'), {
+          text: language === 'no'
+            ? 'Beklager, det oppsto en feil under sending av meldingen.'
+            : 'Sorry, there was an error sending your message.',
+          sender: 'bot',
+          timestamp: serverTimestamp(),
+        });
+      } catch (innerError) {
+        console.error('Error adding error message to chat:', innerError);
+      }
     }
   };
 
@@ -841,8 +934,8 @@ const EnhancedChatBot = () => {
                   }}>
                     <GlassOrbAvatar 
                       messageId="header" 
-                      sender="bot" 
-                      isTyping={isTyping}
+                      sender="user" 
+                      isTyping={isUserTyping}
                       skin={skin}
                       style={{ 
                         width: '80px',
@@ -964,7 +1057,9 @@ const EnhancedChatBot = () => {
                         ref={inputRef}
                         type="text"
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleInputChange}
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
                         placeholder={(maintenance && !takenOver)
                           ? `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`
                           : 'Type your message...'}

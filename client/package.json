@@ -14,6 +14,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/three": "^0.176.0",
+    "@vitalets/google-translate-api": "^9.2.1",
     "axios": "^1.10.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
@@ -87,5 +88,5 @@
       "last 1 safari version"
     ]
   },
-    "proxy": "http://142.93.237.94:8001"
+  "proxy": "http://142.93.237.94:8001"
 }

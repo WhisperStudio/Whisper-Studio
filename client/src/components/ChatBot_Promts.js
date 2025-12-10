@@ -1,11 +1,6 @@
 // ChatBot_Promts.js
-const API_URL = "https://pyapi.vintrastudio.com/api/chatbot";
 
-// Thin client: forwards user input to Python FastAPI and returns its response
-
-// All intent/language logic is handled by Python backend
-
-// No canned responses in the frontend
+import { ChatState, handleMessage } from '../services/Node_AI'; // juster path
 
 // generer en enkel sessionId per bruker (f.eks. lagres i localStorage)
 export const getSessionId = () => {
@@ -18,20 +13,36 @@ export const getSessionId = () => {
   return id;
 };
 
+
+const stateBySession = new Map();
+
 export const sendToBot = async (text) => {
   const sessionId = getSessionId();
 
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ session_id: sessionId, text }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Bot API error");
+  let state = stateBySession.get(sessionId);
+  if (!state) {
+    state = new ChatState();
+    stateBySession.set(sessionId, state);
   }
 
-  const data = await res.json();
-  // data = { reply, lang, intent, awaiting_ticket_confirm, active_view, last_topic }
-  return data;
+  const result = await handleMessage(text, state);
+  stateBySession.set(sessionId, result.state);
+
+  const {
+    reply,
+    lang,
+    intent,
+    awaiting_ticket_confirm,
+    active_view,
+    last_topic,
+  } = result;
+
+  return {
+    reply,
+    lang,
+    intent,
+    awaiting_ticket_confirm,
+    active_view,
+    last_topic,
+  };
 };

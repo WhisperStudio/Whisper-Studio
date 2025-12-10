@@ -26,23 +26,23 @@ const GlassOrbAvatar = ({
       { r: 200, g: 130, b: 255 },
       { r: 230, g: 120, b: 255 },
     ],
+    // Green for user typing
     typing: [
-      { r: 50, g: 200, b: 50 },
-      { r: 70, g: 220, b: 70 },
-      { r: 100, g: 240, b: 100 },
+      { r: 50, g: 220, b: 50 },   // Bright green
+      { r: 70, g: 240, b: 70 },   // Lighter green
+      { r: 100, g: 255, b: 100 }, // Lightest green
     ],
+    // Red for AI typing/responding
     listening: [
-      { r: 255, g: 100, b: 100 },
-      { r: 255, g: 150, b: 100 },
-      { r: 255, g: 200, b: 100 },
+      { r: 255, g: 50, b: 50 },   // Bright red
+      { r: 255, g: 80, b: 80 },   // Lighter red
+      { r: 255, g: 120, b: 120 }, // Lightest red
     ],
   };
 
   useEffect(() => {
-    if (sender === 'user' && isTyping) {
-      setColorState('typing');
-    } else if (sender === 'assistant' && isTyping) {
-      setColorState('listening');
+    if (isTyping) {
+      setColorState(sender === 'user' ? 'typing' : 'listening');
     } else {
       setColorState('idle');
     }
