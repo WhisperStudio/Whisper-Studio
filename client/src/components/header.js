@@ -5,6 +5,34 @@ import Vintra from '../images/VINTRA.png';
 import Studio from '../images/STUDIO.png';
 import VOTE_V from '../images/Vote_V.png';
 
+/* ===================== TIMING CONSTANTS ===================== */
+/* ENKLE TIMINGS - Juster disse for å endre animasjonshastighet */
+const TIMING = {
+  // Fase 1: VINTRA og STUDIO forsvinner
+  LOGO_FADE_OUT: 500,           // Hvor raskt VINTRA/STUDIO forsvinner (ms)
+  
+  // Fase 2: Pause før V kommer
+  V_DELAY: 50,                 // Pause mellom fade out og V animasjon (ms)
+  
+  // Fase 3: V kommer inn
+  V_SPIN_IN: 700,               // Hvor raskt V spinner inn (ms)
+  
+  // Fase 4: Tilbake - V forsvinner
+  V_SPIN_OUT: 700,              // Hvor raskt V spinner ut (ms)
+  
+  // Fase 5: Pause før logoer kommer tilbake
+  LOGO_DELAY_BACK: 150,         // Pause før VINTRA/STUDIO kommer tilbake (ms)
+  
+  // Fase 6: VINTRA og STUDIO kommer tilbake
+  LOGO_FADE_IN: 700,            // Hvor raskt VINTRA/STUDIO kommer tilbake (ms)
+};
+
+/* Justér V-ens posisjon (i px) */
+const V_POSITION = {
+  X: -14,  // Horisontal offset
+  Y: -2,   // Vertikal offset
+};
+
 /* ===================== Header Shell ===================== */
 
 const HeaderContainer = styled.header`
@@ -101,10 +129,10 @@ const NavItem = styled.a`
     border-radius:1px;
   }
 
-  &.is-active::before{
+  &.nav-slide-in::before{
     animation: ${slideInFromLeft} 0.45s cubic-bezier(.25,.46,.45,.94) forwards;
   }
-  &.is-leaving::before{
+  &.nav-slide-out::before{
     animation: ${slideOutToRight} 0.55s cubic-bezier(.25,.46,.45,.94) forwards;
   }
 `;
@@ -187,8 +215,6 @@ const MobileNavItem = styled.a`
   &:hover::after { width: 100%; }
 `;
 
-/* Removed MobileIndicator - simplified mobile menu */
-
 /* ===================== Scroll to top ===================== */
 
 const ScrollTopButton = styled.button`
@@ -207,54 +233,63 @@ const ScrollTopButton = styled.button`
 
 /* ===================== VINTRA/STUDIO <-> V overgang ===================== */
 
-/* timings og posisjon kan du finjustere */
-const V_DURATION = 800;       // ms
-const LOGO_FADE = 950;        // ms
-const LOGO_DELAY_BACK = 590;   // ms
-const V_DELAY = 550;          // ms delay before V animation starts - start later in logo fade
-
-/* Justér så V-en treffer nøyaktig V-en i VINTRA */
-const V_OFFSET_X = -8;        // px
-const V_OFFSET_Y = -2;        // px
-
+/* Animasjoner for V */
 const spinGrow = keyframes`
-  from { opacity: 0; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
-  to   { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
+  from { 
+    opacity: 0; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
+  }
 `;
 
 const spinBack = keyframes`
-  from { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(360deg) scale(1.25); }
-  to   { opacity: 1; transform: translate(${V_OFFSET_X}px, ${V_OFFSET_Y}px) rotate(0deg) scale(1); }
+  from { 
+    opacity: 1; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
+  }
 `;
 
+/* VINTRA bilde - forsvinner og kommer tilbake */
 const VintraImg = styled.img`
   height: 50px;
   margin-bottom: 10px;
   opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
-  transition:
-    opacity ${LOGO_FADE}ms ease-in-out
-    ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
-  pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+  visibility: ${({ isScrolled }) => (isScrolled ? 'hidden' : 'visible')};
+  transition: 
+    opacity ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
+    visibility 0ms ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
+  transition-delay: ${({ isScrolled }) => (isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
+  pointer-events: none;
   
   @media (max-width: 768px) {
     display: none;
   }
 `;
 
+/* STUDIO bilde - forsvinner og kommer tilbake */
 const StudioImg = styled.img`
   height: 45px;
   opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
-  transition:
-    opacity ${LOGO_FADE}ms ease-in-out
-    ${({ isScrolled }) => (isScrolled ? 0 : LOGO_DELAY_BACK)}ms;
-  pointer-events: ${({ isScrolled }) => (isScrolled ? 'none' : 'auto')};
+  visibility: ${({ isScrolled }) => (isScrolled ? 'hidden' : 'visible')};
+  transition: 
+    opacity ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
+    visibility 0ms ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
+  transition-delay: ${({ isScrolled }) => (isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
+  pointer-events: none;
   
   @media (max-width: 768px) {
     display: none;
   }
 `;
 
-/* V-en som spinner og skaleres */
+/* V-en som spinner og skaleres - kommer først etter logoene er borte */
 const VoteVImg = styled.img`
   position: absolute;
   left: 0;
@@ -267,19 +302,20 @@ const VoteVImg = styled.img`
   opacity: 0;
   visibility: hidden;
 
-  /* Simplified animation logic */
+  /* Animasjonslogikk */
   ${({ isScrolled, $hasScrolledFromTop }) => {
     if (isScrolled && $hasScrolledFromTop) {
+      // Scrollet ned - V kommer inn ETTER logoene er borte
+      const totalDelay = TIMING.LOGO_FADE_OUT + TIMING.V_DELAY;
       return css`
-        opacity: 1;
         visibility: visible;
-        animation: ${spinGrow} ${V_DURATION}ms ease-out ${V_DELAY}ms forwards;
+        animation: ${spinGrow} ${TIMING.V_SPIN_IN}ms ease-out ${totalDelay}ms forwards;
       `;
     } else if ($hasScrolledFromTop) {
+      // Scrollet opp - V forsvinner FØRST, så kommer logoene
       return css`
-        opacity: 1;
         visibility: visible;
-        animation: ${spinBack} ${V_DURATION}ms ease-in forwards;
+        animation: ${spinBack} ${TIMING.V_SPIN_OUT}ms ease-in forwards;
       `;
     }
     return css`
@@ -308,9 +344,8 @@ const Header = () => {
   const [hasScrolledFromTop, setHasScrolledFromTop] = useState(false);
   const [showTop, setShowTop] = useState(false);
 
-  // Desktop hover state
-  const [activeIdx, setActiveIdx] = useState(null);
-  const [leavingIdx, setLeavingIdx] = useState(null);
+  // Desktop hover state - using refs for independent animations
+  const navItemRefs = useRef({});
 
   // Mobile menu ref
   const mobileContainerRef = useRef(null);
@@ -376,11 +411,12 @@ const Header = () => {
   // Separate effect to handle state reset after reverse animation
   useEffect(() => {
     if (hasScrolledFromTop && !isScrolled) {
-      // User scrolled back to top - reset state after animation completes
+      // User scrolled back to top - reset state after ALL animations complete
+      const totalAnimationTime = TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK + TIMING.LOGO_FADE_IN;
       const timer = setTimeout(() => {
         setHasScrolledFromTop(false);
         hasScrolledFromTopRef.current = false;
-      }, V_DURATION + 200);
+      }, totalAnimationTime + 100);
 
       return () => clearTimeout(timer);
     }
@@ -404,17 +440,49 @@ const Header = () => {
     { href: '/contact',             label: 'Support' },
   ];
 
-  // Removed indicator logic for simpler mobile menu
-
+  // Uavhengige animasjoner - direkte DOM-manipulasjon
   const handleMouseEnter = (idx) => {
-    setActiveIdx(idx);
-    setLeavingIdx(null);
+    const el = navItemRefs.current[idx];
+    if (!el) return;
+
+    // Fjern exit-animasjonen hvis den kjører
+    el.classList.remove('nav-slide-out');
+
+    // Hvis enter-animasjon allerede kjører, restart den
+    if (el.classList.contains('nav-slide-in')) {
+      el.classList.remove('nav-slide-in');
+      // Dobbel requestAnimationFrame sikrer restart
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.classList.add('nav-slide-in');
+        });
+      });
+    } else {
+      // Første gang - bare legg til klassen
+      el.classList.add('nav-slide-in');
+    }
   };
 
   const handleMouseLeave = (idx) => {
-    setActiveIdx(null);
-    setLeavingIdx(idx);
-    setTimeout(() => setLeavingIdx(null), 600);
+    const el = navItemRefs.current[idx];
+    if (!el) return;
+
+    // Fjern enter-animasjonen hvis den kjører
+    el.classList.remove('nav-slide-in');
+
+    // Hvis exit-animasjon allerede kjører, restart den
+    if (el.classList.contains('nav-slide-out')) {
+      el.classList.remove('nav-slide-out');
+      // Dobbel requestAnimationFrame sikrer restart
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.classList.add('nav-slide-out');
+        });
+      });
+    } else {
+      // Første gang - bare legg til klassen
+      el.classList.add('nav-slide-out');
+    }
   };
 
   return (
@@ -424,29 +492,25 @@ const Header = () => {
           <LogoStage>
             <VintraImg src={Vintra} alt="Vintra" isScrolled={isScrolled} />
             <StudioImg src={Studio} alt="Studio" isScrolled={isScrolled} />
-            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} /></LogoStage>
+            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
+          </LogoStage>
         </Logodiv>
       </Logo>
 
       {/* DESKTOP NAV */}
       <NavMenu isScrolled={isScrolled}>
-        {items.map((item, idx) => {
-          const className =
-            (activeIdx === idx ? 'is-active ' : '') +
-            (leavingIdx === idx ? 'is-leaving' : '');
-          return (
-            <NavItem
-              key={item.href}
-              href={item.href}
-              textColor={textColor}
-              className={className.trim()}
-              onMouseEnter={() => handleMouseEnter(idx)}
-              onMouseLeave={() => handleMouseLeave(idx)}
-            >
-              {item.label}
-            </NavItem>
-          );
-        })}
+        {items.map((item, idx) => (
+          <NavItem
+            key={item.href}
+            ref={el => navItemRefs.current[idx] = el}
+            href={item.href}
+            textColor={textColor}
+            onMouseEnter={() => handleMouseEnter(idx)}
+            onMouseLeave={() => handleMouseLeave(idx)}
+          >
+            {item.label}
+          </NavItem>
+        ))}
       </NavMenu>
 
       <ScrollTopButton
