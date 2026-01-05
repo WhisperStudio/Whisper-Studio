@@ -23,11 +23,11 @@ import Vote_E from '../images/Vote_E.png';
 // Først inn: O og T. Deretter: V og E. Dottene etter hver sin bokstav.
 const PLAN = [
   // V and its dot
-  { type: 'img', key: 'V', src: Vote_V, h: '12rem', delay: 2.0, style: { marginRight: '-1.5rem', position: 'relative', top: '0.5rem' } },
+  { type: 'img', key: 'V', src: Vote_V, h: '12.8rem', delay: 2.0, style: { marginRight: '-1.5rem', position: 'relative', top: '0.8rem' } },
   { type: 'dot', key: 'dot1', delay: 0.5 },
   
   // O and its dot
-  { type: 'img', key: 'O', src: Vote_O, h: '11rem', delay: 3.0 },
+  { type: 'img', key: 'O', src: Vote_O, h: '11.4rem', delay: 3.0, style: { marginRight: '-0.5rem', position: 'relative', top: '0.4rem' } },
   { type: 'dot', key: 'dot2', delay: 1.0 },
   
   // T and its dot
@@ -35,7 +35,7 @@ const PLAN = [
   { type: 'dot', key: 'dot3', delay: 1.5 },
   
   // E (no dot after E)
-  { type: 'img', key: 'E', src: Vote_E, h: '13rem', delay: 5.0, style: { marginTop: '1.2rem', position: 'relative', top: '1.2rem' } },
+  { type: 'img', key: 'E', src: Vote_E, h: '13.5rem', delay: 5.0, style: { marginTop: '1.2rem', position: 'relative', top: '1.5rem' } },
 ];
 
 export default function VotePage() {
