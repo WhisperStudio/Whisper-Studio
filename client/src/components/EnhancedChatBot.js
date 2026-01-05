@@ -168,15 +168,23 @@ const ButtonContent = styled.div`
   font-size: ${props => props.$isExpanded ? '16px' : '24px'};
 `;
 const ChatWindow = styled(motion.div)`
-  position: absolute; bottom: 80px; right: 0; width: 420px; height: 600px;
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: min(420px, calc(100vw - 40px));
+  height: min(600px, calc(100vh - 140px));
   background: ${props => props.theme.background}; border-radius: 20px;
   box-shadow: 0 20px 60px ${props => props.theme.shadow};
   display: flex; flex-direction: column; overflow: hidden; border: 1px solid ${props => props.theme.border};
   @media (max-width: 768px) {
-    width: calc(100vw - 40px); height: calc(100vh - 120px); max-width: 420px; max-height: 600px;
+    width: calc(100vw - 40px);
+    height: calc(100vh - 140px);
+    max-width: 420px;
+    max-height: 600px;
   }
   @media (max-width: 480px) {
-    width: calc(100vw - 20px); right: -10px;
+    width: calc(100vw - 20px);
+    right: 0;
   }
 `;
 const Header = styled.div`
@@ -275,7 +283,14 @@ const HeaderTitle = styled.h3`
 `;
 const HeaderStatus = styled.span`
   font-size: 12px; opacity: 0.9; display: flex; align-items: center; gap: 5px;
-  &::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: ${pulse} 2s infinite; }
+  &::before { 
+    content: ''; 
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%; 
+    background: ${props => (props.$maintenance ? '#f59e0b' : '#10b981')}; 
+    animation: ${pulse} 2s infinite; 
+  }
 `;
 const HeaderActions = styled.div` display: flex; gap: 10px; z-index: 1; `;
 const HeaderButton = styled.button`
@@ -458,6 +473,30 @@ const MaintenanceOverlay = styled.div`
   }
 `;
 
+const MaintenanceView = styled.div`
+  flex: 1;
+  background: #0b1f3b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: #e5f0ff;
+  gap: 12px;
+`;
+
+const MaintenanceIcon = styled(FiAlertTriangle)`
+  font-size: 40px;
+  color: #fbbf24;
+`;
+
+const MaintenanceText = styled.p`
+  margin: 0;
+  font-size: 14px;
+  max-width: 280px;
+`;
+
 // ===================== AI AVATAR ===================== */
 // The AI_Avatar component is now imported from './AI_Avatar'
 
@@ -471,6 +510,7 @@ const EnhancedChatBot = () => {
   const [theme, setTheme] = useState('dark');
   const [language, setLanguage] = useState('en');
   const [maintenance, setMaintenance] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [userId, setUserId] = useState('');
   const [takenOver, setTakenOver] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
@@ -495,6 +535,9 @@ const EnhancedChatBot = () => {
   const welcomeRequestedRef = useRef(false);
 
   const currentTheme = themes[theme];
+  const effectiveMaintenanceText = (typeof maintenanceMessage === 'string' && maintenanceMessage.trim())
+    ? maintenanceMessage.trim()
+    : 'The bot is currently under maintenance.';
 
   // UI chrome uses static labels; all bot text comes from Python backend
 
@@ -520,6 +563,12 @@ const EnhancedChatBot = () => {
       const globalMaintenance = !enabled;
       maintenanceRef.current = globalMaintenance;
       setMaintenance(globalMaintenance);
+
+      if (typeof data.maintenanceMessage === 'string') {
+        setMaintenanceMessage(data.maintenanceMessage);
+      } else {
+        setMaintenanceMessage('');
+      }
 
       if (typeof data.expectedWait === 'number') {
         setExpectedWait(data.expectedWait);
@@ -558,8 +607,13 @@ const EnhancedChatBot = () => {
 
     const savedLanguage = localStorage.getItem('chatLanguage') || 'en';
     const savedSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+    const savedAISettings = JSON.parse(localStorage.getItem('aiSettings') || '{}');
     
     setLanguage(savedLanguage);
+
+    if (typeof savedAISettings.message === 'string') {
+      setMaintenanceMessage(savedAISettings.message);
+    }
     
     // Load theme and avatar skin from admin settings
     if (savedSettings.theme) {
@@ -603,7 +657,7 @@ const EnhancedChatBot = () => {
   }, [isTyping, input]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !isOpen) return;
 
     const chatRef = doc(db, 'chats', userId);
     setDoc(chatRef, { createdAt: serverTimestamp() }, { merge: true }).catch(() => {});
@@ -620,6 +674,13 @@ const EnhancedChatBot = () => {
       setAdminTyping(!!data.adminTyping);
     });
 
+    // When in maintenance mode (and not handled by a human), avoid
+    // subscribing to messages or initializing the AI backend.
+    if (maintenance && !takenOver) {
+      setMessages([]);
+      return () => { unsubChat(); };
+    }
+
     const msgsRef = collection(db, 'chats', userId, 'messages');
     const msgsQ = query(msgsRef, orderBy('timestamp', 'asc'));
     const unsubMsgs = onSnapshot(msgsQ, (snap) => {
@@ -634,35 +695,34 @@ const EnhancedChatBot = () => {
       });
       setMessages(list);
 
-      // Request welcome from Python bot once when chat opens and no messages exist
+      // Request welcome from Python/Node bot once when chat opens and no messages exist
       if (list.length === 0 && isOpen && !welcomeRequestedRef.current) {
-  welcomeRequestedRef.current = true;
-  const greetInput = 'hello';
-  (async () => {
-    try {
-      const data = await generateAIResponse(greetInput, userId);
-      // data = { reply, lang, intent, awaiting_ticket_confirm, active_view, last_topic, state }
-      if (data?.lang) {
-        setLanguage(data.lang);
-        localStorage.setItem('chatLanguage', data.lang);
+        welcomeRequestedRef.current = true;
+        const greetInput = 'hello';
+        (async () => {
+          try {
+            const data = await generateAIResponse(greetInput, userId);
+            if (data?.lang) {
+              setLanguage(data.lang);
+              localStorage.setItem('chatLanguage', data.lang);
+            }
+            if (data?.reply) {
+              await addDoc(msgsRef, {
+                text: data.reply,
+                sender: 'bot',
+                timestamp: serverTimestamp(),
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching welcome from bot:', err);
+          }
+        })();
       }
-      if (data?.reply) {
-        await addDoc(msgsRef, {
-          text: data.reply,
-          sender: 'bot',
-          timestamp: serverTimestamp(),
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching welcome from bot:', err);
-    }
-  })();
-}
 
     });
 
     return () => { unsubChat(); unsubMsgs(); };
-  }, [userId, isOpen, language]);
+  }, [userId, isOpen, language, maintenance, takenOver]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -968,6 +1028,7 @@ const EnhancedChatBot = () => {
                       messageId="header" 
                       sender="user" 
                       isTyping={isUserTyping}
+                      maintenance={maintenance && !takenOver}
                       skin={skin}
                       style={{ 
                         width: '80px',
@@ -980,10 +1041,10 @@ const EnhancedChatBot = () => {
                   </div>
                   <HeaderInfo>
                     <HeaderTitle>
-                      {maintenance ? <FiAlertTriangle color="#ffa500" /> : <none/>}
+                      {maintenance ? <FiAlertTriangle color="#ffa500" /> : null}
                       Vintra AI Assistant
                     </HeaderTitle>
-                    <HeaderStatus>
+                    <HeaderStatus $maintenance={maintenance && !takenOver}>
                       {takenOver
                         ? 'Support Agent Active'
                         : (maintenance
@@ -1023,8 +1084,16 @@ const EnhancedChatBot = () => {
 
               {/* Chat View */}
               {activeView === 'chat' && (
+                maintenance && !takenOver ? (
+                  <MaintenanceView>
+                    <MaintenanceIcon />
+                    <MaintenanceText>
+                      {effectiveMaintenanceText}
+                    </MaintenanceText>
+                  </MaintenanceView>
+                ) : (
                 <>
-                  <MessagesContainer $maintenance={maintenance && !takenOver}>
+                  <MessagesContainer $maintenance={false}>
                     {messages.map((message) => {
                       const isUser = message.sender === 'user';
                       return (
@@ -1092,10 +1161,8 @@ const EnhancedChatBot = () => {
                         onChange={handleInputChange}
                         onFocus={handleInputFocus}
                         onBlur={handleInputBlur}
-                        placeholder={(maintenance && !takenOver)
-                          ? `Under maintenance – please wait${expectedWait ? ` ~${expectedWait} min` : ''}`
-                          : 'Type your message...'}
-                        disabled={isTyping || (maintenance && !takenOver)}
+                        placeholder={'Type your message...'}
+                        disabled={isTyping}
                       />
                       <InputActions>
                         <IconButton
@@ -1111,7 +1178,7 @@ const EnhancedChatBot = () => {
                     <IconButton
                       type="submit"
                       $primary
-                      disabled={!input.trim() || isTyping || (maintenance && !takenOver)}
+                      disabled={!input.trim() || isTyping}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -1130,6 +1197,7 @@ const EnhancedChatBot = () => {
                     </EmojiPickerContainer>
                   )}
                 </>
+                )
               )}
 
               {/* Tickets View */}

@@ -4,6 +4,7 @@ const GlassOrbAvatar = ({
   messageId,
   sender,
   isTyping,
+  maintenance = false,
   style,
   className,
   size = 40,
@@ -26,6 +27,14 @@ const GlassOrbAvatar = ({
       { r: 200, g: 130, b: 255 },
       { r: 230, g: 120, b: 255 },
     ],
+    maintenance: [
+      { r: 255, g: 193, b: 7 },
+      { r: 245, g: 158, b: 11 },
+      { r: 255, g: 140, b: 0 },
+      { r: 96, g: 165, b: 250 },
+      { r: 59, g: 130, b: 246 },
+      { r: 129, g: 140, b: 248 },
+    ],
     // Green for user typing
     typing: [
       { r: 50, g: 220, b: 50 },   // Bright green
@@ -41,12 +50,17 @@ const GlassOrbAvatar = ({
   };
 
   useEffect(() => {
+    if (maintenance) {
+      setColorState('maintenance');
+      return;
+    }
+
     if (isTyping) {
       setColorState(sender === 'user' ? 'typing' : 'listening');
     } else {
       setColorState('idle');
     }
-  }, [isTyping, sender]);
+  }, [isTyping, sender, maintenance]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -109,7 +123,7 @@ const GlassOrbAvatar = ({
     let targetPaletteColors = colorPalettes[colorState].map((c) => ({ ...c }));
     let colorTransitionProgress = 1;
 
-    const getCurrentColor = (alpha = 0.25, variant = 'normal') => {
+    const getCurrentColor = (alpha = 0.25, variant = 'normal', offset = 0) => {
       const colors = currentPaletteColors.map((current, i) => {
         const target = targetPaletteColors[i];
         return {
@@ -125,8 +139,9 @@ const GlassOrbAvatar = ({
         };
       });
 
-      const current = colors[colorIndex % colors.length];
-      const next = colors[(colorIndex + 1) % colors.length];
+      const baseIndex = (colorIndex + offset) % colors.length;
+      const current = colors[baseIndex];
+      const next = colors[(baseIndex + 1) % colors.length];
 
       let r, g, b;
 
@@ -136,8 +151,8 @@ const GlassOrbAvatar = ({
         b = Math.min(255, Math.floor(current.b * 1.2));
       } else if (variant === 'pushed') {
         r = 255;
-        g = Math.max(0, Math.floor(current.g * 0.4));
-        b = Math.max(0, Math.floor(current.b * 0.4));
+        g = 35;
+        b = 35;
       } else {
         r = Math.floor(current.r + (next.r - current.r) * colorProgress);
         g = Math.floor(current.g + (next.g - current.g) * colorProgress);
@@ -389,6 +404,7 @@ const getChristmasBaseColor = (x, y) => {
         this.radiusOffset = 0;
         this.angleOffset = 0;
         this.effect = 'none';
+        this.colorOffset = Math.floor(Math.random() * 9999);
       }
 
       update() {
@@ -566,13 +582,18 @@ const getChristmasBaseColor = (x, y) => {
             color = `rgba(${r}, ${g}, ${b}, ${baseAlpha})`;
             glowColor = `rgba(${r}, ${g}, ${b}, ${glowAlpha})`;
         } else {
-            color = getCurrentColor(baseAlpha, variant);
-            glowColor = getCurrentColor(glowAlpha, variant);
+            if (variant === 'pushed') {
+              baseAlpha = Math.min(0.65, baseAlpha * 2.4);
+              glowAlpha = Math.min(0.55, glowAlpha * 3.0);
+            }
+
+            color = getCurrentColor(baseAlpha, variant, this.colorOffset);
+            glowColor = getCurrentColor(glowAlpha, variant, this.colorOffset);
         }
 
         const sizePx = Math.min(canvas.width, canvas.height);
 
-        ctx.shadowBlur = 20 * (sizePx / 500);
+        ctx.shadowBlur = (variant === 'pushed' ? 32 : 20) * (sizePx / 500);
         ctx.shadowColor = glowColor;
         ctx.fillStyle = color;
         ctx.beginPath();
