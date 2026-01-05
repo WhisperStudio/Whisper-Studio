@@ -550,12 +550,12 @@ const EnhancedChatBot = () => {
       const data = snap.data() || {};
 
       // Theme / appearance
-      if (data.theme && data.theme !== theme && themes[data.theme]) {
-        setTheme(data.theme);
+      if (data.theme && themes[data.theme]) {
+        setTheme(prev => (prev === data.theme ? prev : data.theme));
         document.documentElement.setAttribute('data-theme', data.theme);
       }
-      if (data.avatarSkin && data.avatarSkin !== skin) {
-        setSkin(data.avatarSkin);
+      if (data.avatarSkin) {
+        setSkin(prev => (prev === data.avatarSkin ? prev : data.avatarSkin));
       }
 
       // Maintenance mode: when bot is disabled globally, chat goes into maintenance
@@ -576,7 +576,7 @@ const EnhancedChatBot = () => {
     });
 
     return () => unsub();
-  }, [theme, skin]);
+  }, []);
 
   // Handle keyboard events for direct typing when chat is open
   useEffect(() => {
@@ -606,7 +606,6 @@ const EnhancedChatBot = () => {
     setUserId(id);
 
     const savedLanguage = localStorage.getItem('chatLanguage') || 'en';
-    const savedSettings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
     const savedAISettings = JSON.parse(localStorage.getItem('aiSettings') || '{}');
     
     setLanguage(savedLanguage);
@@ -614,36 +613,7 @@ const EnhancedChatBot = () => {
     if (typeof savedAISettings.message === 'string') {
       setMaintenanceMessage(savedAISettings.message);
     }
-    
-    // Load theme and avatar skin from admin settings
-    if (savedSettings.theme) {
-      setTheme(savedSettings.theme);
-      document.documentElement.setAttribute('data-theme', savedSettings.theme);
-    }
-    
-    if (savedSettings.avatarSkin) {
-      setSkin(savedSettings.avatarSkin);
-    }
-    
-    setLanguage(savedLanguage);
-    
-    // Listen for storage changes to update settings in real-time
-    const handleStorageChange = (e) => {
-      if (e.key === 'adminSettings') {
-        const newSettings = JSON.parse(e.newValue || '{}');
-        if (newSettings.theme && newSettings.theme !== theme) {
-          setTheme(newSettings.theme);
-          document.documentElement.setAttribute('data-theme', newSettings.theme);
-        }
-        if (newSettings.avatarSkin && newSettings.avatarSkin !== skin) {
-          setSkin(newSettings.avatarSkin);
-        }
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [theme, skin]);
+  }, []);
 
   // Header avatar state management for the AI_Avatar component
   // Header avatar state management for the GlassOrbAvatar component
@@ -1104,6 +1074,7 @@ const EnhancedChatBot = () => {
                                 messageId={message.id} 
                                 sender={message.sender} 
                                 isTyping={false}
+                                skin={skin}
                                 style={{ width: '32px', height: '32px' }} 
                               />
                             )}
@@ -1127,6 +1098,7 @@ const EnhancedChatBot = () => {
                             messageId="typing" 
                             sender="bot" 
                             isTyping={true}
+                            skin={skin}
                             style={{ width: '32px', height: '32px' }} 
                           />
                         </MessageAvatar>
