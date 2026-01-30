@@ -4,9 +4,15 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 import backgroundImage from '../images/94c13177-f23a-4250-b0af-53b850454da8.png';
 
-const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css?family=Open+Sans:400,300,600');
+// Import Google Fonts directly
+const link = document.createElement('link');
+link.href = 'https://fonts.googleapis.com/css?family=Open+Sans:400,300,600';
+link.rel = 'stylesheet';
+if (!document.querySelector('link[href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,600"]')) {
+  document.head.appendChild(link);
+}
 
+const GlobalStyle = createGlobalStyle`
   html, body {
     width: 100%;
     height: 100%;

@@ -5,9 +5,15 @@ import Chill from '../../Fonts/SortsMillGoudy-Regular.ttf';
 
 import video1 from '../../images/Forest with lights.mp4';
 
-const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+// Import Google Fonts directly
+const link = document.createElement('link');
+link.href = 'https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap';
+link.rel = 'stylesheet';
+if (!document.querySelector('link[href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap"]')) {
+  document.head.appendChild(link);
+}
 
+const GlobalStyle = createGlobalStyle`
   @font-face {
     font-family: 'Norse';
     src: url(${Norse}) format('opentype');
