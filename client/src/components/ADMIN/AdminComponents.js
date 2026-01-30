@@ -3,8 +3,8 @@ import styled from 'styled-components';
 import { 
   db, collection, getDocs, query, orderBy, limit, where, onSnapshot,
   updateDoc, doc, deleteDoc, serverTimestamp, addDoc
-} from '../firebase';
-import { CompactLoader, SkeletonLoader } from './LoadingComponent';
+} from '../../firebase';
+import { CompactLoader, SkeletonLoader } from '../LoadingComponent';
 import { 
   FiUsers, FiMessageSquare, FiSettings, FiDatabase, FiServer, FiShield,
   FiActivity, FiAlertTriangle, FiCheckCircle, FiClock, FiEdit3, FiTrash2,

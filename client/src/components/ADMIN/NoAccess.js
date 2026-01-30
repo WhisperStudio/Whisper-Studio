@@ -1,7 +1,7 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 import { FiLock, FiAlertCircle, FiMail, FiUser, FiLogOut } from 'react-icons/fi';
-import { auth } from '../firebase';
+import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 
 // Animations

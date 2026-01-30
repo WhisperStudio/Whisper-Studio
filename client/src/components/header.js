@@ -43,11 +43,22 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-image: linear-gradient(
-    ${({ isScrolled }) =>
-      isScrolled ? 'black, black, transparent' : 'black, black, black, transparent'}
+  
+  /* Solid background for nav area */
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 70%,
+    rgba(0, 0, 0, 0.8) 85%,
+    rgba(0, 0, 0, 0) 100%
   );
-  transition: background-image 0.3s ease-in-out;
+  
+  /* Blur effect for smooth fade */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  /* Smooth transition */
+  transition: all 0.3s ease-in-out;
   
   @media (max-width: 768px) { 
     padding: 1rem 2rem;

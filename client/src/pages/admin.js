@@ -7,28 +7,28 @@ import { auth, onAuthStateChanged } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { db, collection, collectionGroup, getDocs, query, orderBy, where, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
 import { checkAdminStatus } from '../utils/firebaseAdmin';
-import ChatDashboard from '../components/ChatDashboard';
+import ChatDashboard from '../components/ADMIN/ChatDashboard';
 import LiveChat from '../components/LiveChat';
-import VisitorAnalytics from '../components/VisitorAnalytics';
+import VisitorAnalytics from '../components/ADMIN/VisitorAnalytics';
 import ChatPieChart from '../components/ChatPieChart';
 import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart from '../components/ChatGeoChart';
-import BugDashboard from '../components/BugDashboard';
-import AdminManagement from '../components/AdminManagement';
+import BugDashboard from '../components/ADMIN/BugDashboard';
+import AdminManagement from '../components/ADMIN/AdminManagement';
 import RoleManagement from '../components/RoleManagement/RoleManagement';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
-import { DashboardOverview, RealtimeMonitor } from '../components/AdminDashboard';
+import { DashboardOverview, RealtimeMonitor } from '../components/ADMIN/AdminDashboard';
 import { 
   ServerStatus, DatabaseManager,
   UserManagement, SystemSettings, AdvancedAnalytics,
   TicketsView
-} from '../components/AdminComponents';
+} from '../components/ADMIN/AdminComponents';
 import AISettings from '../components/AISetting';
 import { AdminLoadingScreen } from '../components/LoadingComponent';
 import TaskManagement from '../components/TaskManagement/TaskManagement';
-import PendingAccess from '../components/PendingAccess';
-import NoAccess from '../components/NoAccess';
+import PendingAccess from '../components/ADMIN/PendingAccess';
+import NoAccess from '../components/ADMIN/NoAccess';
 
 import {
   FiMessageSquare,

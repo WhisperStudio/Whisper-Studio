@@ -4,15 +4,15 @@ import '../pages/Styled_Pages/Vote.css';
 
 import backgroundVideo from '../images/Forest witout lights.mp4';
 import rune from '../images/Rune.png';
-import AnimationSection from '../components/info';
-import AnimationSection2 from '../components/info2';
+import ScrollAnimation from '../components/VOTE/info';
+import ScrollAnimation2 from '../components/VOTE/info2';
 import Header from '../components/header';
-import Countdown from '../components/Countdown';
+import Countdown from '../components/VOTE/Countdown';
 import backgroundMusic from '../bilder/VOTE THEME 1.mp3';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
-import CharacterScrollytelling from '../components/CharacterScroll';
+import CharacterScrollytelling from '../components/VOTE/CharacterScroll';
 
 import Vote_V from '../images/Vote_V.png';
 import Vote_O from '../images/Vote_O.png';
@@ -46,6 +46,77 @@ export default function VotePage() {
   const [showUnder, setShowUnder] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let current = window.scrollY || 0;
+    let target = current;
+    let rafId = null;
+
+    const isScrollable = (el) => {
+      if (!el || el === document.body || el === document.documentElement) return false;
+      const style = window.getComputedStyle(el);
+      const oy = style.overflowY;
+      const canScroll = (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1;
+      return canScroll;
+    };
+
+    const hasScrollableParent = (start) => {
+      let el = start;
+      while (el && el !== document.body) {
+        if (isScrollable(el)) return true;
+        el = el.parentElement;
+      }
+      return false;
+    };
+
+    const maxScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+    const tick = () => {
+      const delta = target - current;
+      current += delta * 0.12;
+
+      if (Math.abs(delta) < 0.5) {
+        current = target;
+        window.scrollTo(0, target);
+        rafId = null;
+        return;
+      }
+
+      window.scrollTo(0, current);
+      rafId = window.requestAnimationFrame(tick);
+    };
+
+    const onWheel = (e) => {
+      if (e.ctrlKey) return;
+      if (hasScrollableParent(e.target)) return;
+      e.preventDefault();
+      target = Math.min(maxScroll(), Math.max(0, target + e.deltaY));
+      if (!rafId) rafId = window.requestAnimationFrame(tick);
+    };
+
+    const onScroll = () => {
+      if (rafId) return;
+      current = window.scrollY || 0;
+      target = current;
+    };
+
+    const onResize = () => {
+      target = Math.min(maxScroll(), Math.max(0, target));
+      current = Math.min(maxScroll(), Math.max(0, current));
+    };
+
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -157,11 +228,12 @@ export default function VotePage() {
             </div>
           </div>
 
-          <div className="fancy-divider">
-            <img className="center-rune" src={rune} alt="Rune" />
-          </div>
-
           <audio ref={audioRef} src={backgroundMusic} loop muted />
+        </div>
+
+        <div className="divider-spacer" />
+        <div className="fancy-divider">
+          <img className="center-rune" src={rune} alt="Rune" />
         </div>
 
         {hasStarted && (
@@ -170,13 +242,21 @@ export default function VotePage() {
           </button>
         )}
 
-        <AnimationSection />
+        <ScrollAnimation />
+        <div className="divider-spacer tight" />
         <div className="fancy-divider fd2">
           <img className="center-rune" src={rune} alt="Rune" />
         </div>
-        <AnimationSection2 />
-        <CharacterScrollytelling />
+        <ScrollAnimation2 />
+        
       </div>
+
+      <div className="divider-spacer" />  
+      <div className="fancy-divider fd3">
+          <img className="center-rune" src={rune} alt="Rune" />
+        </div>   
+      <div className="character-scroll-top-fade" />
+      <CharacterScrollytelling />
 
       <section className="news-section">
         <div className="fancy-divider fd3">
@@ -243,6 +323,8 @@ export default function VotePage() {
           </div>
         </div>
       </section>
+
+      
     </>
   );
 }

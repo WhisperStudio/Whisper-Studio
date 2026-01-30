@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { FiX, FiSend, FiTrash2, FiUser, FiMessageCircle } from "react-icons/fi";
-import { db, doc, updateDoc, serverTimestamp, collection, addDoc, onSnapshot } from "../firebase";
+import { db, doc, updateDoc, serverTimestamp, collection, addDoc, onSnapshot } from "../../firebase";
 
 const Overlay = styled.div`
   position: fixed; inset: 0; z-index: 10080;

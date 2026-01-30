@@ -12,8 +12,8 @@ import {
   deleteDoc,
   addDoc,
   serverTimestamp
-} from '../firebase';
-import { auth } from '../firebase';
+} from '../../firebase';
+import { auth } from '../../firebase';
 import { 
   FiAlertTriangle, 
   FiEye, 

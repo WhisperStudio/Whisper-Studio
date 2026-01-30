@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import BugReport from '../components/BugReport';
+import BugReport from '../components/ADMIN/BugReport';
 
 const PageContainer = styled.div`
   min-height: 100vh;

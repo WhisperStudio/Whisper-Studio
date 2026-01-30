@@ -11,8 +11,8 @@ import {
   format,
 } from "date-fns";
 import { Chart } from 'react-google-charts';
-import { db, collection, getDocs } from '../firebase';
-import LineChart from "./LineChart2";
+import { db, collection, getDocs } from '../../firebase';
+import LineChart from "../LineChart2";
 
 const RANGES = [
   { label: "Last 1 h", value: "1h" },

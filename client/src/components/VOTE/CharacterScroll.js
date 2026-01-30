@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import "./Styled_Component/CharacterScroll.css";
+import "../Styled_Component/CharacterScroll.css";
 
 /* ===== GSAP ===== */
 import { gsap } from "gsap";
@@ -257,7 +257,7 @@ const resolveSrc = (img) => {
 const RAW_CREATURES = [
   {
     id: 1,
-    img: require("../bilder/smart_gnome.png"),
+    img: require("../../bilder/smart_gnome.png"),
     title: "Nisse — The Farmstead Gnome",
     sub: "Friendly",
     tags: ["gnome", "friendly", "folk"],
@@ -270,7 +270,7 @@ In VOTE, this Nisse is one of the main characters—among the sharpest minds of 
   },
   {
     id: 2,
-    img: require("../bilder/assets_task_01jqzwt0nqf4ttddc4ykksgj87_img_0.webp"),
+    img: require("../../bilder/assets_task_01jqzwt0nqf4ttddc4ykksgj87_img_0.webp"),
     title: "Forest Dweller",
     sub: "Unfriendly",
     tags: ["forest", "dark"],
@@ -282,7 +282,7 @@ If you meet one, keep your lantern high and your steps steady. Do not chase; mak
   },
   {
     id: 3,
-    img: require("../bilder/assets_task_01jqebmy91fw3r80bh65pceeam_img_1.webp"),
+    img: require("../../bilder/assets_task_01jqebmy91fw3r80bh65pceeam_img_1.webp"),
     title: "Shadow",
     sub: "Unfriendly",
     tags: ["shadow", "mystic"],
@@ -294,7 +294,7 @@ Where Shadow passes, lanterns gutter and paths forget where they lead. It does n
   },
   {
     id: 4,
-    img: require("../bilder/assets_task_01jqzyj308f1s8ph7d3pz8fy24_img_0.webp"),
+    img: require("../../bilder/assets_task_01jqzyj308f1s8ph7d3pz8fy24_img_0.webp"),
     title: "Huldra",
     sub: "Unfriendly",
     tags: ["folk", "myth"],
@@ -306,7 +306,7 @@ Huldra is kin to the sea’s sirens, but her realm is the high forest where wind
   },
   {
     id: 12,
-    img: require("../bilder/Nøkken.png"),
+    img: require("../../bilder/Nøkken.png"),
     title: "Nøkken",
     sub: "Unfriendly",
     tags: ["water", "monster"],
@@ -318,7 +318,7 @@ Parents told tales of Nøkken to keep children from the banks—to teach that da
   },
   {
     id: 13,
-    img: require("../bilder/Troll.png"),
+    img: require("../../bilder/Troll.png"),
     title: "Troll",
     sub: "Unfriendly",
     tags: ["troll", "rock"],
@@ -330,7 +330,7 @@ Trolls hoard what they can’t eat and hold grudges longer than winter. If you m
   },
   {
     id: 14,
-    img: require("../bilder/Pesta.png"),
+    img: require("../../bilder/Pesta.png"),
     title: "Pesta",
     sub: "Unfriendly",
     tags: ["plague", "dark"],
@@ -376,13 +376,13 @@ export default function CharacterScroll() {
   // Faser (for total høyde)
   const HERO_PHASE = 60;
   const ZOOM_PHASE = 90;
-  const TEXT_PHASE = 180;
+  const TEXT_PHASE = 260;
   const FADE_PHASE = 40;
   const PHASE_LENGTH = ZOOM_PHASE + TEXT_PHASE + FADE_PHASE;
   const TOTAL_HEIGHT = HERO_PHASE + CREATURES.length * PHASE_LENGTH + 60;
 
   // Bildet skal "leve" lenger mens man leser
-  const HOLD_BEFORE_FADE = 10.99;
+  const HOLD_BEFORE_FADE = 0.92;
 
 
 
@@ -436,7 +436,7 @@ export default function CharacterScroll() {
         const heroScale = 1 + heroProgress * 0.1;
 
         if (heroRef.current) {
-          heroRef.current.style.setProperty("--hero-opacity", String(heroOpacity));
+          heroRef.current.style.setProperty("--hero-opacity", "1");
           heroRef.current.style.setProperty("--hero-scale", String(heroScale));
           heroRef.current.style.visibility = "visible";
           heroRef.current.style.pointerEvents = "auto";
@@ -447,7 +447,7 @@ export default function CharacterScroll() {
       }
 
       if (heroRef.current) {
-        heroRef.current.style.setProperty("--hero-opacity", "0");
+        heroRef.current.style.setProperty("--hero-opacity", "1");
         heroRef.current.style.visibility = "hidden";
         heroRef.current.style.pointerEvents = "none";
       }

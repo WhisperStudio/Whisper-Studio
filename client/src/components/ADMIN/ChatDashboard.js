@@ -9,9 +9,9 @@ import {
   db, collection, getDocs, query, orderBy, addDoc, 
   serverTimestamp, deleteDoc, doc, getDoc, setDoc, 
   updateDoc, onSnapshot 
-} from '../firebase';
-import { auth } from '../firebase';
-import { CompactLoader } from './LoadingComponent'; // Antar denne er tilgjengelig
+} from '../../firebase';
+import { auth } from '../../firebase';
+import { CompactLoader } from '../LoadingComponent'; // Antar denne er tilgjengelig
 
 // --- Stiler ---
 

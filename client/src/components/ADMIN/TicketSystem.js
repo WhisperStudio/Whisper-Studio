@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   db, collection, addDoc, getDocs, query, orderBy, onSnapshot,
   updateDoc, doc, serverTimestamp, where, deleteDoc
-} from '../firebase';
-import TicketReplyWindow from './TicketReplyWindow';
+} from '../../firebase';
+import TicketReplyWindow from '../TicketReplyWindow';
 import {
   FiMessageSquare, FiSend, FiPaperclip, FiImage, FiFile,
   FiAlertCircle, FiCheckCircle, FiClock, FiUser, FiTag,

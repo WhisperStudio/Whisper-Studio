@@ -9,8 +9,8 @@ import {
   ref,
   uploadBytes,
   getDownloadURL
-} from '../firebase';
-import { auth } from '../firebase';
+} from '../../firebase';
+import { auth } from '../../firebase';
 import { 
   FiAlertTriangle, 
   FiUpload, 

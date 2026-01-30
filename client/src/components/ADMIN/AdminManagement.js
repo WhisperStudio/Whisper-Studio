@@ -14,8 +14,8 @@ import {
   where,
   onSnapshot,
   getDoc
-} from '../firebase';
-import { auth, createUserWithEmailAndPassword } from '../firebase';
+} from '../../firebase';
+import { auth, createUserWithEmailAndPassword } from '../../firebase';
 import { 
   FiUsers, 
   FiUserPlus, 
@@ -42,7 +42,7 @@ import {
   FiUserCheck
 } from 'react-icons/fi';
 import { BsCrown, BsShieldCheck, BsPerson } from 'react-icons/bs';
-import { CompactLoader } from './LoadingComponent';
+import { CompactLoader } from '../LoadingComponent';
 
 const Container = styled.div`
   max-width: 1400px;

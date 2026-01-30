@@ -27,7 +27,7 @@ import Cursor from './components/Cursor';
 import ProtectedRoute from './components/ProtectedRoute';
 // import ChatBot from './components/ChatBot'; // Old chatbot
 import EnhancedChatBot from './components/EnhancedChatBot'; // New enhanced chatbot
-import BugReportButton from './components/BugReportButton';
+import BugReportButton from './components/ADMIN/BugReportButton';
 
 // Wrapper with Header
 const MainLayout = ({ children }) => (

@@ -1,10 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styled, { css, createGlobalStyle } from 'styled-components';
-import Norse from '../Fonts/Norse-KaWl.otf'; // Adjust path if needed
-import Chill from '../Fonts/SortsMillGoudy-Regular.ttf';
-import Countdown from '../components/Countdown'; // tilpass path hvis nødvendig
+import Norse from '../../Fonts/Norse-KaWl.otf'; // Adjust path if needed
+import Chill from '../../Fonts/SortsMillGoudy-Regular.ttf';
 
-import video1 from '../images/gnomevid.mp4';
+import video1 from '../../images/Forest with lights.mp4';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
@@ -15,12 +14,12 @@ const GlobalStyle = createGlobalStyle`
     font-weight: normal;
     font-style: normal;
   }
-    @font-face {
-      font-family: 'Chill';
-      src: url(${Chill}) format('truetype'); /* Sørg for at formatet er riktig */
-      font-weight: normal;
-      font-style: normal;
-    }
+  @font-face {
+    font-family: 'Chill';
+    src: url(${Chill}) format('truetype'); /* Sørg for at formatet er riktig */
+    font-weight: normal;
+    font-style: normal;
+  }
 
   body {
     margin: 0;
@@ -57,29 +56,36 @@ const DarkOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
+  /* Updated gradient to fade in at top, fade out in the middle, and fade back in at the bottom. */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 0.8) 5%,
     rgba(0, 0, 0, 0.7) 10%,
-    rgba(0, 0, 0, 0.6) 15%,
-    rgba(0, 0, 0, 0.5) 20%,
-    rgba(0, 0, 0, 0.0) 25%
+    rgba(0, 0, 0, 0.5) 15%,
+    rgba(0, 0, 0, 0) 25%,
+    rgba(0, 0, 0, 0) 75%,
+    rgba(0, 0, 0, 0.5) 85%,
+    rgba(0, 0, 0, 0.7) 90%,
+    rgba(0, 0, 0, 0.8) 95%,
+    rgba(0, 0, 0, 1) 100%
   );
   z-index: 2;
 `;
 
+
 const TextBox = styled.div`
   position: relative;
-  top: 2vh;
-  left: 48vh;
+  left: 30vh;
+  top: -12vh;
   z-index: 3;
-  width: 35%;
+  width: 60%;
   max-width: 800px;
   margin: 40vh auto 0 auto;
   text-align: center;
   padding: 20px;
   opacity: 0;
+  transform: translateY(30px);
   transition: transform 0.6s ease-out, opacity 0.6s ease-out;
   will-change: transform, opacity;
 
@@ -99,7 +105,6 @@ const TextBox = styled.div`
     font-family: 'Chill', sans-serif;
     font-size: 25px;
     line-height: 1.4;
-   
   }
   
   @media (max-width: 768px) {
@@ -121,7 +126,7 @@ const TextBox = styled.div`
   }
 `;
 
-function ScrollAnimation2() {
+function ScrollAnimation() {
   const bgVideoRef = useRef(null);
   const textRef = useRef(null);
 
@@ -237,16 +242,18 @@ function ScrollAnimation2() {
           ref={textRef}
           className={isTextVisible ? 'active' : ''}
         >
-          <h2>Coming soon</h2>
+          <h2>About the game</h2>
           <p>
-          Our game is currently under development, and we’re excited to announce that we plan to release it in 2026 on the Epic Games Store!
+          Our game takes you on a mysterious journey into the unknown.
+           You play as a young boy living deep in the woods with his father.
+            One day, your father disappears without a trace, leaving behind an eerie silence and a strange VR headset. 
+            Curious and desperate, you put it on, only to be pulled into a dark and haunting world unlike anything you’ve ever known.
+            To uncover the truth and find your father, you must explore this chilling new reality, where danger lurks in every shadow, and nothing is as it seems.
           </p>
-          <Countdown/>
         </TextBox>
-        
       </Container>
     </>
   );
 }
 
-export default ScrollAnimation2;
+export default ScrollAnimation;

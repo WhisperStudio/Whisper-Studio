@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import {
   db, collection, getDocs
-} from '../firebase';
-import { CompactLoader } from './LoadingComponent';
+} from '../../firebase';
+import { CompactLoader } from '../LoadingComponent';
 import {
   FiUsers, FiMessageSquare, FiTrendingUp, FiCheckCircle, FiAlertCircle,
   FiRefreshCw, FiFilter, FiFileText, FiActivity, FiDollarSign, FiDownload
