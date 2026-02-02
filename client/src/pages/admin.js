@@ -1,27 +1,22 @@
 
 // src/pages/AdminPanel.js
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css } from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { auth, onAuthStateChanged } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { db, collection, collectionGroup, getDocs, query, orderBy, where, addDoc, serverTimestamp, deleteDoc, doc, getDoc, setDoc, updateDoc, onSnapshot } from '../firebase';
-import { checkAdminStatus } from '../utils/firebaseAdmin';
+import { db, collection, getDocs, query, where, serverTimestamp, deleteDoc, doc, getDoc, setDoc} from '../firebase';
 import ChatDashboard from '../components/ADMIN/ChatDashboard';
-import LiveChat from '../components/LiveChat';
 import VisitorAnalytics from '../components/ADMIN/VisitorAnalytics';
 import ChatPieChart from '../components/ChatPieChart';
 import ChatActivityChart from '../components/ChatActivityChart';
 import ChatGeoChart from '../components/ChatGeoChart';
 import BugDashboard from '../components/ADMIN/BugDashboard';
-import AdminManagement from '../components/ADMIN/AdminManagement';
-import RoleManagement from '../components/RoleManagement/RoleManagement';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
 import { DashboardOverview, RealtimeMonitor } from '../components/ADMIN/AdminDashboard';
 import { 
-  ServerStatus, DatabaseManager,
-  UserManagement, SystemSettings, AdvancedAnalytics,
+  ServerStatus, DatabaseManager, SystemSettings, AdvancedAnalytics,
   TicketsView
 } from '../components/ADMIN/AdminComponents';
 import AISettings from '../components/AISetting';
@@ -33,63 +28,19 @@ import NoAccess from '../components/ADMIN/NoAccess';
 import {
   FiMessageSquare,
   FiFileText,
-  FiUsers,
   FiBarChart2,
   FiPieChart,
-  FiCpu,
   FiSettings,
-  FiMessageCircle,
   FiAlertTriangle,
-  FiActivity,
   FiDatabase,
-  FiShield,
-  FiGlobe,
-  FiTrendingUp,
-  FiAlertCircle,
-  FiCheckCircle,
-  FiClock,
-  FiDollarSign,
-  FiMail,
-  FiPhone,
-  FiMapPin,
-  FiCalendar,
-  FiLock,
-  FiUnlock,
-  FiRefreshCw,
-  FiDownload,
-  FiUpload,
-  FiTrash2,
-  FiEdit3,
-  FiEye,
-  FiZap,
-  FiHardDrive,
-  FiWifi,
   FiServer,
-  FiMonitor,
-  FiSmartphone,
-  FiTablet,
-  FiHeadphones,
-  FiMic,
-  FiVideo,
-  FiCamera,
-  FiBell,
-  FiSearch,
-  FiFilter,
-  FiGrid,
-  FiList,
-  FiMaximize,
-  FiMinimize,
-  FiX,
-  FiPlus,
-  FiMinus,
   FiLogOut
 } from 'react-icons/fi';
 import { 
-  BsRobot, BsGraphUp, BsSpeedometer2, BsShieldCheck, BsChatDots,
-  BsLightning, BsStars, BsGear, BsPeople, BsBarChart, BsCloudCheck
+  BsRobot, BsGraphUp, BsSpeedometer2
 } from 'react-icons/bs';
-import { IoSparkles, IoRocketSharp, IoPulse, IoAnalytics } from 'react-icons/io5';
-import { HiOutlineChartBar, HiOutlineUserGroup, HiOutlineCog } from 'react-icons/hi';
+import { IoPulse, IoAnalytics } from 'react-icons/io5';
+import {  HiOutlineUserGroup, HiOutlineCog } from 'react-icons/hi';
 import { BsKanban } from 'react-icons/bs';
 
 // Global Styles
@@ -448,9 +399,6 @@ const Content = styled.main`
 // ─── Main Component ─────────────────────────────────────────────────────────
 export default function AdminPanel() {
   const navigate = useNavigate();
-  const [conversations, setConversations] = useState({});
-  const [selectedConv, setSelectedConv] = useState(null);
-  const [input, setInput] = useState("");
   const [active, setActive] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [userChecked, setUserChecked] = useState(false);

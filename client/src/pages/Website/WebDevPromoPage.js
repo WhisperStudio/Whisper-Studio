@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
 import {
   FiArrowRight, FiCheck, FiCopy, FiDollarSign, FiPackage, FiRefreshCw, FiSliders,
   FiZap, FiMessageCircle, FiChevronDown, FiChevronUp, FiDatabase, FiShield, FiGlobe
