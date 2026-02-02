@@ -453,7 +453,6 @@ const EnhancedChatBot = () => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
  
-  const [isUserTyping, setIsUserTyping] = useState(false);
   const [expectedWait, setExpectedWait] = useState(null);
 
   const [ticketData, setTicketData] = useState({ title: '', description: '', category: 'general', priority: 'medium' });
@@ -461,7 +460,6 @@ const EnhancedChatBot = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketMessage, setTicketMessage] = useState('');
-  const [awaitingTicketConfirm, setAwaitingTicketConfirm] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -771,17 +769,14 @@ const EnhancedChatBot = () => {
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInput(value);
-    setIsUserTyping(value.length > 0);
   };
 
   const handleInputFocus = () => {
-    if (input.length > 0) {
-      setIsUserTyping(true);
-    }
+    // Removed isUserTyping logic
   };
 
   const handleInputBlur = () => {
-    setIsUserTyping(false);
+    // Removed isUserTyping logic
   };
 
   const handleSubmit = async (e) => {
@@ -791,7 +786,6 @@ const EnhancedChatBot = () => {
     if (maintenanceRef.current && !takenOverRef.current) return;
 
     setInput('');
-    setIsUserTyping(false); // Reset user typing state when submitting
     setIsTyping(true);
 
     try {
@@ -856,8 +850,6 @@ const EnhancedChatBot = () => {
         setLanguage(response.lang);
         localStorage.setItem('chatLanguage', response.lang);
       }
-
-      setAwaitingTicketConfirm(!!response.awaiting_ticket_confirm);
 
       if (response.active_view) {
         setActiveView(response.active_view);
