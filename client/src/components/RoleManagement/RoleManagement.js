@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { 
   db, collection, getDocs, doc, deleteDoc, updateDoc,
@@ -252,6 +252,35 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState(ROLES.USER);
 
+  const filterUsers = useCallback(() => {
+    let filtered = [...users];
+
+    // Filter based on view mode
+    if (isAdminView) {
+      // Admins can only see support and regular users
+      filtered = filtered.filter(user => 
+        user.role === ROLES.SUPPORT || 
+        user.role === ROLES.USER || 
+        !user.role
+      );
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(user =>
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by active tab
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(user => user.role === activeTab);
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, activeTab, isAdminView]);
+
   useEffect(() => {
     loadUsers();
     checkCurrentUserRole();
@@ -259,7 +288,7 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, activeTab, filterUsers]);
+  }, [filterUsers]);
 
   const checkCurrentUserRole = async () => {
     try {
@@ -380,56 +409,6 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
         console.error('RoleManagement: Fallback also failed:', fallbackError);
       }
     }
-  };
-
-  const filterUsers = () => {
-    let filtered = [...users];
-
-    // Filter based on view mode
-    if (isAdminView) {
-      // Admins can only see support and regular users
-      filtered = filtered.filter(user => 
-        user.role === ROLES.SUPPORT || 
-        user.role === ROLES.USER || 
-        !user.role
-      );
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by tab
-    switch (activeTab) {
-      case 'pending':
-        filtered = filtered.filter(user => user.role === ROLES.PENDING);
-        break;
-      case 'owners':
-        if (!isAdminView) {
-          filtered = filtered.filter(user => user.role === ROLES.OWNER);
-        }
-        break;
-      case 'admins':
-        if (!isAdminView) {
-          filtered = filtered.filter(user => user.role === ROLES.ADMIN);
-        }
-        break;
-      case 'support':
-        filtered = filtered.filter(user => user.role === ROLES.SUPPORT);
-        break;
-      case 'users':
-        filtered = filtered.filter(user => user.role === ROLES.USER);
-        break;
-      default:
-        // Show all
-        break;
-    }
-
-    setFilteredUsers(filtered);
   };
 
   const canManageUser = (targetUser) => {

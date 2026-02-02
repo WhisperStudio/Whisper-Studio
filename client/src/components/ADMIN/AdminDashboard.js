@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import {
   db, collection, getDocs
@@ -409,19 +409,19 @@ const Gauge = ({
   const norm = clamp((value - min) / (max - min), 0, 1);
   const angle = lerp(startAngle, endAngle, norm);
 
-  const toXY = (ang, r) => {
+  const toXY = React.useCallback((ang, r) => {
     const t = (ang - 90) * (Math.PI / 180);
     return [cx + r * Math.cos(t), cy + r * Math.sin(t)];
-  };
+  }, [cx, cy]);
 
-  const arcPath = (r, a0, a1) => {
+  const arcPath = React.useCallback((r, a0, a1) => {
     const [x0, y0] = toXY(a0, r);
     const [x1, y1] = toXY(a1, r);
     const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
     return `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`;
-  };
+  }, [toXY]);
 
-  const ringSlice = (a0, a1) => {
+  const ringSlice = React.useCallback((a0, a1) => {
     const [xo0, yo0] = toXY(a0, rRingOuter);
     const [xo1, yo1] = toXY(a1, rRingOuter);
     const [xi1, yi1] = toXY(a1, rRingInner);
@@ -434,7 +434,7 @@ const Gauge = ({
       A ${rRingInner} ${rRingInner} 0 ${large} 0 ${xi0} ${yi0}
       Z
     `;
-  };
+  }, [toXY, rRingOuter, rRingInner]);
 
   const zonePaths = React.useMemo(() => {
     return (zones || defaultZones).map((z, i) => {

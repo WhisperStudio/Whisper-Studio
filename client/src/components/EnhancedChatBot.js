@@ -882,7 +882,7 @@ const EnhancedChatBot = () => {
       }
     }, (error) => { console.error('Error loading tickets:', error); });
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, selectedTicket?.id]);
 
   /* ===================== RENDER ===================== */
   return (

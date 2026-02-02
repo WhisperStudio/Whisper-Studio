@@ -415,7 +415,6 @@ const ChatDashboard = () => {
           
           for (const chatDoc of chatsSnapshot.docs) {
             const userId = chatDoc.id;
-            const chatData = chatDoc.data();
             
             // Hent kun de siste 5 meldingene for forhåndsvisning i listen (ytelsesoptimalisering)
             const messagesRef = collection(db, 'chats', chatDoc.id, 'messages');

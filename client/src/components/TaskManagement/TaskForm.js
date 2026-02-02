@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { FiX, FiSave, FiTrash2, FiLayers, FiEdit3, FiPlus } from 'react-icons/fi';
 import TaskCard from './TaskCard'; 
@@ -244,7 +244,7 @@ const priorityOptions = ['low', 'medium', 'high', 'urgent'];
 // =======================================================
 
 const TaskForm = ({ isOpen, onClose, onSubmit, onDelete, task, admins }) => {
-  const defaultTask = {
+  const defaultTask = useMemo(() => ({
     title: '',
     description: '',
     assignedTo: '',
@@ -253,7 +253,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, onDelete, task, admins }) => {
     dueDate: '',
     progress: 0,
     tags: []
-  };
+  }), []);
   
   const [formData, setFormData] = useState(defaultTask);
   const isEditing = !!task;

@@ -8,7 +8,7 @@ import {
   auth
 } from '../../firebase';
 import { 
-  db, doc, setDoc, getDoc, getDocs, collection, serverTimestamp 
+  db, doc, setDoc, getDocs, collection, serverTimestamp 
 } from '../../firebase';
 
 // Styled Components (reuse from PermissionModal)

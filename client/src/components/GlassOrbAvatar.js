@@ -711,7 +711,7 @@ const getChristmasBaseColor = (x, y) => {
       container.removeEventListener('click', handleClick);
       resizeObserver.disconnect();
     };
-  }, [colorState]);
+  }, [colorState, colorPalettes, skin]);
 
   // glasskule–look fra HTML
   const glassBackground =
