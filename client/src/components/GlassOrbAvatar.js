@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 
 const GlassOrbAvatar = ({
   sender,
@@ -15,7 +15,7 @@ const GlassOrbAvatar = ({
 
   const [colorState, setColorState] = useState('idle'); // 'idle' | 'typing' | 'listening'
 
-  const colorPalettes = {
+  const colorPalettes = useMemo(() => ({
     idle: [
       { r: 80, g: 150, b: 255 },
       { r: 90, g: 170, b: 255 },
@@ -45,7 +45,7 @@ const GlassOrbAvatar = ({
       { r: 255, g: 80, b: 80 },   // Lighter red
       { r: 255, g: 120, b: 120 }, // Lightest red
     ],
-  };
+  }), []);
 
   useEffect(() => {
     if (maintenance) {
@@ -711,7 +711,7 @@ const getChristmasBaseColor = (x, y) => {
       container.removeEventListener('click', handleClick);
       resizeObserver.disconnect();
     };
-  }, [colorState, colorPalettes, skin]);
+  }, [colorState, skin, colorPalettes]);
 
   // glasskule–look fra HTML
   const glassBackground =
