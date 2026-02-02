@@ -7,31 +7,19 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  updateDoc,
   serverTimestamp,
-  query,
-  orderBy,
-  where,
-  onSnapshot,
-  getDoc
 } from '../../firebase';
-import { auth, createUserWithEmailAndPassword } from '../../firebase';
+import { auth } from '../../firebase';
 import { 
   FiUsers, 
-  FiUserPlus, 
   FiMail, 
   FiCalendar, 
-  FiUser,
-  FiSearch,
   FiRefreshCw,
   FiShield,
   FiShieldOff,
   FiEye,
-  FiSettings,
   FiStar,
   FiTrash2,
-  FiEdit3,
-  FiX
 } from 'react-icons/fi';
 import { CompactLoader } from '../LoadingComponent';
 

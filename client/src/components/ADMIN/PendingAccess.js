@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { FiLock, FiClock, FiMail, FiUser, FiRefreshCw, FiLogOut } from 'react-icons/fi';
 import { auth } from '../../firebase';

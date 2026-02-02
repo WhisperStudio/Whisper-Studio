@@ -68,8 +68,8 @@ const HeaderContainer = styled.header`
 `;
 
 const Logo = styled.a`
-  margin-top: ${({ isScrolled }) => (isScrolled ? '-10px' : '0')};
-  color: ${({ textColor }) => textColor};
+  margin-top: ${({ $isScrolled }) => ($isScrolled ? '-10px' : '0')};
+  color: ${({ $textColor }) => $textColor};
   transition: margin-top 0.1s ease-in-out;
   display: flex;
   align-items: center;
@@ -96,7 +96,7 @@ const LogoStage = styled.div`
 /* ===================== Nav Menu ===================== */
 
 const NavMenu = styled.nav`
-  margin-top: ${({ isScrolled }) => (isScrolled ? '-10px' : '0')};
+  margin-top: ${({ $isScrolled }) => ($isScrolled ? '-10px' : '0')};
   display: flex;
   gap: 2.5rem;
   transition: margin-top 0.1s ease-in-out;
@@ -115,7 +115,7 @@ const slideOutToRight = keyframes`
 
 const NavItem = styled.a`
   position: relative;
-  color: ${({ textColor }) => textColor};
+  color: ${({ $textColor }) => $textColor};
   text-decoration: none;
   font-size: 1rem;
   font-weight: 500;
@@ -126,7 +126,7 @@ const NavItem = styled.a`
   overflow: hidden;
 
   &:hover {
-    color: ${({ textColor }) => (textColor === 'black' ? '#333' : '#f0f0f0')};
+    color: ${({ $textColor }) => ($textColor === 'black' ? '#333' : '#f0f0f0')};
   }
 
   &::before{
@@ -164,15 +164,15 @@ const HamburgerButton = styled.button`
     display: block;
     position: absolute;
     height: 2px; width: 100%;
-    background: ${({ isOpen, textColor }) => (isOpen ? 'white' : textColor)};
+    background: ${({ $isOpen, $textColor }) => ($isOpen ? 'white' : $textColor)};
     border-radius: 2px;
     transition: all 0.25s ease-in-out;
   }
-  span:nth-child(1){ top: ${({ isOpen }) => (isOpen ? '9px' : '0')};
-    transform: ${({ isOpen }) => (isOpen ? 'rotate(45deg)' : 'none')}; }
-  span:nth-child(2){ top: 9px; opacity: ${({ isOpen }) => (isOpen ? 0 : 1)}; }
-  span:nth-child(3){ top: ${({ isOpen }) => (isOpen ? '9px' : '18px')};
-    transform: ${({ isOpen }) => (isOpen ? 'rotate(-45deg)' : 'none')}; }
+  span:nth-child(1){ top: ${({ $isOpen }) => ($isOpen ? '9px' : '0')};
+    transform: ${({ $isOpen }) => ($isOpen ? 'rotate(45deg)' : 'none')}; }
+  span:nth-child(2){ top: 9px; opacity: ${({ $isOpen }) => ($isOpen ? 0 : 1)}; }
+  span:nth-child(3){ top: ${({ $isOpen }) => ($isOpen ? '9px' : '18px')};
+    transform: ${({ $isOpen }) => ($isOpen ? 'rotate(-45deg)' : 'none')}; }
 `;
 
 /* ===================== Mobile Menu ===================== */
@@ -181,7 +181,7 @@ const fadeIn = keyframes`from{opacity:0;transform:translateY(-20px)}to{opacity:1
 const fadeOut = keyframes`from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}`;
 
 const MobileNavMenu = styled.nav`
-  display: ${({ isVisible }) => (isVisible ? 'flex' : 'none')};
+  display: ${({ $isVisible }) => ($isVisible ? 'flex' : 'none')};
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
@@ -195,7 +195,7 @@ const MobileNavMenu = styled.nav`
   padding: 100px 1.5rem 2rem 1.5rem;
   gap: 0;
   z-index: 999;
-  animation: ${({ isOpen }) => (isOpen ? fadeIn : fadeOut)} 0.3s ease-out;
+  animation: ${({ $isOpen }) => ($isOpen ? fadeIn : fadeOut)} 0.3s ease-out;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 `;
@@ -235,7 +235,7 @@ const ScrollTopButton = styled.button`
   margin-top: 0.5rem;
   width: 2.8rem; height: 2.8rem;
   background: transparent; border: none; cursor: pointer;
-  display: ${({ visible }) => (visible ? 'flex' : 'none')};
+  display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   align-items: center; justify-content: center;
   transition: transform 0.2s ease;
   &:hover { transform: translateY(-2px); }
@@ -271,12 +271,12 @@ const spinBack = keyframes`
 const VintraImg = styled.img`
   height: 50px;
   margin-bottom: 10px;
-  opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
-  visibility: ${({ isScrolled }) => (isScrolled ? 'hidden' : 'visible')};
+  opacity: ${({ $isScrolled }) => ($isScrolled ? 0 : 1)};
+  visibility: ${({ $isScrolled }) => ($isScrolled ? 'hidden' : 'visible')};
   transition: 
-    opacity ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
-    visibility 0ms ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
-  transition-delay: ${({ isScrolled }) => (isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
+    opacity ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
+    visibility 0ms ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
+  transition-delay: ${({ $isScrolled }) => ($isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
   pointer-events: none;
   
   @media (max-width: 768px) {
@@ -287,12 +287,12 @@ const VintraImg = styled.img`
 /* STUDIO bilde - forsvinner og kommer tilbake */
 const StudioImg = styled.img`
   height: 45px;
-  opacity: ${({ isScrolled }) => (isScrolled ? 0 : 1)};
-  visibility: ${({ isScrolled }) => (isScrolled ? 'hidden' : 'visible')};
+  opacity: ${({ $isScrolled }) => ($isScrolled ? 0 : 1)};
+  visibility: ${({ $isScrolled }) => ($isScrolled ? 'hidden' : 'visible')};
   transition: 
-    opacity ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
-    visibility 0ms ${({ isScrolled }) => (isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
-  transition-delay: ${({ isScrolled }) => (isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
+    opacity ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
+    visibility 0ms ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
+  transition-delay: ${({ $isScrolled }) => ($isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
   pointer-events: none;
   
   @media (max-width: 768px) {
@@ -314,8 +314,8 @@ const VoteVImg = styled.img`
   visibility: hidden;
 
   /* Animasjonslogikk */
-  ${({ isScrolled, $hasScrolledFromTop }) => {
-    if (isScrolled && $hasScrolledFromTop) {
+  ${({ $isScrolled, $hasScrolledFromTop }) => {
+    if ($isScrolled && $hasScrolledFromTop) {
       // Scrollet ned - V kommer inn ETTER logoene er borte
       const totalDelay = TIMING.LOGO_FADE_OUT + TIMING.V_DELAY;
       return css`
@@ -497,25 +497,25 @@ const Header = () => {
   };
 
   return (
-    <HeaderContainer isScrolled={isScrolled}>
-      <Logo href="/" textColor={textColor} isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
-        <Logodiv isScrolled={isScrolled}>
+    <HeaderContainer $isScrolled={isScrolled}>
+      <Logo href="/" $textColor={textColor} $isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
+        <Logodiv $isScrolled={isScrolled}>
           <LogoStage>
-            <VintraImg src={Vintra} alt="Vintra" isScrolled={isScrolled} />
-            <StudioImg src={Studio} alt="Studio" isScrolled={isScrolled} />
-            <VoteVImg src={VOTE_V} alt="V" isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
+            <VintraImg src={Vintra} alt="Vintra" $isScrolled={isScrolled} />
+            <StudioImg src={Studio} alt="Studio" $isScrolled={isScrolled} />
+            <VoteVImg src={VOTE_V} alt="V" $isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
           </LogoStage>
         </Logodiv>
       </Logo>
 
       {/* DESKTOP NAV */}
-      <NavMenu isScrolled={isScrolled}>
+      <NavMenu $isScrolled={isScrolled}>
         {items.map((item, idx) => (
           <NavItem
             key={item.href}
             ref={el => navItemRefs.current[idx] = el}
             href={item.href}
-            textColor={textColor}
+            $textColor={textColor}
             onMouseEnter={() => handleMouseEnter(idx)}
             onMouseLeave={() => handleMouseLeave(idx)}
           >
@@ -526,7 +526,7 @@ const Header = () => {
 
       <ScrollTopButton
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        visible={showTop}
+        $visible={showTop}
         aria-label="Scroll to top"
       >
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -536,14 +536,14 @@ const Header = () => {
       </ScrollTopButton>
 
       {/* HAMBURGER (mobile) */}
-      <HamburgerButton onClick={toggleMenu} isOpen={menuState.isOpen} textColor={textColor}>
+      <HamburgerButton onClick={toggleMenu} $isOpen={menuState.isOpen} $textColor={textColor}>
         <span /><span /><span />
       </HamburgerButton>
 
       {/* MOBILE NAV */}
       <MobileNavMenu
-        isOpen={menuState.isOpen}
-        isVisible={menuState.isVisible}
+        $isOpen={menuState.isOpen}
+        $isVisible={menuState.isVisible}
       >
         {items.map((item, idx) => (
           <MobileNavItem

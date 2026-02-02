@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
   db, 
@@ -6,35 +6,26 @@ import {
   getDocs, 
   query, 
   orderBy, 
-  where,
   doc,
   updateDoc,
   deleteDoc,
-  addDoc,
   serverTimestamp
 } from '../../firebase';
 import { auth } from '../../firebase';
 import { 
   FiAlertTriangle, 
   FiEye, 
-  FiEdit3, 
   FiTrash2, 
   FiCheck, 
   FiX, 
   FiClock, 
   FiUser, 
-  FiMessageSquare,
-  FiArrowUp,
-  FiFilter,
-  FiSearch,
-  FiDownload,
   FiRefreshCw,
   FiZap,
   FiInfo,
   FiTag,
   FiCalendar,
-  FiImage,
-  FiExternalLink
+  FiImage
 } from 'react-icons/fi';
 
 const DashboardContainer = styled.div`

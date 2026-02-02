@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
-  db, collection, getDocs, query, orderBy, limit, where, onSnapshot,
-  updateDoc, doc, deleteDoc, serverTimestamp, addDoc
+  db, collection, getDocs, query, orderBy, onSnapshot,
+  updateDoc, doc, deleteDoc, serverTimestamp
 } from '../../firebase';
 import { CompactLoader } from '../LoadingComponent';
 import { 

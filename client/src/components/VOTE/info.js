@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import styled, { css, createGlobalStyle } from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import Norse from '../../Fonts/Norse-KaWl.otf'; // Adjust path if needed
 import Chill from '../../Fonts/SortsMillGoudy-Regular.ttf';
 
@@ -53,7 +53,7 @@ const BackgroundVideo = styled.video`
   z-index: 0;
   pointer-events: none;
   transition: filter 1s ease-out, opacity 2s ease-out;
-  filter: ${({ isFading }) => (isFading ? 'brightness(0.9) grayscale(30%)' : 'none')};
+  filter: ${({ $isFading }) => ($isFading ? 'brightness(0.9) grayscale(30%)' : 'none')};
 `;
 
 const DarkOverlay = styled.div`
@@ -239,7 +239,7 @@ function ScrollAnimation() {
           muted
           playsInline
           preload="metadata"
-          isFading={isFading}
+          $isFading={isFading}
         />
         <DarkOverlay />
 

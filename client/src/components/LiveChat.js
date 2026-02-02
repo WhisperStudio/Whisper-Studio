@@ -10,12 +10,11 @@ import {
   orderBy, 
   serverTimestamp,
   doc,
-  setDoc,
   where,
   deleteDoc 
 } from '../firebase';
 import { auth } from '../firebase';
-import { FiSend, FiUser, FiCpu, FiMessageCircle, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiSend, FiUser, FiMessageCircle, FiX, FiTrash2 } from 'react-icons/fi';
 
 const ChatContainer = styled.div`
   display: grid;

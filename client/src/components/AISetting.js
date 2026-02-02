@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiCheckCircle, FiAlertTriangle, FiSave, FiX } from 'react-icons/fi';
 import { BsRobot } from 'react-icons/bs';

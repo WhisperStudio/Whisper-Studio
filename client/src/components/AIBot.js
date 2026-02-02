@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { 
-  db, 
-  collection, 
-  addDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  serverTimestamp 
-} from '../firebase';
-import { auth } from '../firebase';
+
 import { FiSend, FiCpu, FiUser, FiActivity, FiTrendingUp } from 'react-icons/fi';
 
 const BotContainer = styled.div`

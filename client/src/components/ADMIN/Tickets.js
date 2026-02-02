@@ -1,5 +1,5 @@
 // ✅ Tickets.js (med støtte for admin-svar til tickets) - Fikset
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import api from '../../utils/api';
 

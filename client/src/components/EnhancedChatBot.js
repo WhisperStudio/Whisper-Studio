@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css, ThemeProvider } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSend, FiPlus, FiX, FiMessageSquare, FiAlertTriangle } from 'react-icons/fi';
+import { FiSend, FiX,  FiAlertTriangle } from 'react-icons/fi';
 import GlassOrbAvatar from './GlassOrbAvatar';
 import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, onSnapshot, updateDoc, collectionGroup } from '../firebase';
 import { FiSmile, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
@@ -116,12 +116,7 @@ const GlobalChatStyles = createGlobalStyle`
   }
 `;
 
-const bounceIn = keyframes`
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.05); }
-  70% { transform: scale(0.9); }
-  100% { transform: scale(1); opacity: 1; }
-`;
+
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
@@ -258,22 +253,7 @@ const HeaderLeft = styled.div`
   z-index: 1; 
   gap: 20px;
 `;
-const Avatar = styled.div`
-  width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.3s ease;
-  &::before {
-    content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%;
-    background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #4facfe, #667eea);
-    background-size: 300% 300%; opacity: 0; z-index: -1; filter: blur(8px); transition: opacity 0.3s ease;
-  }
-  &:hover::before { opacity: 0.6; animation: gradientShift 3s ease infinite; }
-  &::after {
-    content: ''; position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px; border-radius: 50%;
-    border: 2px solid rgba(99, 102, 241, 0.3); opacity: 0; transition: all 0.3s ease;
-  }
-  &:hover::after { opacity: 1; animation: ${pulse} 2s ease-in-out infinite; }
-  & > div { width: 100%; height: 100%; }
-  @keyframes gradientShift { 0% {background-position: 0% 50%} 50% {background-position: 100% 50%} 100% {background-position: 0% 50%} }
-`;
+
 const HeaderInfo = styled.div` 
   display: flex; 
   flex-direction: column; 
@@ -397,14 +377,7 @@ const IconButton = styled(motion.button)`
 
 const EmojiPickerContainer = styled.div` position: absolute; bottom: 60px; right: 10px; z-index: 1000; `;
 
-const TicketFormContainer = styled(motion.div)`
-  position: absolute; bottom: 60px; right: 10px; width: 350px;
-  background: ${props => props.theme.background}; border-radius: 15px; box-shadow: 0 20px 60px ${props => props.theme.shadow};
-  border: 1px solid ${props => props.theme.border}; z-index: 1000; overflow: hidden;
-`;
-const TicketFormHeader = styled.div` background: ${props => props.theme.gradient}; padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; `;
-const TicketFormTitle = styled.h3` margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; `;
-const TicketFormBody = styled.div` padding: 20px; display: flex; flex-direction: column; gap: 15px; `;
+
 const FormGroup = styled.div` display: flex; flex-direction: column; gap: 5px; `;
 const FormLabel = styled.label` font-size: 13px; font-weight: 500; color: ${props => props.theme.text}; `;
 const FormInput = styled.input`
@@ -425,7 +398,7 @@ const FormSelect = styled.select`
   &:focus { outline: none; border-color: ${props => props.theme.primary}; }
   option { background: ${props => props.theme.surface}; }
 `;
-const FormActions = styled.div` display: flex; gap: 10px; justify-content: flex-end; `;
+
 const FormButton = styled(motion.button)`
   padding: 8px 16px; border-radius: 8px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px;
   ${props => props.$primary ? css` background: ${props => props.theme.gradient}; color: white; ` : css`
@@ -435,49 +408,6 @@ const FormButton = styled(motion.button)`
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
-const MaintenanceOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 5;
-  color: #ffa500;
-  text-align: center;
-  padding: 20px;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-left: 50px solid transparent;
-    border-right: 50px solid transparent;
-    border-bottom: 100px solid rgba(255, 165, 0, 0.2);
-    transform: translate(-50%, -50%) rotate(0deg);
-    animation: rotate 10s linear infinite;
-  }
-  
-  &::after {
-    content: '⚠️';
-    font-size: 48px;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 2;
-  }
-  
-  @keyframes rotate {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
-  }
-`;
 
 const MaintenanceView = styled.div`
   flex: 1;
@@ -522,22 +452,22 @@ const EnhancedChatBot = () => {
   const [adminTyping, setAdminTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [isButtonExpanded, setIsButtonExpanded] = useState(false);
-  const [hasNotification] = useState(false);
+ 
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [expectedWait, setExpectedWait] = useState(null);
-  const [showTicketForm, setShowTicketForm] = useState(false); // kept for potential popup form usage
+
   const [ticketData, setTicketData] = useState({ title: '', description: '', category: 'general', priority: 'medium' });
   const [activeView, setActiveView] = useState('chat'); // 'chat', 'tickets', 'createTicket', 'viewTicket'
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketMessage, setTicketMessage] = useState('');
-  const [awaitingTicketConfirm, setAwaitingTicketConfirm] = useState(false);
+  const [ setAwaitingTicketConfirm] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const takenOverRef = useRef(false);
   const maintenanceRef = useRef(false);
-  const headerAvatarRef = useRef(null);
+
   const welcomeRequestedRef = useRef(false);
 
   const currentTheme = themes[theme];

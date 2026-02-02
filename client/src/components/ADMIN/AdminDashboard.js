@@ -6,7 +6,7 @@ import {
 import { CompactLoader } from '../LoadingComponent';
 import {
   FiUsers, FiMessageSquare, FiTrendingUp, FiCheckCircle, FiAlertCircle,
-  FiRefreshCw, FiFilter, FiFileText, FiActivity, FiDownload
+  FiRefreshCw, FiFilter, FiFileText, FiDownload
 } from 'react-icons/fi';
 import { BsSpeedometer2 } from 'react-icons/bs';
 import { IoPulse } from 'react-icons/io5';

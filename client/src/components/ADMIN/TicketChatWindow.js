@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { FiSend, FiX } from 'react-icons/fi';
-import { db, collection, addDoc, serverTimestamp, doc, onSnapshot, updateDoc } from '../../firebase';
+import { db, serverTimestamp, doc, onSnapshot, updateDoc } from '../../firebase';
 
 const ChatWindow = styled.div`
   position: fixed;

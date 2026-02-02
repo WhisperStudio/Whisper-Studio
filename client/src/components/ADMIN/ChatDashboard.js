@@ -1,5 +1,5 @@
 // src/components/ChatDashboard.js
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import styled, { keyframes, css } from "styled-components";
 import { 
   FiLock, FiUnlock, FiTrash2, FiMessageCircle, FiUser, 

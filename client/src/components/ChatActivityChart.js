@@ -1,5 +1,5 @@
 // src/components/ChatActivityChart.js
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   collectionGroup,
   query,
@@ -11,8 +11,6 @@ import {
   subHours,
   subDays,
   subYears,
-  differenceInMinutes,
-  differenceInDays,
   eachMonthOfInterval,
   startOfDay,
   startOfMonth,

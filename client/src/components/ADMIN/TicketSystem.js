@@ -1,25 +1,21 @@
 // src/components/TicketSystem.js
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect} from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  db, collection, addDoc, getDocs, query, orderBy, onSnapshot,
-  updateDoc, doc, serverTimestamp, where, deleteDoc
+  db, collection, addDoc, query, orderBy, onSnapshot,
+  updateDoc, doc, serverTimestamp,
 } from '../../firebase';
 import TicketReplyWindow from '../TicketReplyWindow';
 import {
-  FiMessageSquare, FiSend, FiPaperclip, FiImage, FiFile,
-  FiAlertCircle, FiCheckCircle, FiClock, FiUser, FiTag,
-  FiX, FiMaximize2, FiMinimize2, FiMoreVertical, FiEdit3,
-  FiTrash2, FiStar, FiFilter, FiSearch, FiBell, FiArchive,
-  FiRefreshCw, FiDownload, FiUpload, FiZap, FiShield, FiMessageCircle
+  FiMessageSquare, FiSend,
+  FiClock, 
+  FiX, FiEdit3,
+  FiRefreshCw, FiMessageCircle
 } from 'react-icons/fi';
 import {
-  BsTicketPerforated, BsChatDots, BsExclamationTriangle,
-  BsCheckCircleFill, BsClockHistory, BsPerson, BsReply,
-  BsStarFill, BsArchive, BsShieldCheck
+  BsTicketPerforated,
 } from 'react-icons/bs';
-import { IoSparkles, IoRocketSharp, IoPulse } from 'react-icons/io5';
 
 // Animations
 const fadeIn = keyframes`

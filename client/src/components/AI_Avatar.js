@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 /* ===================== GLASS ORB AVATAR (MESSAGE) ===================== */
-const MessageAvatarPolkadot = ({ messageId, sender, isTyping }) => {
+const MessageAvatarPolkadot = ({ sender, isTyping }) => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animRef = useRef(null);
