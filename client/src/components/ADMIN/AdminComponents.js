@@ -441,7 +441,7 @@ export const AdvancedAnalytics = () => {
 
 // Ticket Dashboard Component
 export const TicketDashboard = () => {
-  const [tickets, setTickets] = useState([
+  const [tickets] = useState([
     { id: 1, title: 'Login Issue', status: 'open', priority: 'high', created: '2 hours ago' },
     { id: 2, title: 'Payment Failed', status: 'in-progress', priority: 'urgent', created: '5 hours ago' },
     { id: 3, title: 'Feature Request', status: 'closed', priority: 'low', created: '1 day ago' }
@@ -958,7 +958,7 @@ export const TicketsView = () => {
 
 // Performance Metrics Component
 export const PerformanceMetrics = () => {
-  const [metrics, setMetrics] = useState({
+  const [metrics] = useState({
     responseTime: '125ms',
     throughput: '1,250 req/s',
     errorRate: '0.02%',
@@ -1011,7 +1011,7 @@ export const PerformanceMetrics = () => {
 
 // Server Status Component
 export const ServerStatus = () => {
-  const [servers, setServers] = useState([
+  const [servers] = useState([
     { name: 'Web Server 1', status: 'online', cpu: 45, memory: 62, uptime: '15d 3h' },
     { name: 'Database Server', status: 'online', cpu: 38, memory: 71, uptime: '45d 12h' },
     { name: 'API Server', status: 'online', cpu: 52, memory: 48, uptime: '8d 19h' }
@@ -1241,7 +1241,7 @@ export const DatabaseManager = () => {
 
 // Security Center Component
 export const SecurityCenter = () => {
-  const [securityEvents, setSecurityEvents] = useState([
+  const [securityEvents] = useState([
     { id: 1, type: 'login', message: 'Successful admin login', time: '5 min ago', severity: 'info' },
     { id: 2, type: 'firewall', message: 'Blocked suspicious IP', time: '15 min ago', severity: 'warning' },
     { id: 3, type: 'update', message: 'Security patch applied', time: '1 hour ago', severity: 'success' }
@@ -1316,7 +1316,7 @@ export const SecurityCenter = () => {
 
 // System Logs Component
 export const SystemLogs = () => {
-  const [logs, setLogs] = useState([
+  const [logs] = useState([
     { id: 1, level: 'INFO', message: 'Application started successfully', timestamp: '2024-01-24 10:30:45' },
     { id: 2, level: 'WARNING', message: 'High memory usage detected', timestamp: '2024-01-24 10:28:12' },
     { id: 3, level: 'ERROR', message: 'Failed to connect to external API', timestamp: '2024-01-24 10:25:33' },

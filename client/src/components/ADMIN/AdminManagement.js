@@ -12,16 +12,15 @@ import {
 import { auth } from '../../firebase';
 import { 
   FiUsers, 
-  FiMail, 
-  FiCalendar, 
+  FiEye,
   FiRefreshCw,
+  FiStar,
+  FiMail,
+  FiCalendar,
   FiShield,
   FiShieldOff,
-  FiEye,
-  FiStar,
-  FiTrash2,
+  FiTrash2
 } from 'react-icons/fi';
-import { CompactLoader } from '../LoadingComponent';
 
 const Container = styled.div`
   max-width: 1400px;
@@ -244,7 +243,7 @@ const UserCard = styled.div`
     }
     
     &::after {
-      content: '⭐';
+      content: '';
       position: absolute;
       top: 2px;
       right: 2px;
@@ -654,9 +653,7 @@ const AdminManagement = () => {
   };
   
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.displayName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     if (filterType === 'admins') return matchesSearch && user.isAdmin;
     if (filterType === 'users') return matchesSearch && !user.isAdmin;
     return matchesSearch;

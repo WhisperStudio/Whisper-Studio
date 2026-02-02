@@ -443,33 +443,55 @@ const BugDashboard = () => {
   });
 
   useEffect(() => {
+    const loadBugs = async () => {
+      try {
+        setLoading(true);
+        const bugsRef = collection(db, 'bugs');
+        const q = query(bugsRef, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        
+        const bugsData = [];
+        snapshot.forEach(doc => {
+          bugsData.push({ id: doc.id, ...doc.data() });
+        });
+        
+        setBugs(bugsData);
+        calculateStats(bugsData);
+      } catch (error) {
+        console.error('Error loading bugs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadBugs();
   }, []);
 
   useEffect(() => {
+    const filterBugs = () => {
+      let filtered = bugs;
+
+      if (searchTerm) {
+        filtered = filtered.filter(bug => 
+          bug.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bug.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          bug.reporterName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(bug => bug.status === statusFilter);
+      }
+
+      if (priorityFilter !== 'all') {
+        filtered = filtered.filter(bug => bug.priority === priorityFilter);
+      }
+
+      setFilteredBugs(filtered);
+    };
+
     filterBugs();
   }, [bugs, searchTerm, statusFilter, priorityFilter]);
-
-  const loadBugs = async () => {
-    try {
-      setLoading(true);
-      const bugsRef = collection(db, 'bugs');
-      const q = query(bugsRef, orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      
-      const bugsData = [];
-      snapshot.forEach(doc => {
-        bugsData.push({ id: doc.id, ...doc.data() });
-      });
-      
-      setBugs(bugsData);
-      calculateStats(bugsData);
-    } catch (error) {
-      console.error('Error loading bugs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const calculateStats = (bugsData) => {
     const stats = {
@@ -481,28 +503,6 @@ const BugDashboard = () => {
       high: bugsData.filter(bug => bug.priority === 'high').length
     };
     setStats(stats);
-  };
-
-  const filterBugs = () => {
-    let filtered = bugs;
-
-    if (searchTerm) {
-      filtered = filtered.filter(bug =>
-        bug.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bug.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bug.reporterName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(bug => bug.status === statusFilter);
-    }
-
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(bug => bug.priority === priorityFilter);
-    }
-
-    setFilteredBugs(filtered);
   };
 
   const updateBugStatus = async (bugId, newStatus) => {
@@ -577,7 +577,7 @@ const BugDashboard = () => {
           <FiAlertTriangle />
           Bug Dashboard
         </Title>
-        <ActionButton variant="primary" onClick={loadBugs} disabled={loading}>
+        <ActionButton variant="primary" onClick={() => window.location.reload()} disabled={loading}>
           <FiRefreshCw />
           Oppdater
         </ActionButton>

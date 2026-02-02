@@ -442,7 +442,7 @@ const Gauge = ({
       const a1 = lerp(startAngle, endAngle, clamp((z.to   - min) / (max - min), 0, 1));
       return { d: ringSlice(a0, a1), color: z.color, key: i };
     });
-  }, [zones, min, max, size]);
+  }, [zones, min, max, size, ringSlice, startAngle]);
 
   const ticks = React.useMemo(() => {
     if (!showTicks || majorTicks < 2) return [];
@@ -457,7 +457,7 @@ const Gauge = ({
       arr.push({ x0, y0, x1, y1, xl, yl, label, key: i });
     }
     return arr;
-  }, [showTicks, majorTicks, min, max, size, format]);
+  }, [showTicks, majorTicks, min, max, size, format, rRingInner, startAngle, endAngle, toXY]);
 
   const needleLength = rRingInner - 12;
   const needleWidth = 6;
