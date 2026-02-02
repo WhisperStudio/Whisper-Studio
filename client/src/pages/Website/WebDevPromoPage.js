@@ -170,7 +170,7 @@ export default function WebDevPromoPage() {
 
     const vatAmount = oneTime * (vatRate / 100);
     return { oneTimeCost: oneTime, monthlyCost: monthly, weeks, items, vatAmount, totalWithVat: oneTime + vatAmount, vatRate };
-  }, [inputs, vatRate]);
+  }, [inputs, vatRate, priceMap.admin.max, priceMap.admin.min, priceMap.ai, priceMap.base, priceMap.blog, priceMap.booking, priceMap.carePlan, priceMap.contactForm, priceMap.customDesign, priceMap.database.max, priceMap.database.min, priceMap.design, priceMap.ecommerce.max, priceMap.ecommerce.min, priceMap.gallery.max, priceMap.gallery.min, priceMap.perPage, priceMap.seo, priceMap.viewer3D.max, priceMap.viewer3D.min]);
 
   const updateInput = (key, value) => {
     setInputs(prev => {

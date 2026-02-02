@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { FiX, FiSave, FiTrash2, FiLayers, FiEdit3, FiPlus } from 'react-icons/fi';
 import TaskCard from './TaskCard'; 
 
@@ -269,7 +269,7 @@ const TaskForm = ({ isOpen, onClose, onSubmit, onDelete, task, admins }) => {
     } else {
       setFormData(defaultTask);
     }
-  }, [task, isOpen]);
+  }, [task, isOpen, defaultTask]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

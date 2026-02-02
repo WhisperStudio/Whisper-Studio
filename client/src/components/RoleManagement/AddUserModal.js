@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { 
-  FiX, FiSave, FiUser, FiMail, FiLock, FiShield,
-  FiUserPlus, FiKey, FiAlertCircle
+  FiX, FiSave, FiUser, FiMail, FiShield,
+  FiUserPlus, FiAlertCircle
 } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
 import { 
-  auth, provider, signInWithPopup
+  auth
 } from '../../firebase';
 import { 
   db, doc, setDoc, getDoc, getDocs, collection, serverTimestamp 
@@ -248,7 +247,7 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [addMethod, setAddMethod] = useState('email'); // 'email' or 'google'
+  const [addMethod] = useState('email'); // 'email' or 'google'
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -329,20 +328,6 @@ const AddUserModal = ({ onClose, onAdd, currentUserRole }) => {
     }
   };
 
-  const PERMISSIONS = {
-    dashboard: true,
-    chat: true,
-    analytics: true,
-    users: true,
-    admins: true,
-    settings: true,
-    tasks: true,
-    tickets: true,
-    bugs: true,
-    database: true,
-    security: true,
-    aiBot: true
-  };
 
   return (
     <ModalOverlay onClick={(e) => e.target === e.currentTarget && onClose()}>

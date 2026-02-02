@@ -171,7 +171,6 @@ const HelpText = styled.div`
 // Main Component
 const PendingAccess = ({ user }) => {
   const [checkingStatus, setCheckingStatus] = useState(false);
-  const [userRole, setUserRole] = useState('pending');
 
   useEffect(() => {
     if (!user?.uid) return;

@@ -553,14 +553,6 @@ const EnhancedChatBot = () => {
 
   // Header avatar state management for the AI_Avatar component
   // Header avatar state management for the GlassOrbAvatar component
-  const [headerAvatarState, setHeaderAvatarState] = useState('idle');
-  const [isHovered, setIsHovered] = useState(false);
-
-  useEffect(() => {
-    if (isTyping) setHeaderAvatarState('typing');
-    else if (input.length > 0) setHeaderAvatarState('listening');
-    else setHeaderAvatarState('idle');
-  }, [isTyping, input]);
 
   useEffect(() => {
     if (!userId || !isOpen) return;
@@ -697,14 +689,6 @@ const EnhancedChatBot = () => {
 
   /* ===================== SEND MESSAGE ===================== */
   const formatTime = (date) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const cycleTheme = () => {
-    const themeKeys = Object.keys(themes);
-    const currentIndex = themeKeys.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % themeKeys.length;
-    const newTheme = themeKeys[nextIndex];
-    setTheme(newTheme);
-    localStorage.setItem('chatTheme', newTheme);
-  };
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
@@ -739,15 +723,6 @@ const EnhancedChatBot = () => {
     } catch (error) { console.error('Error sending message:', error); }
   };
 
-  const onBotReply = async (replyText) => {
-    try {
-      await addDoc(collection(db, 'chats', userId, 'messages'), {
-        text: replyText,
-        sender: 'bot',
-        timestamp: serverTimestamp(),
-      });
-    } catch {}
-  };
 
   // Input handlers for chat input
   const handleInputChange = (e) => {
@@ -907,7 +882,7 @@ const EnhancedChatBot = () => {
       }
     }, (error) => { console.error('Error loading tickets:', error); });
     return () => unsubscribe();
-  }, [userId, selectedTicket?.id]);
+  }, [userId]);
 
   /* ===================== RENDER ===================== */
   return (
@@ -939,7 +914,6 @@ const EnhancedChatBot = () => {
                       style={{ 
                         width: '80px',
                         height: '80px',
-                        transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                         transition: 'transform 0.3s ease-in-out',
                         margin: 0
                       }} 

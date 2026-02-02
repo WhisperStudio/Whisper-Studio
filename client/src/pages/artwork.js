@@ -196,10 +196,6 @@ const Select = styled.select`
   }
 `;
 
-const ViewToggle = styled.div`
-  display:flex; gap:8px;
-`;
-const ViewBtn = styled(Pill)` padding: 8px 12px; `;
 
 // ---------- Grid / Masonry ----------
 const Grid = styled(motion.div)`
@@ -523,8 +519,32 @@ export default function GallerySection({ headerHeight }){
           {/* View toggle */}
           {view!=="3d" && (
             <div style={{ display:'flex', gap:8, justifySelf:'end' }}>
-              <ViewBtn active={view==='grid'} onClick={()=> setView('grid')}>Grid</ViewBtn>
-              <ViewBtn active={view==='masonry'} onClick={()=> setView('masonry')}>Masonry</ViewBtn>
+              <button 
+                style={{ 
+                  padding: '8px 12px', 
+                  background: view==='grid' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  borderRadius: '12px', 
+                  color: '#fff', 
+                  cursor: 'pointer' 
+                }} 
+                onClick={()=> setView('grid')}
+              >
+                Grid
+              </button>
+              <button 
+                style={{ 
+                  padding: '8px 12px', 
+                  background: view==='masonry' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  borderRadius: '12px', 
+                  color: '#fff', 
+                  cursor: 'pointer' 
+                }} 
+                onClick={()=> setView('masonry')}
+              >
+                Masonry
+              </button>
             </div>
           )}
         </Toolbar>
@@ -579,7 +599,7 @@ export default function GallerySection({ headerHeight }){
 
 // ---------- Item Components ----------
 function GridItem({ it, i, onOpen }){
-  const { ref, onMove, reset } = useParallax();
+  const { onMove, reset } = useParallax();
   return (
     <Card
       as={motion.button}
@@ -610,7 +630,7 @@ function GridItem({ it, i, onOpen }){
 }
 
 function MasonryItem({ it, i, onOpen }){
-  const { ref, onMove, reset } = useParallax();
+  const { onMove, reset } = useParallax();
   return (
     <MasonryCard
       as={motion.button}

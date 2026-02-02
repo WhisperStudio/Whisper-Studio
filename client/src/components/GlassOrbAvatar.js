@@ -12,7 +12,6 @@ const GlassOrbAvatar = ({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const animationRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: size, height: size });
 
   const [colorState, setColorState] = useState('idle'); // 'idle' | 'typing' | 'listening'
 
@@ -101,7 +100,6 @@ const GlassOrbAvatar = ({
       const sizePx = Math.min(container.offsetWidth, container.offsetHeight);
       canvas.width = sizePx;
       canvas.height = sizePx;
-      setDimensions({ width: sizePx, height: sizePx });
       updatePhysicsConstants(sizePx);
     };
 
@@ -364,7 +362,6 @@ const getChristmasBaseColor = (x, y) => {
     };
 
     const updateSnow = () => {
-      const sizePx = Math.min(canvas.width, canvas.height);
       ctx.save();
       ctx.fillStyle = 'rgba(255,255,255,0.85)';
       snowflakes.forEach((flake) => {
@@ -714,7 +711,7 @@ const getChristmasBaseColor = (x, y) => {
       container.removeEventListener('click', handleClick);
       resizeObserver.disconnect();
     };
-  }, [colorState, skin]);
+  }, [colorState]);
 
   // glasskule–look fra HTML
   const glassBackground =

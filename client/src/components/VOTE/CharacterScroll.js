@@ -432,7 +432,6 @@ export default function CharacterScroll() {
       // HERO
       if (progress < HERO_RATIO) {
         const heroProgress = progress / HERO_RATIO;
-        const heroOpacity = 1 - heroProgress;
         const heroScale = 1 + heroProgress * 0.1;
 
         if (heroRef.current) {

@@ -358,9 +358,6 @@ const Header = () => {
   // Desktop hover state - using refs for independent animations
   const navItemRefs = useRef({});
 
-  // Mobile menu ref
-  const mobileContainerRef = useRef(null);
-
   // Track if user has scrolled from the very top
   const hasScrolledFromTopRef = useRef(false);
 

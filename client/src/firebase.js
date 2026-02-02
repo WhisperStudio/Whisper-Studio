@@ -13,7 +13,6 @@ import {
   query, 
   where, 
   orderBy, 
-  limit, 
   onSnapshot, 
   serverTimestamp,
   collectionGroup,

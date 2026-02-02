@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
-  db, collection, getDocs, doc, setDoc, deleteDoc, updateDoc,
-  serverTimestamp, query, orderBy, where, onSnapshot, getDoc
+  db, collection, getDocs, doc, deleteDoc, updateDoc,
+  serverTimestamp, onSnapshot, getDoc
 } from '../../firebase';
 import { auth } from '../../firebase';
 import { 
-  FiUsers, FiUserPlus, FiUserMinus, FiMail, FiCalendar, FiUser,
-  FiSearch, FiFilter, FiRefreshCw, FiShield, FiShieldOff,
-  FiEye, FiSettings, FiStar, FiTrash2, FiAlertTriangle,
-  FiEdit3, FiCheck, FiX, FiLock, FiUnlock, FiUserCheck, FiAward,
-  FiToggleLeft, FiToggleRight, FiSave, FiKey
+  FiUsers, FiUserPlus, 
+  FiSearch, FiRefreshCw, FiAlertTriangle,
+  
 } from 'react-icons/fi';
 import { BsShieldCheck, BsPerson, BsPersonBadge, BsAward } from 'react-icons/bs';
 import { CompactLoader } from '../LoadingComponent';
@@ -261,7 +259,7 @@ const RoleManagement = ({ isOwnerView = false, isAdminView = false }) => {
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, activeTab]);
+  }, [users, searchTerm, activeTab, filterUsers]);
 
   const checkCurrentUserRole = async () => {
     try {

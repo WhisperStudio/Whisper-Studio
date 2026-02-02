@@ -201,11 +201,9 @@ export const AdvancedAnalytics = () => {
       // Load real data from Firebase
       const visitorsSnapshot = await getDocs(collection(db, 'visitors'));
       const usersSnapshot = await getDocs(collection(db, 'users'));
-      const ticketsSnapshot = await getDocs(collection(db, 'tickets'));
 
       const totalVisitors = visitorsSnapshot.size;
       const totalUsers = usersSnapshot.size;
-      const totalTickets = ticketsSnapshot.size;
 
       // Calculate conversion rate (users/visitors)
       const conversionRate = totalVisitors > 0 ? ((totalUsers / totalVisitors) * 100).toFixed(1) : '0';

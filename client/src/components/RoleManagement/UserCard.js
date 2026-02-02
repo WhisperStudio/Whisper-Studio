@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import styled from 'styled-components';
 import { 
-  FiMail, FiCalendar, FiShield, FiTrash2, FiEdit3,
-  FiLock, FiUnlock, FiSettings, FiUser, FiAward, FiAlertTriangle
+  FiMail, FiCalendar, FiTrash2, FiEdit3,
+  FiLock,  FiSettings,  FiAward, FiAlertTriangle
 } from 'react-icons/fi';
 import { BsAward, BsShieldCheck, BsPerson, BsPersonBadge } from 'react-icons/bs';
 
@@ -259,16 +259,6 @@ const getRoleLabel = (role) => {
     case 'support': return 'Support';
     case 'pending': return 'Venter godkjenning';
     default: return 'Bruker';
-  }
-};
-
-const getRoleColor = (role) => {
-  switch(role) {
-    case 'owner': return 'linear-gradient(135deg, #fbbf24, #f59e0b)';
-    case 'admin': return 'linear-gradient(135deg, #60a5fa, #3b82f6)';
-    case 'support': return 'linear-gradient(135deg, #22c55e, #16a34a)';
-    case 'pending': return 'linear-gradient(135deg, #ef4444, #dc2626)';
-    default: return 'linear-gradient(135deg, #6b7280, #4b5563)';
   }
 };
 

@@ -237,41 +237,6 @@ const AISettings = () => {
     }
   };
 
-  const handleSaveSettings = async () => {
-    setIsSaving(true);
-    
-    try {
-      const settings = {
-        isEnabled: isBotEnabled,
-        message: maintenanceMessage,
-        lastUpdated: new Date().toISOString()
-      };
-
-      // Persist full settings snapshot to Firestore
-      await setDoc(doc(db, 'system', 'aiSettings'), {
-        isEnabled: isBotEnabled,
-        maintenanceMessage,
-        theme: settings.theme || settings.theme === '' ? settings.theme : undefined,
-        lastUpdated: serverTimestamp(),
-      }, { merge: true });
-
-      // Legacy localStorage persistence
-      localStorage.setItem('aiSettings', JSON.stringify(settings));
-      localStorage.setItem('aiMaintenanceMode', !isBotEnabled);
-      
-      setIsBotEnabled(isBotEnabled);
-      setStatus(isBotEnabled ? 'Operational' : 'Maintenance');
-      
-      // Show success message
-      alert('Settings saved successfully!');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('Failed to save settings. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <Container>

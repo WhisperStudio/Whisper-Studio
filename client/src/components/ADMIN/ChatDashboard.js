@@ -418,7 +418,7 @@ const ChatDashboard = () => {
             const chatData = chatDoc.data();
             
             // Hent kun de siste 5 meldingene for forhåndsvisning i listen (ytelsesoptimalisering)
-            const messagesRef = collection(db, 'chats', userId, 'messages');
+            const messagesRef = collection(db, 'chats', chatDoc.id, 'messages');
             const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc')); // Descending for latest first
             
             fetchPromises.push(
@@ -485,7 +485,7 @@ const ChatDashboard = () => {
         unsubscribe();
       }
     };
-  }, []); // Kun kjøres ved mount/unmount
+  }, [selected]); // Include selected dependency
 
   // Cleanup listeners on unmount
   useEffect(() => {

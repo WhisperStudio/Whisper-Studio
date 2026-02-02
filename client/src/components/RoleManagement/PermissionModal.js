@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
-  FiX, FiSave, FiToggleLeft, FiToggleRight, FiCheck,
+  FiX, FiSave, FiCheck,
   FiShield, FiLock, FiUnlock, FiSettings
 } from 'react-icons/fi';
 
@@ -281,22 +281,6 @@ const Button = styled.button`
 `;
 
 // Permission descriptions
-const AVAILABLE_PERMISSIONS = {
-  dashboard: 'Dashboard Overview',
-  realtime: 'Real-time Monitor',
-  analytics: 'Analytics & Reports',
-  chat: 'Chat Dashboard',
-  aiBot: 'AI Assistant',
-  tickets: 'Support Tickets',
-  server: 'Server Status',
-  database: 'Database Access',
-  security: 'Security Center',
-  tasks: 'Task Management',
-  bugs: 'Bug Reports',
-  admins: 'Admin Management',
-  users: 'User Management',
-  settings: 'System Settings'
-};
 
 // Main Component
 const PermissionModal = ({ user, onClose, onSave, availablePermissions }) => {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import {
-  FiEdit3, FiTrash2, FiCalendar, FiClock, FiFlag,
-  FiMessageSquare, FiPercent, FiChevronDown, FiChevronUp,
+  FiEdit3, FiTrash2, FiCalendar, FiFlag,
+  FiMessageSquare, FiChevronDown, FiChevronUp,
   FiCheck
 } from 'react-icons/fi';
 
