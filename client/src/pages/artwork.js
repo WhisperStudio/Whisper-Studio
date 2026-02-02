@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import styled from "styled-components";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
@@ -46,8 +46,6 @@ const RAW = [
   { id: 13, img: placeholderImage10, category: "Creatures", sub: "Unfriendly", title: "Troll", tags:["troll","rock"] },
   { id: 14, img: placeholderImage12, category: "Creatures", sub: "Unfriendly", title: "Pesta", tags:["plague","dark"] },
 ];
-
-const MODELS = ["Nokken","Troll","Shadow","Headset"];
 
 // ---------- Theme (scoped) ----------
 const C = {
@@ -455,9 +453,10 @@ export default function GallerySection({ headerHeight }){
 
   // pagination / infinite
   const [visible, setVisible] = useState(9);
+  const subsString = subs.join(',');
   useEffect(()=>{
    setVisible(v => Math.min(9, data.length || 0));
- }, [category, subs.join(','), query, sort, view, data.length]);
+ }, [category, subsString, query, sort, view, data.length]);
   const loadMoreRef = useRef(null);
   useEffect(()=>{
     const el = loadMoreRef.current; if(!el) return;

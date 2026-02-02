@@ -219,7 +219,7 @@ export const getEmojiSuggestions = (sentiment) => {
   return emojiMap[sentiment] || emojiMap.neutral;
 };
 
-export default {
+const aiService = {
   generateAIResponse,
   analyzeSentiment,
   getMessageSuggestions,
@@ -230,3 +230,5 @@ export default {
   processFileUpload,
   getEmojiSuggestions,
 };
+
+export default aiService;

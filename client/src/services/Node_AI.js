@@ -175,60 +175,6 @@ const AMBIGUOUS_GREETINGS = new Set([
   "hei", "hello", "hi", "hola", "bonjour", "hallo", "hej", "moi",
 ]);
 
-// ========= ML-TRENINGSData =========
-const ML_TRAIN_DATA = [
-  ["hei", "greeting"],
-  ["hei, jeg har et spørsmål", "greeting"],
-  ["god morgen", "greeting"],
-  ["hallo bot", "greeting"],
-
-  ["ha det", "farewell"],
-  ["snakkes", "farewell"],
-  ["bye", "farewell"],
-  ["goodbye", "farewell"],
-
-  ["takk", "thanks"],
-  ["tusen takk for hjelpen", "thanks"],
-  ["thanks a lot", "thanks"],
-
-  ["jeg trenger hjelp fra support", "ask_ticket"],
-  ["kan du lage en ticket for meg", "ask_ticket"],
-  ["jeg vil opprette sak", "ask_ticket"],
-
-  ["hva koster spillet", "price"],
-  ["hva blir prisen", "price"],
-  ["what is the price", "price"],
-
-  ["når kommer spillet", "release_window"],
-  ["hva er lanseringsdatoen", "release_window"],
-  ["when is the game out", "release_window"],
-
-  ["hva er gameplayet", "gameplay_info"],
-  ["hvordan er gameplay", "gameplay_info"],
-  ["what is the gameplay like", "gameplay_info"],
-
-  ["hva er vote", "what_is_vote"],
-  ["hva går vote ut på", "what_is_vote"],
-
-  ["hvem lager vote", "team_size"],
-  ["hvor stort er teamet", "team_size"],
-
-  ["hva er vintra studio", "what_is_vintra"],
-  ["hva er vintra", "what_is_vintra"],
-  ["fortell om vintra", "what_is_vintra"],
-  ["fortell om vintra studio", "what_is_vintra"],
-
-  ["jeg vet ikke helt", "fragment"],
-  ["jeg", "fragment"],
-
-  ["lol dette er ikke relatert i det hele tatt", "off_topic"],
-  ["snakk om noe helt annet", "off_topic"],
-
-  ["jeg trenger litt hjelp", "generic_help"],
-  ["kan du hjelpe meg", "generic_help"],
-];
-
-// ========= SVAR-TEMPLATES =========
 const REPLY_TEMPLATES = {
   greeting: [
     "Hei! 👋 Hva kan jeg hjelpe deg med om VOTE eller Vintra Studio i dag?",
@@ -461,11 +407,6 @@ function pickLangForMessage(text, state) {
 
 // I Python brukes spaCy + scikit-learn (Tfidf + LogisticRegression).
 // Her lager vi bare en stub. Du kan implementere dette med f.eks. "natural" + "ml-logistic-regression".
-
-function mlPreprocess(text) {
-  // Enkel versjon: bruk norm() (ev. plugg inn wink-nlp eller liknende)
-  return norm(text);
-}
 
 let ML_VECTORIZER = null;
 let ML_CLASSIFIER = null;

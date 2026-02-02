@@ -5,7 +5,6 @@ import {
   doc, 
   getDoc, 
   collection, 
-  addDoc, 
   serverTimestamp,
   onAuthStateChanged,
   query,

@@ -459,21 +459,16 @@ const CardButton = styled(BaseButton)`
 `;
 
 const CardDate = styled.span`
-  font-size: clamp(0.9rem, 1vw, 1.1rem); 
+  font-size: 0.9rem;
   color: rgba(255,255,255,0.7); 
   margin-bottom: 20px; 
   display: block; 
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 `;
 
 /* ---------- Component ---------- */
 function App() {
   const vidRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  
-  // Animation state (bruker setState kun i throttlet funksjon)
   const [heroState, setHeroState] = useState({
     opacity: 1,
     shift: 0,
@@ -481,8 +476,6 @@ function App() {
     parallax: 0,
     videoScale: 1.05,
   });
-
-  // Element refs
   const titleRef = useRef(null);
   const largeRef = useRef(null);
   const smallRefs = useRef([]);
@@ -540,7 +533,6 @@ function App() {
         videoScale: 1.05 + easedProgress * 0.1,
       });
 
-      setScrollProgress(progress); 
     }, 16); 
 
     // 2. Element Animation (RequestAnimationFrame)

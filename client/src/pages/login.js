@@ -12,7 +12,6 @@ import {
   updateProfile,
   sendPasswordResetEmail
 } from '../firebase';
-import { signOut } from "firebase/auth";
 import { checkAdminStatus, getOrCreateUser } from '../utils/firebaseAdmin';
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';

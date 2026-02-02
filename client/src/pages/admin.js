@@ -112,7 +112,6 @@ const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
-
 const slideIn = keyframes`
   from { transform: translateX(-100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -121,16 +120,6 @@ const slideIn = keyframes`
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
-`;
-
-const glow = keyframes`
-  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
-  50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
-`;
-
-const float = keyframes`
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
 `;
 
 // Removed socket.io dependency - using Firebase only
@@ -468,7 +457,6 @@ export default function AdminPanel() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentUserRole, setCurrentUserRole] = useState('user');
   const [userPermissions, setUserPermissions] = useState([]);
-  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   const buttonRefs = useRef([]);
   const highlightRef = useRef(null);
 
@@ -478,11 +466,9 @@ export default function AdminPanel() {
       if (currentUserRole === 'owner') {
         // Owner har tilgang til alt
         setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'admins', 'users', 'settings']);
-        setPermissionsLoaded(true);
       } else if (currentUserRole === 'admin') {
         // Admin har tilgang til alt unntatt owner-spesifikke seksjoner
         setUserPermissions(['dashboard', 'realtime', 'analytics', 'chat', 'teamChat', 'aiBot', 'tickets', 'server', 'database', 'security', 'tasks', 'bugs', 'users', 'settings']);
-        setPermissionsLoaded(true);
       } else if (currentUserRole === 'support' || currentUserRole === 'user') {
         // Support og vanlige brukere må ha eksplisitte permissions fra databasen
         if (currentUser) {
@@ -503,11 +489,9 @@ export default function AdminPanel() {
         } else {
           setUserPermissions([]);
         }
-        setPermissionsLoaded(true);
       } else {
         // Pending eller ukjent rolle - ingen tilgang
         setUserPermissions([]);
-        setPermissionsLoaded(true);
       }
     };
     
@@ -619,32 +603,6 @@ export default function AdminPanel() {
 
     return () => unsubscribe();
   }, [navigate]);
-
-  const sendChat = () => {
-    if (!input.trim() || !selectedConv) return;
-    const msg = { 
-      from: 'admin', 
-      text: input, 
-      userId: selectedConv, 
-      timestamp: new Date(),
-      adminEmail: currentUser?.email 
-    };
-    
-    // TODO: Implement Firebase-based message sending
-    // For now, just update local state
-    setConversations(prev => ({
-      ...prev,
-      [selectedConv]: (prev[selectedConv] || []).concat(msg)
-    }));
-    setInput("");
-  };
-
-  const deleteConv = id => {
-    const c = { ...conversations };
-    delete c[id];
-    setConversations(c);
-    if (selectedConv === id) setSelectedConv(null);
-  };
 
   const logout = async () => {
     try {
