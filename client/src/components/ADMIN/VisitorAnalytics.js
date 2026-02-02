@@ -21,8 +21,15 @@ const RANGES = [
   { label: "All time", value: "all" },
 ];
 
+const ANALYTICS_TYPES = [
+  { label: "Besøkende", value: "visitors", collection: "visitors" },
+  { label: "Chat", value: "chat", collection: "chats" },
+  { label: "Nettside 2", value: "website2", collection: "website2_visitors" },
+];
+
 export default function VisitorAnalytics() {
   const [range, setRange] = useState("all");
+  const [analyticsType, setAnalyticsType] = useState("visitors");
   const [now, setNow] = useState(new Date());
   const [windowStart, setWindowStart] = useState(new Date(2020, 0, 1));
   const [points, setPoints] = useState([]);
@@ -86,7 +93,11 @@ export default function VisitorAnalytics() {
     // 4) Hent data fra Firebase
     const fetchData = async () => {
       try {
-        const visitorsRef = collection(db, 'visitors');
+        // Get the current analytics type collection
+        const currentType = ANALYTICS_TYPES.find(type => type.value === analyticsType);
+        const collectionName = currentType ? currentType.collection : "visitors";
+        
+        const visitorsRef = collection(db, collectionName);
         const snapshot = await getDocs(visitorsRef);
         
         const fresh = { ...counts };
@@ -175,7 +186,7 @@ export default function VisitorAnalytics() {
     
     // Force re-render av chart når range endres
     setChartKey(prev => prev + 1);
-  }, [range, now]);
+  }, [range, now, analyticsType]);
 
   // Akseoppsett
   const isHour = range === "1h";
@@ -196,7 +207,7 @@ export default function VisitorAnalytics() {
   // Dataset til linechart
   const datasets = [
     {
-      label: "Visitors",
+      label: ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors',
       data: points,
       borderColor: "rgba(168, 85, 247, 1)",
       backgroundColor: "rgba(168, 85, 247, 0.1)",
@@ -226,15 +237,15 @@ export default function VisitorAnalytics() {
         legend: { display: false },
         title: {
           display: true,
-          text: `Website Visitors • ${RANGES.find((r) => r.value === range).label}`,
+          text: `${ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'} • ${RANGES.find((r) => r.value === range).label}`,
           color: "#fff",
           font: { size: 20, weight: '700', family: 'Inter' },
           padding: { bottom: 20 }
         },
         tooltip: {
           backgroundColor: "rgba(15, 23, 42, 0.95)",
-          titleColor: "#fff",
-          bodyColor: "#fff",
+          titleColor: "#d71e1eff",
+          bodyColor: "#b22323ff",
           borderColor: "rgba(168, 85, 247, 0.3)",
           borderWidth: 1,
           cornerRadius: 12,
@@ -247,7 +258,7 @@ export default function VisitorAnalytics() {
               if (isWeek) return format(pt.parsed.x, "MMM d");
               return format(pt.parsed.x, "PPpp");
             },
-            label: (ctx) => `Visitors: ${ctx.parsed.y}`,
+            label: (ctx) => `${ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'}: ${ctx.parsed.y}`,
           },
         },
       },
@@ -291,7 +302,7 @@ export default function VisitorAnalytics() {
           },
           title: { 
             display: true, 
-            text: "Visitors", 
+            text: ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors', 
             color: "rgba(255, 255, 255, 0.8)",
             font: { size: 14, weight: '600' }
           },
@@ -424,6 +435,33 @@ export default function VisitorAnalytics() {
 
   return (
     <>
+     
+      {/* Time Range Selector */}
+      <div style={styles.card}>
+        <div style={styles.toolbar}>
+          {ANALYTICS_TYPES.map((type) => (
+            <button
+              key={type.value}
+              style={styles.button(analyticsType === type.value)}
+              onClick={() => setAnalyticsType(type.value)}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+        <div style={styles.toolbar}>
+          {RANGES.map((r) => (
+            <button
+              key={r.value}
+              style={styles.button(range === r.value)}
+              onClick={() => setRange(r.value)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Map card */}
       <div style={styles.card}>
         <div style={styles.mapGrid}>
@@ -446,39 +484,13 @@ export default function VisitorAnalytics() {
                 </li>
               ))}
             </ol>
-            <div style={styles.total}>Total Visitors: {totalVisitors.toLocaleString()}</div>
+            <div style={styles.total}>Total {ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'}: {totalVisitors.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
       {/* Time range line chart card (matches ChatActivityChart styling) */}
       <div style={styles.card}>
-        <div style={styles.toolbar}>
-          {RANGES.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => setRange(r.value)}
-              style={styles.button(r.value === range)}
-              onMouseEnter={(e) => {
-                if (r.value !== range) {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(96, 165, 250, 0.2)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (r.value !== range) {
-                  e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-
         <LineChart key={chartKey} datasets={datasets} options={getChartOptions()} height={450} />
       </div>
     </>

@@ -3,7 +3,7 @@ import styled, { createGlobalStyle, keyframes, css, ThemeProvider } from 'styled
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiX,  FiAlertTriangle } from 'react-icons/fi';
 import GlassOrbAvatar from './GlassOrbAvatar';
-import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, onSnapshot, updateDoc, collectionGroup } from '../firebase';
+import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, onSnapshot, updateDoc, collectionGroup, getDoc } from '../firebase';
 import { FiSmile, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
 import { BsChatDots, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
@@ -461,7 +461,8 @@ const EnhancedChatBot = () => {
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketMessage, setTicketMessage] = useState('');
-  const [ setAwaitingTicketConfirm] = useState(false);
+  const [awaitingTicketConfirm, setAwaitingTicketConfirm] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -557,9 +558,50 @@ const EnhancedChatBot = () => {
   useEffect(() => {
     if (!userId || !isOpen) return;
 
-    const chatRef = doc(db, 'chats', userId);
-    setDoc(chatRef, { createdAt: serverTimestamp() }, { merge: true }).catch(() => {});
+    // Set initializing state to show loading indicator
+    setIsInitializing(true);
 
+    // Initialize chat document immediately (non-blocking)
+    setDoc(doc(db, 'chats', userId), { 
+      createdAt: serverTimestamp() 
+    }, { merge: true }).catch(() => {});
+
+    // Fetch country code asynchronously without blocking
+    const fetchCountryAsync = async () => {
+      try {
+        const chatDoc = await getDoc(doc(db, 'chats', userId));
+        const chatData = chatDoc.data();
+        
+        if (!chatData.country) {
+          try {
+            const response = await fetch('https://ipapi.co/json');
+            const { country } = await response.json();
+            
+            await updateDoc(doc(db, 'chats', userId), {
+              country: country || 'Unknown',
+              lastUpdated: serverTimestamp()
+            });
+          } catch (error) {
+            console.error('Error fetching country:', error);
+            // Set Unknown as fallback
+            await updateDoc(doc(db, 'chats', userId), {
+              country: 'Unknown',
+              lastUpdated: serverTimestamp()
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing chat:', error);
+      } finally {
+        // Clear initializing state after a short delay
+        setTimeout(() => setIsInitializing(false), 300);
+      }
+    };
+
+    // Start country fetching in background
+    fetchCountryAsync();
+
+    const chatRef = doc(db, 'chats', userId);
     const unsubChat = onSnapshot(chatRef, (snap) => {
       const data = snap.data() || {};
       setTakenOver(!!data.takenOver);
@@ -593,13 +635,14 @@ const EnhancedChatBot = () => {
       });
       setMessages(list);
 
-      // Request welcome from Python/Node bot once when chat opens and no messages exist
+      // Request welcome message once when chat opens and no messages exist
       if (list.length === 0 && isOpen && !welcomeRequestedRef.current) {
         welcomeRequestedRef.current = true;
-        const greetInput = 'hello';
-        (async () => {
+        
+        // Add small delay to prevent blocking UI
+        setTimeout(async () => {
           try {
-            const data = await generateAIResponse(greetInput, userId);
+            const data = await generateAIResponse('hello', userId);
             if (data?.lang) {
               setLanguage(data.lang);
               localStorage.setItem('chatLanguage', data.lang);
@@ -614,7 +657,7 @@ const EnhancedChatBot = () => {
           } catch (err) {
             console.error('Error fetching welcome from bot:', err);
           }
-        })();
+        }, 100); // Small delay to prevent UI blocking
       }
 
     });
@@ -899,26 +942,36 @@ const EnhancedChatBot = () => {
             >
               <Header>
                 <HeaderLeft>
-                  <div style={{
-                    position: 'absolute',
-                    left: '-80px',
-                    top: '0px',
-                    zIndex: 10
-                  }}>
-                    <GlassOrbAvatar 
-                      messageId="header" 
-                      sender="user" 
-                      isTyping={isUserTyping}
-                      maintenance={maintenance && !takenOver}
-                      skin={skin}
-                      style={{ 
-                        width: '80px',
-                        height: '80px',
-                        transition: 'transform 0.3s ease-in-out',
-                        margin: 0
-                      }} 
-                    />
-                  </div>
+                  {isInitializing && (
+                    <div style={{
+                      position: 'absolute',
+                      left: '-80px',
+                      top: '0px',
+                      zIndex: 10
+                    }}>
+                      <GlassOrbAvatar 
+                        size={60} 
+                        skin={skin} 
+                        colorState="typing" 
+                        isTyping={true} 
+                      />
+                    </div>
+                  )}
+                  {!isInitializing && (
+                    <div style={{
+                      position: 'absolute',
+                      left: '-80px',
+                      top: '0px',
+                      zIndex: 10
+                    }}>
+                      <GlassOrbAvatar 
+                        size={60} 
+                        skin={skin} 
+                        colorState="idle" 
+                        isHovered={false} 
+                      />
+                    </div>
+                  )}
                   <HeaderInfo>
                     <HeaderTitle>
                       {maintenance ? <FiAlertTriangle color="#ffa500" /> : null}

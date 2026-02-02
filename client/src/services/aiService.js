@@ -1,5 +1,5 @@
 // src/services/aiService.js
-import { ChatState, handleMessage } from './Node_AI';
+import VOTEBot from './AI_JS/VOTEBOT';
 
 // AI Service Configuration (kept minimal; frontend handles prompts)
 const AI_CONFIG = {
@@ -35,7 +35,7 @@ class ContextManager {
 }
 
 const contextManager = new ContextManager();
-const stateBySession = new Map(); // sessionId -> ChatState
+const botInstances = new Map(); // userId -> VOTEBot instance
 
 // Hoved-funksjon brukt av EnhancedChatBot
 export const generateAIResponse = async (text, userId) => {
@@ -53,19 +53,19 @@ export const generateAIResponse = async (text, userId) => {
         return id;
       })();
 
-    // Hent eller opprett ChatState for denne brukeren
-    let state = stateBySession.get(sessionId);
-    if (!state) {
-      state = new ChatState();
-      stateBySession.set(sessionId, state);
+    // Hent eller opprett VOTEBot instans for denne brukeren
+    let bot = botInstances.get(sessionId);
+    if (!bot) {
+      bot = new VOTEBot();
+      botInstances.set(sessionId, bot);
     }
 
-    // Kjør meldingen gjennom Node_AI-botten
-    const result = await handleMessage(text, state);
-    // result = { reply, lang, intent, awaiting_ticket_confirm, active_view, last_topic, state }
+    // Kjør meldingen gjennom VOTEBOT
+    const result = bot.handleMessage(text);
+    // result = { reply, intent, state }
 
-    // Oppdater lagret state
-    stateBySession.set(sessionId, result.state);
+    // Oppdater lagret bot instance (med state)
+    botInstances.set(sessionId, bot);
 
     const reply = result.reply || '';
 
@@ -73,10 +73,18 @@ export const generateAIResponse = async (text, userId) => {
     contextManager.addMessage(sessionId, { role: 'user', content: text });
     contextManager.addMessage(sessionId, { role: 'assistant', content: reply });
 
-    // VIKTIG: returner HELE result-objektet, ikke bare reply
-    return result;
+    // Returner format som EnhancedChatBot forventer
+    return {
+      reply: reply,
+      lang: result.state.user_lang || 'no',
+      intent: result.intent,
+      awaiting_ticket_confirm: result.state.awaiting_ticket_confirm,
+      active_view: result.state.active_view,
+      last_topic: result.state.last_topic,
+      state: result.state
+    };
   } catch (error) {
-    console.error('AI Service Error (Node_AI in frontend):', error);
+    console.error('AI Service Error (VOTEBOT):', error);
     throw error;
   }
 };
@@ -162,7 +170,7 @@ export const getTypingDuration = (message) => {
 
 export const clearUserContext = (userId) => {
   contextManager.clearContext(userId);
-  stateBySession.delete(userId);
+  botInstances.delete(userId);
 };
 
 export const processVoiceCommand = (transcript) => {
