@@ -10,7 +10,7 @@ import {
   serverTimestamp 
 } from '../firebase';
 import { auth } from '../firebase';
-import { FiSend, FiCpu, FiUser, FiSettings, FiActivity, FiTrendingUp } from 'react-icons/fi';
+import { FiSend, FiCpu, FiUser, FiActivity, FiTrendingUp } from 'react-icons/fi';
 
 const BotContainer = styled.div`
   display: grid;

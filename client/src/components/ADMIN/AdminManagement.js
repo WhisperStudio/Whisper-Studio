@@ -19,12 +19,10 @@ import { auth, createUserWithEmailAndPassword } from '../../firebase';
 import { 
   FiUsers, 
   FiUserPlus, 
-  FiUserMinus, 
   FiMail, 
   FiCalendar, 
   FiUser,
   FiSearch,
-  FiFilter,
   FiRefreshCw,
   FiShield,
   FiShieldOff,
@@ -32,16 +30,9 @@ import {
   FiSettings,
   FiStar,
   FiTrash2,
-  FiAlertTriangle,
   FiEdit3,
-  FiCheck,
-  FiX,
-  FiLock,
-  FiUnlock,
-  FiCrown,
-  FiUserCheck
+  FiX
 } from 'react-icons/fi';
-import { BsCrown, BsShieldCheck, BsPerson } from 'react-icons/bs';
 import { CompactLoader } from '../LoadingComponent';
 
 const Container = styled.div`

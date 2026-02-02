@@ -4,19 +4,18 @@ import {
   db, collection, getDocs, query, orderBy, limit, where, onSnapshot,
   updateDoc, doc, deleteDoc, serverTimestamp, addDoc
 } from '../../firebase';
-import { CompactLoader, SkeletonLoader } from '../LoadingComponent';
+import { CompactLoader } from '../LoadingComponent';
 import { 
-  FiUsers, FiMessageSquare, FiSettings, FiDatabase, FiServer, FiShield,
-  FiActivity, FiAlertTriangle, FiCheckCircle, FiClock, FiEdit3, FiTrash2,
-  FiEye, FiDownload, FiUpload, FiRefreshCw, FiPlus, FiFilter, FiSearch,
+  FiUsers, FiSettings, FiDatabase, FiServer, FiShield,
+  FiActivity, FiCheckCircle, FiEdit3, FiTrash2,
+  FiEye, FiDownload, FiRefreshCw, FiPlus,
   FiToggleLeft, FiToggleRight, FiSave, FiBarChart2, FiSmartphone, FiMonitor,
-  FiTablet, FiGlobe, FiSend, FiFileText, FiGrid, FiLock, FiX
+  FiTablet, FiGlobe, FiSend, FiFileText, FiGrid, FiLock
 } from 'react-icons/fi';
 import { 
-  BsSpeedometer2, BsGraphUp, BsLightning, BsShieldCheck,
-  BsCloudCheck, BsRobot, BsChatDots, BsGear
+  BsLightning, BsShieldCheck
 } from 'react-icons/bs';
-import { IoSparkles, IoPulse, IoAnalytics } from 'react-icons/io5';
+import { IoAnalytics } from 'react-icons/io5';
 
 // Styled Components
 const Container = styled.div`

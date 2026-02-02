@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { createGlobalStyle, keyframes, css, ThemeProvider } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSend, FiPlus, FiX, FiSun, FiMoon, FiGlobe, FiMessageSquare, FiAlertTriangle } from 'react-icons/fi';
-import { FaRobot } from 'react-icons/fa';
+import { FiSend, FiPlus, FiX, FiMessageSquare, FiAlertTriangle } from 'react-icons/fi';
 import GlassOrbAvatar from './GlassOrbAvatar';
 import { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, onSnapshot, updateDoc, collectionGroup } from '../firebase';
-import { FiSmile, FiZap, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
-import { BsChatDots, BsTicketPerforated, BsRobot } from 'react-icons/bs';
+import { FiSmile, FiEdit3, FiClock, FiArrowLeft, FiUser } from 'react-icons/fi';
+import { BsChatDots, BsTicketPerforated } from 'react-icons/bs';
 import EmojiPicker from 'emoji-picker-react';
 import { generateAIResponse } from '../services/aiService';
 
