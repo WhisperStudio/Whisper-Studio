@@ -13,18 +13,18 @@ import { db, collection, getDocs } from '../../firebase';
 import LineChart from "../LineChart2";
 
 const RANGES = [
-  { label: "Last 1 h", value: "1h" },
-  { label: "Last 24 h", value: "24h" },
-  { label: "Last 7 d", value: "7d" },
-  { label: "Last 30 d", value: "30d" },
-  { label: "Last 1 y", value: "1y" },
-  { label: "All time", value: "all" },
+  { label: "1h", value: "1h", icon: "⚡" },
+  { label: "24h", value: "24h", icon: "📅" },
+  { label: "7d", value: "7d", icon: "📊" },
+  { label: "30d", value: "30d", icon: "📈" },
+  { label: "1y", value: "1y", icon: "📆" },
+  { label: "All", value: "all", icon: "∞" },
 ];
 
 const ANALYTICS_TYPES = [
-  { label: "Besøkende", value: "visitors", collection: "visitors" },
-  { label: "Chat", value: "chat", collection: "chats" },
-  { label: "Nettside 2", value: "website2", collection: "website2_visitors" },
+  { label: "Visitors", value: "visitors", collection: "visitors", color: "#00d9ff" },
+  { label: "Chat", value: "chat", collection: "chats", color: "#00ff88" },
+  { label: "Game", value: "game", collection: "game-visitors", color: "#ff00ff" },
 ];
 
 export default function VisitorAnalytics() {
@@ -34,66 +34,60 @@ export default function VisitorAnalytics() {
   const [windowStart, setWindowStart] = useState(new Date(2020, 0, 1));
   const [points, setPoints] = useState([]);
   const [totalVisitors, setTotalVisitors] = useState(0);
+  const [filteredTotal, setFilteredTotal] = useState(0);
   const [countryStats, setCountryStats] = useState([]);
   const [mapData, setMapData] = useState([['Country', 'Visits']]);
-  const [chartKey, setChartKey] = useState(0); // For å force re-render av chart
+  const [chartKey, setChartKey] = useState(0);
 
-  // Oppdater "now" hvert minutt
+  // Update "now" every minute
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
-    // 1) Finn vindusstart
+    // 1) Find window start
     let ws;
     if (range === "1h") ws = subHours(now, 1);
     else if (range === "24h") ws = subHours(now, 24);
     else if (range === "7d") ws = subDays(now, 7);
     else if (range === "30d") ws = subDays(now, 30);
     else if (range === "1y") ws = startOfMonth(subYears(now, 1));
-    else ws = startOfMonth(subYears(now, 3)); // All time begrenset til 3 år
+    else ws = startOfMonth(subYears(now, 3));
     setWindowStart(ws);
 
-    // 2) Lag buckets - fikser tidsintervall problemet
+    // 2) Create buckets
     const buckets = [];
     if (range === "1h") {
-      // For 1h: lag kun 6 buckets for siste time
-      const startTime = new Date(now.getTime() - 60 * 60 * 1000); // Akkurat 1 time siden
+      const startTime = new Date(now.getTime() - 60 * 60 * 1000);
       for (let m = 0; m <= 6; m++) {
         buckets.push(new Date(startTime.getTime() + m * 10 * 60_000));
       }
     } else if (range === "24h") {
-      // For 24h: lag buckets for hver time i de siste 24 timene
       for (let h = 0; h <= 24; h += 1) {
         buckets.push(new Date(ws.getTime() + h * 60 * 60_000));
       }
     } else if (range === "7d") {
-      // For 7d: lag buckets for hver dag i de siste 7 dagene
       for (let d = 0; d <= 7; d++) {
         buckets.push(startOfDay(new Date(ws.getTime() + d * 86_400_000)));
       }
     } else if (range === "30d") {
-      // For 30d: lag buckets for hver dag i de siste 30 dagene
       for (let d = 0; d <= 30; d++) {
         buckets.push(startOfDay(new Date(ws.getTime() + d * 86_400_000)));
       }
     } else if (range === "1y") {
-      // For 1y: lag månedlige buckets
       const startDate = subYears(now, 1);
       buckets.push(...eachMonthOfInterval({ start: startOfMonth(startDate), end: startOfMonth(now) }));
     } else {
-      // All time - månedlige buckets, begrenset til 3 år
       buckets.push(...eachMonthOfInterval({ start: ws, end: startOfMonth(now) }));
     }
 
-    // 3) Nullfyll
+    // 3) Zero-fill
     const counts = Object.fromEntries(buckets.map((dt) => [+dt, 0]));
 
-    // 4) Hent data fra Firebase
+    // 4) Fetch data from Firebase
     const fetchData = async () => {
       try {
-        // Get the current analytics type collection
         const currentType = ANALYTICS_TYPES.find(type => type.value === analyticsType);
         const collectionName = currentType ? currentType.collection : "visitors";
         
@@ -102,30 +96,38 @@ export default function VisitorAnalytics() {
         
         const fresh = { ...counts };
         const countryCount = {};
+        const filteredCountryCount = {};
         let total = 0;
+        let filtered = 0;
 
         snapshot.forEach((doc) => {
           const data = doc.data();
           const timestamp = data.timestamp?.toDate?.() || new Date(data.timestamp?.seconds * 1000);
           const country = data.country || 'Unknown';
           
-          // Count countries for all time
+          // Count ALL for total
           countryCount[country] = (countryCount[country] || 0) + 1;
           total++;
 
-          // Only count visits within time range for chart
-          if (range !== "all" && timestamp < ws) return;
+          // Count FILTERED for chart and filtered stats
+          const isInRange = range === "all" || timestamp >= ws;
+          if (isInRange) {
+            filteredCountryCount[country] = (filteredCountryCount[country] || 0) + 1;
+            filtered++;
 
-          // Finn riktig bucket
-          let idx = buckets.length - 1;
-          while (idx > 0 && timestamp < buckets[idx]) idx--;
-          const key = +buckets[idx];
-          if (fresh[key] !== undefined) fresh[key]++;
+            // Find correct bucket
+            let idx = buckets.length - 1;
+            while (idx > 0 && timestamp < buckets[idx]) idx--;
+            const key = +buckets[idx];
+            if (fresh[key] !== undefined) fresh[key]++;
+          }
         });
+
+        // Use filtered or all data based on range
+        const displayCountryCount = range === "all" ? countryCount : filteredCountryCount;
 
         // For "all time", show all data
         if (range === "all") {
-          // Group by month for all time view
           const monthlyData = {};
           snapshot.forEach((doc) => {
             const data = doc.data();
@@ -144,15 +146,24 @@ export default function VisitorAnalytics() {
         }
 
         setTotalVisitors(total);
+        setFilteredTotal(filtered);
         
-        // Top 10 countries
-        const sortedCountries = Object.entries(countryCount)
+        // Top 10 countries (filtered)
+        const sortedCountries = Object.entries(displayCountryCount)
           .sort(([,a], [,b]) => b - a)
           .slice(0, 10);
         setCountryStats(sortedCountries);
 
-        // Map data for GeoChart
-        const mapDataArray = [['Country', 'Visits'], ...Object.entries(countryCount)];
+        // Map data for GeoChart (filtered)
+        const currentColor = ANALYTICS_TYPES.find(t => t.value === analyticsType)?.color || '#00d9ff';
+        const mapDataArray = [
+          ['Country', 'Visits', { type: 'string', role: 'tooltip', p: { html: true } }],
+          ...Object.entries(displayCountryCount).map(([country, visits]) => ([
+            country,
+            visits,
+            makeGeoTooltipHtml(country, visits),
+          ])),
+        ];
         setMapData(mapDataArray);
 
       } catch (error) {
@@ -164,6 +175,7 @@ export default function VisitorAnalytics() {
         }));
         setPoints(mockPoints);
         setTotalVisitors(500);
+        setFilteredTotal(350);
         setCountryStats([
           ['Norway', 150],
           ['Sweden', 120],
@@ -172,23 +184,21 @@ export default function VisitorAnalytics() {
           ['Finland', 40]
         ]);
         setMapData([
-          ['Country', 'Visits'],
-          ['Norway', 150],
-          ['Sweden', 120],
-          ['Denmark', 80],
-          ['Germany', 60],
-          ['Finland', 40]
+          ['Country', 'Visits', { type: 'string', role: 'tooltip', p: { html: true } }],
+          ['Norway', 150, makeGeoTooltipHtml('Norway', 150)],
+          ['Sweden', 120, makeGeoTooltipHtml('Sweden', 120)],
+          ['Denmark', 80, makeGeoTooltipHtml('Denmark', 80)],
+          ['Germany', 60, makeGeoTooltipHtml('Germany', 60)],
+          ['Finland', 40, makeGeoTooltipHtml('Finland', 40)],
         ]);
       }
     };
 
     fetchData();
-    
-    // Force re-render av chart når range endres
     setChartKey(prev => prev + 1);
   }, [range, now, analyticsType]);
 
-  // Akseoppsett
+  // Axis setup
   const isHour = range === "1h";
   const isDay = range === "24h";
   const isWeek = range === "7d" || range === "30d";
@@ -204,28 +214,40 @@ export default function VisitorAnalytics() {
     month: "MMM yyyy",
   };
 
-  // Dataset til linechart
+  // Get current analytics type color
+  const currentColor = ANALYTICS_TYPES.find(t => t.value === analyticsType)?.color || '#00d9ff';
+
+  // Dataset for linechart
   const datasets = [
     {
       label: ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors',
       data: points,
-      borderColor: "rgba(168, 85, 247, 1)",
-      backgroundColor: "rgba(168, 85, 247, 0.1)",
+      borderColor: currentColor,
+      backgroundColor: `${currentColor}20`,
       fill: true,
       tension: 0.4,
-      pointRadius: 6,
+      pointRadius: 4,
       pointHoverRadius: 8,
-      pointBackgroundColor: "rgba(168, 85, 247, 1)",
-      pointBorderColor: "rgba(255, 255, 255, 0.8)",
+      pointBackgroundColor: currentColor,
+      pointBorderColor: "#0f182a",
       pointBorderWidth: 2,
-      borderWidth: 3,
+      borderWidth: 2,
       parsing: false,
       spanGaps: true,
       normalized: true,
     },
   ];
 
-  // Lag nye options for hver render for å unngå cache-problemer
+  const makeGeoTooltipHtml = (country, visits) => `
+  <div class="geoTT">
+    <div class="geoTT__top">
+      <div class="geoTT__title">${country}</div>
+      <div class="geoTT__badge">${Number(visits).toLocaleString()}</div>
+    </div>
+    <div class="geoTT__sub">Visits</div>
+  </div>
+`;
+
   const getChartOptions = () => {
     const currentTime = new Date();
     const minTime = isHour ? new Date(currentTime.getTime() - 60 * 60 * 1000) : windowStart;
@@ -238,20 +260,20 @@ export default function VisitorAnalytics() {
         title: {
           display: true,
           text: `${ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'} • ${RANGES.find((r) => r.value === range).label}`,
-          color: "#fff",
-          font: { size: 20, weight: '700', family: 'Inter' },
+          color: "#e2e8f0",
+          font: { size: 18, weight: '600', family: 'system-ui' },
           padding: { bottom: 20 }
         },
         tooltip: {
-          backgroundColor: "rgba(15, 23, 42, 0.95)",
-          titleColor: "#d71e1eff",
-          bodyColor: "#b22323ff",
-          borderColor: "rgba(168, 85, 247, 0.3)",
+          backgroundColor: "#0f182a",
+          titleColor: currentColor,
+          bodyColor: "#cbd5e1",
+          borderColor: `${currentColor}40`,
           borderWidth: 1,
-          cornerRadius: 12,
+          cornerRadius: 8,
           padding: 12,
-          titleFont: { size: 14, weight: '600' },
-          bodyFont: { size: 13 },
+          titleFont: { size: 13, weight: '600' },
+          bodyFont: { size: 12 },
           callbacks: {
             title: ([pt]) => {
               if (isYear) return format(pt.parsed.x, "MMM yyyy");
@@ -275,128 +297,227 @@ export default function VisitorAnalytics() {
           max: currentTime,
           bounds: "data",
           ticks: { 
-            color: "rgba(255, 255, 255, 0.7)",
+            color: "#94a3b8",
             maxTicksLimit: isHour ? 6 : isDay ? 12 : isWeek ? 15 : 12,
-            font: { size: 12, weight: '500' }
+            font: { size: 11, weight: '500' }
           },
           grid: { 
-            color: "rgba(255, 255, 255, 0.05)",
-            borderColor: "rgba(255, 255, 255, 0.1)"
+            color: "#1e293b",
+            borderColor: "#334155"
           },
           title: {
             display: true,
             text: isYear ? "Month" : isWeek ? "Date" : isDay ? "Hour" : "Time",
-            color: "rgba(255, 255, 255, 0.8)",
-            font: { size: 14, weight: '600' }
+            color: "#cbd5e1",
+            font: { size: 12, weight: '600' }
           },
         },
         y: {
           beginAtZero: true,
           ticks: { 
-            color: "rgba(255, 255, 255, 0.7)",
-            font: { size: 12, weight: '500' }
+            color: "#94a3b8",
+            font: { size: 11, weight: '500' }
           },
           grid: { 
-            color: "rgba(255, 255, 255, 0.05)",
-            borderColor: "rgba(255, 255, 255, 0.1)"
+            color: "#1e293b",
+            borderColor: "#334155"
           },
           title: { 
             display: true, 
             text: ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors', 
-            color: "rgba(255, 255, 255, 0.8)",
-            font: { size: 14, weight: '600' }
+            color: "#cbd5e1",
+            font: { size: 12, weight: '600' }
           },
         },
       },
     };
   };
 
-  // GeoChart options (hex colors only to avoid invalid color errors)
+  // GeoChart options
   const geoOptions = {
     displayMode: 'regions',
     resolution: 'countries',
     backgroundColor: 'transparent',
-    datalessRegionColor: '#1f2937',
-    defaultColor: '#374151',
-    colorAxis: { 
-      colors: ['#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'],
+    datalessRegionColor: '#1e293b',
+    defaultColor: '#334155',
+    colorAxis: {
+      colors: [
+        `${currentColor}`,
+        `${currentColor}`,
+        currentColor,
+        currentColor
+      ],
       minValue: 0
     },
     legend: 'none',
-    tooltip: { 
-      textStyle: { color: '#ffffff', fontSize: 12 }, 
-      backgroundColor: '#0f172a'
-    }
+    tooltip: {
+      isHtml: true,
+      trigger: 'focus'
+    },
   };
 
   const styles = {
+    container: {
+      minHeight: '100vh',
+      background: '#0f182a',
+      padding: '20px',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      color: '#e2e8f0'
+    },
     card: {
-      background: 'rgba(255, 255, 255, 0.03)',
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      borderRadius: 24,
-      padding: 32,
-      margin: '24px',
-      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-      color: '#fff',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      background: 'linear-gradient(135deg, #1a2332 0%, #0f182a 100%)',
+      border: '1px solid #273043',
+      borderRadius: 16,
+      padding: '24px',
+      marginBottom: 20,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
       position: 'relative',
       overflow: 'hidden',
-      animation: 'fadeIn 0.6s ease'
+      animation: 'slideUp 0.5s ease-out'
     },
-    toolbar: {
+    header: {
       display: 'flex',
-      justifyContent: 'center',
-      gap: 12,
-      marginBottom: 32,
-      flexWrap: 'wrap'
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 20,
+      flexWrap: 'wrap',
+      marginBottom: 24
     },
-    button: (selected) => ({
-      padding: '12px 24px',
-      background: selected ? 'linear-gradient(135deg, #a78bfa 0%, #f472b6 100%)' : 'rgba(255, 255, 255, 0.05)',
-      color: selected ? '#fff' : 'rgba(255, 255, 255, 0.7)',
-      border: selected ? '1px solid transparent' : '1px solid rgba(255, 255, 255, 0.1)',
+    headerLeft: {
+      flex: '1 1 300px'
+    },
+    label: {
+      fontSize: 11,
+      color: '#64748b',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
+      marginBottom: 8
+    },
+    mainTitle: {
+      fontSize: 28,
+      fontWeight: 700,
+      color: currentColor,
+      marginBottom: 8,
+      textShadow: `0 0 20px ${currentColor}40`,
+      animation: 'glow 2s ease-in-out infinite'
+    },
+    subtitle: {
+      fontSize: 13,
+      color: '#94a3b8'
+    },
+    statsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: 12,
+      flex: '1 1 400px'
+    },
+    statCard: {
+      background: '#273043',
+      border: '1px solid #334155',
+      borderRadius: 12,
+      padding: 16,
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'all 0.3s ease'
+    },
+    statLabel: {
+      fontSize: 11,
+      color: '#64748b',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 6
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: 700,
+      color: '#e2e8f0'
+    },
+    filterSection: {
+      background: '#1a2332',
+      border: '1px solid #273043',
       borderRadius: 16,
+      padding: 24,
+      marginBottom: 20
+    },
+    filterGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+      gap: 20,
+      '@media (max-width: 768px)': {
+        gridTemplateColumns: '1fr'
+      }
+    },
+    filterGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12
+    },
+    filterTitle: {
+      fontSize: 13,
+      color: '#94a3b8',
+      fontWeight: 600,
+      marginBottom: 4,
+      textTransform: 'uppercase',
+      letterSpacing: 1
+    },
+    buttonGroup: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8
+    },
+    button: (selected, color = currentColor) => ({
+      padding: '10px 18px',
+      background: selected ? `${color}20` : '#273043',
+      color: selected ? color : '#cbd5e1',
+      border: `1px solid ${selected ? color : '#334155'}`,
+      borderRadius: 8,
       cursor: 'pointer',
-      fontSize: 14,
-      fontWeight: selected ? '600' : '500',
+      fontSize: 13,
+      fontWeight: 600,
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      backdropFilter: 'blur(10px)',
-      boxShadow: selected ? '0 8px 24px rgba(168, 85, 247, 0.3)' : 'none'
+      boxShadow: selected ? `0 0 15px ${color}30, inset 0 0 20px ${color}10` : 'none',
+      position: 'relative',
+      overflow: 'hidden',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
     }),
     mapGrid: {
       display: 'grid',
-      gridTemplateColumns: 'minmax(0, 1fr) 320px',
-      gap: 24,
-      alignItems: 'stretch'
+      gridTemplateColumns: '1fr 340px',
+      gap: 20,
+      alignItems: 'stretch',
+      '@media (max-width: 1024px)': {
+        gridTemplateColumns: '1fr'
+      }
     },
     mapLeft: {
-      height: 520,
-      border: '1px solid rgba(255, 255, 255, 0.08)',
+      border: '1px solid #273043',
       borderRadius: 16,
       overflow: 'hidden',
-      background: 'rgba(255, 255, 255, 0.02)'
+      background: '#1a2332',
+      minHeight: 450,
+      position: 'relative'
     },
-    overlay: undefined,
     mapRight: {
       display: 'flex',
       flexDirection: 'column',
-      background: 'rgba(255, 255, 255, 0.02)',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
+      background: '#1a2332',
+      border: '1px solid #273043',
       borderRadius: 16,
-      padding: 16,
-      gap: 12,
-      maxHeight: 520,
-      overflowY: 'auto'
+      padding: 20,
+      gap: 12
     },
-    title: {
-      fontSize: 20,
+    sectionTitle: {
+      fontSize: 16,
       fontWeight: 700,
-      background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      margin: 0,
-      textAlign: 'center'
+      color: currentColor,
+      textAlign: 'center',
+      marginBottom: 12,
+      textTransform: 'uppercase',
+      letterSpacing: 2,
+      textShadow: `0 0 10px ${currentColor}40`
     },
     list: {
       listStyle: 'none',
@@ -404,67 +525,231 @@ export default function VisitorAnalytics() {
       margin: 0,
       display: 'flex',
       flexDirection: 'column',
-      gap: 8
+      gap: 8,
+      flex: 1,
+      overflowY: 'auto'
     },
     listItem: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: '12px 14px',
-      background: 'rgba(255, 255, 255, 0.03)',
-      borderRadius: 12,
-      border: '1px solid rgba(255, 255, 255, 0.05)'
-    },
-    countryCode: { fontWeight: 600, color: '#fff', fontSize: 14 },
-    count: {
-      color: 'rgba(255, 255, 255, 0.85)',
-      fontSize: 13,
-      fontWeight: 600,
-      background: 'rgba(168, 85, 247, 0.15)',
-      padding: '4px 10px',
+      background: '#273043',
       borderRadius: 10,
-      border: '1px solid rgba(168, 85, 247, 0.35)'
+      border: '1px solid #334155',
+      transition: 'all 0.3s ease',
+      animation: 'fadeIn 0.5s ease-out backwards'
     },
-    total: {
-      marginTop: 8,
+    countryName: {
+      fontWeight: 600,
+      color: '#e2e8f0',
+      fontSize: 13
+    },
+    countryCount: {
+      color: currentColor,
+      fontSize: 13,
+      fontWeight: 700,
+      background: `${currentColor}20`,
+      padding: '4px 12px',
+      borderRadius: 999,
+      border: `1px solid ${currentColor}40`
+    },
+    totalBox: {
+      marginTop: 12,
       textAlign: 'center',
-      fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.8)'
+      fontSize: 13,
+      color: '#cbd5e1',
+      padding: 12,
+      background: '#273043',
+      borderRadius: 10,
+      border: '1px solid #334155',
+      fontWeight: 600
     }
   };
 
+  const displayTotal = range === "all" ? totalVisitors : filteredTotal;
+
   return (
-    <>
-     
-      {/* Time Range Selector */}
-      <div style={styles.card}>
-        <div style={styles.toolbar}>
-          {ANALYTICS_TYPES.map((type) => (
-            <button
-              key={type.value}
-              style={styles.button(analyticsType === type.value)}
-              onClick={() => setAnalyticsType(type.value)}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-        <div style={styles.toolbar}>
-          {RANGES.map((r) => (
-            <button
-              key={r.value}
-              style={styles.button(range === r.value)}
-              onClick={() => setRange(r.value)}
-            >
-              {r.label}
-            </button>
-          ))}
+    <div style={styles.container}>
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes glow {
+          0%, 100% {
+            text-shadow: 0 0 20px ${currentColor}40, 0 0 30px ${currentColor}20;
+          }
+          50% {
+            text-shadow: 0 0 30px ${currentColor}60, 0 0 40px ${currentColor}30;
+          }
+        }
+
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+          transform: translateY(0);
+        }
+
+        .statCard:hover {
+          transform: translateY(-2px);
+          border-color: ${currentColor}80;
+          box-shadow: 0 4px 16px ${currentColor}20;
+        }
+
+        .listItem:hover {
+          transform: translateX(4px);
+          border-color: ${currentColor}60;
+          background: #334155;
+        }
+
+        /* Tooltip styling */
+        .google-visualization-tooltip {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .google-visualization-tooltip-item-list,
+        .google-visualization-tooltip-item {
+          background: transparent !important;
+        }
+
+        .geoTT {
+          min-width: 180px;
+          border-radius: 12px;
+          border: 1px solid ${currentColor}60;
+          background: #0f182a;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+          padding: 12px;
+          color: #e2e8f0;
+        }
+        .geoTT__top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 6px;
+        }
+        .geoTT__title {
+          font-weight: 700;
+          font-size: 14px;
+          color: #e2e8f0;
+        }
+        .geoTT__badge {
+          font-weight: 700;
+          font-size: 12px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 1px solid ${currentColor}40;
+          background: ${currentColor}20;
+          color: ${currentColor};
+        }
+        .geoTT__sub {
+          font-size: 11px;
+          color: #94a3b8;
+        }
+
+        @media (max-width: 1024px) {
+          .mapGrid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .statsGrid {
+            grid-template-columns: 1fr !important;
+          }
+          .filterGrid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
+      {/* Header Card */}
+      
+
+      {/* Filter Section */}
+      <div style={styles.filterSection}>
+        <div style={styles.filterGrid}>
+          <div style={styles.filterGroup}>
+            <div style={styles.filterTitle}>📊 Analytics Type</div>
+            <div style={styles.buttonGroup}>
+              {ANALYTICS_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  style={styles.button(analyticsType === type.value, type.color)}
+                  onClick={() => setAnalyticsType(type.value)}
+                  onMouseEnter={(e) => {
+                    if (analyticsType !== type.value) {
+                      e.target.style.background = `${type.color}10`;
+                      e.target.style.borderColor = `${type.color}40`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (analyticsType !== type.value) {
+                      e.target.style.background = '#273043';
+                      e.target.style.borderColor = '#334155';
+                    }
+                  }}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={styles.filterGroup}>
+            <div style={styles.filterTitle}>⏱️ Time Range</div>
+            <div style={styles.buttonGroup}>
+              {RANGES.map((r) => (
+                <button
+                  key={r.value}
+                  style={styles.button(range === r.value)}
+                  onClick={() => setRange(r.value)}
+                  onMouseEnter={(e) => {
+                    if (range !== r.value) {
+                      e.target.style.background = `${currentColor}10`;
+                      e.target.style.borderColor = `${currentColor}40`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (range !== r.value) {
+                      e.target.style.background = '#273043';
+                      e.target.style.borderColor = '#334155';
+                    }
+                  }}
+                >
+                  {r.icon} {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Map card */}
+      {/* Map and Stats Card */}
       <div style={styles.card}>
-        <div style={styles.mapGrid}>
+        <div style={styles.mapGrid} className="mapGrid">
           <div style={styles.mapLeft}>
             <Chart
               chartType="GeoChart"
@@ -475,24 +760,38 @@ export default function VisitorAnalytics() {
             />
           </div>
           <div style={styles.mapRight}>
-            <h3 style={styles.title}>Top 10 Countries</h3>
+            <h3 style={styles.sectionTitle}>Top 10 Countries</h3>
             <ol style={styles.list}>
               {countryStats.map(([country, count], index) => (
-                <li key={country} style={styles.listItem}>
-                  <span style={styles.countryCode}>{index + 1}. {country}</span>
-                  <span style={styles.count}>{count}</span>
+                <li 
+                  key={country} 
+                  className="listItem"
+                  style={{
+                    ...styles.listItem,
+                    animationDelay: `${index * 0.05}s`
+                  }}
+                >
+                  <span style={styles.countryName}>
+                    {index + 1}. {country}
+                  </span>
+                  <span style={styles.countryCount}>{count}</span>
                 </li>
               ))}
             </ol>
-            <div style={styles.total}>Total {ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'}: {totalVisitors.toLocaleString()}</div>
+            <div style={styles.totalBox}>
+              Total {ANALYTICS_TYPES.find(t => t.value === analyticsType)?.label || 'Visitors'}: {displayTotal.toLocaleString()}
+            </div>
           </div>
         </div>
+        <div style={{ marginTop: 24 }}>
+          <LineChart 
+            key={chartKey} 
+            datasets={datasets} 
+            options={getChartOptions()} 
+            height={450} 
+          />
+        </div>
       </div>
-
-      {/* Time range line chart card (matches ChatActivityChart styling) */}
-      <div style={styles.card}>
-        <LineChart key={chartKey} datasets={datasets} options={getChartOptions()} height={450} />
-      </div>
-    </>
+    </div>
   );
 }
