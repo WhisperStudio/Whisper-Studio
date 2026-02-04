@@ -155,7 +155,6 @@ export default function VisitorAnalytics() {
         setCountryStats(sortedCountries);
 
         // Map data for GeoChart (filtered)
-        const currentColor = ANALYTICS_TYPES.find(t => t.value === analyticsType)?.color || '#00d9ff';
         const mapDataArray = [
           ['Country', 'Visits', { type: 'string', role: 'tooltip', p: { html: true } }],
           ...Object.entries(displayCountryCount).map(([country, visits]) => ([
