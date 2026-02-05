@@ -25,8 +25,8 @@ import WebDevPromoPage from './pages/Website/WebDevPromoPage';
 import Header from './components/header';
 import Cursor from './components/Cursor';
 import ProtectedRoute from './components/ProtectedRoute';
-// import ChatBot from './components/ChatBot'; // Old chatbot
-import EnhancedChatBot from './components/EnhancedChatBot'; // New enhanced chatbot
+
+import { ChatWidget } from './components/ChatWidget';
 import BugReportButton from './components/ADMIN/BugReportButton';
 
 // Wrapper with Header
@@ -34,7 +34,6 @@ const MainLayout = ({ children }) => (
   <>
     <Header />
     {children}
-    <EnhancedChatBot />
   </>
 );
 
@@ -67,6 +66,7 @@ function App() {
 
   return (
     <>
+      <ChatWidget />
       {/* 👇 Global custom cursor – visible on all pages */}
       <Cursor />
 
