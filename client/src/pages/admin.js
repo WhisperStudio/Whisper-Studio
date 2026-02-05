@@ -8,9 +8,6 @@ import { signOut } from 'firebase/auth';
 import { db, collection, getDocs, query, where, serverTimestamp, deleteDoc, doc, getDoc, setDoc} from '../firebase';
 import ChatDashboard from '../components/ADMIN/ChatDashboard';
 import VisitorAnalytics from '../components/ADMIN/VisitorAnalytics';
-import ChatPieChart from '../components/ChatPieChart';
-import ChatActivityChart from '../components/ChatActivityChart';
-import ChatGeoChart from '../components/ChatGeoChart';
 import BugDashboard from '../components/ADMIN/BugDashboard';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
@@ -19,7 +16,6 @@ import {
   ServerStatus, DatabaseManager, SystemSettings, AdvancedAnalytics,
   TicketsView
 } from '../components/ADMIN/AdminComponents';
-import AISettings from '../components/AISetting';
 import { AdminLoadingScreen } from '../components/LoadingComponent';
 import TaskManagement from '../components/TaskManagement/TaskManagement';
 import PendingAccess from '../components/ADMIN/PendingAccess';
@@ -676,11 +672,8 @@ export default function AdminPanel() {
     chat: <ChatDashboard />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,
-    pieChart: <ChatPieChart />,
     botAdmin: (
       <>
-        <ChatGeoChart />
-        <ChatActivityChart />
       </>
     ),
     server: <ServerStatus />,
@@ -690,7 +683,6 @@ export default function AdminPanel() {
     adminManagement: <AdminSupportManagement />,
     userManagement: <OwnerUserManagement />,
     settings: <SystemSettings />,
-    ai: <AISettings />
   };
 
   return (

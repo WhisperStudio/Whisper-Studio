@@ -5,6 +5,8 @@ import styled, { createGlobalStyle } from "styled-components";
 /* Skjul OS-cursoren overalt i appen */
 const HideNativeCursor = createGlobalStyle`
   html, body, * { cursor: none !important; }
+  /* Allow native cursor inside embedded iframes (e.g., chat widget) */
+  iframe { cursor: auto !important; }
 `;
 
 const RING_RED = "#b40f3a";
@@ -14,7 +16,7 @@ const RING_BLUE_GLOW = "rgba(59,180,255,.55)";
 
 const Ring = styled.div`
   position: fixed;
-  z-index: 100000; /* Ensure custom cursor is above chat container (9999) */
+  z-index: 2147483647; /* Keep cursor above embedded widgets/iframes */
   width: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
   height: ${(p) => (p.$active ? 18 : p.$hover ? 22 : 20)}px;
   border-radius: 50%;
@@ -78,8 +80,7 @@ export default function Cursor() {
 
       const target = e.target;
       setHover(target?.closest?.(INTERACTIVE_SELECTOR) || false);
-
-      // 👇 Skjul cursoren hvis vi er over en <iframe>
+      // Hide custom ring over iframes (e.g., chat widget) to avoid blocking clicks
       if (target instanceof HTMLIFrameElement) {
         setHidden(true);
       } else {
