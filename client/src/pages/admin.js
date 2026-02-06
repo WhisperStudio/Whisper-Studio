@@ -6,11 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, onAuthStateChanged } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { db, collection, getDocs, query, where, serverTimestamp, deleteDoc, doc, getDoc, setDoc} from '../firebase';
-import ChatDashboard from '../components/ADMIN/ChatDashboard';
 import VisitorAnalytics from '../components/ADMIN/VisitorAnalytics';
-import ChatPieChart from '../components/ChatPieChart';
-import ChatActivityChart from '../components/ChatActivityChart';
-import ChatGeoChart from '../components/ChatGeoChart';
 import BugDashboard from '../components/ADMIN/BugDashboard';
 import OwnerUserManagement from '../components/RoleManagement/OwnerUserManagement';
 import AdminSupportManagement from '../components/RoleManagement/AdminSupportManagement';
@@ -673,14 +669,10 @@ export default function AdminPanel() {
     dashboard: <DashboardOverview />,
     realtime: <RealtimeMonitor />,
     analytics: <AdvancedAnalytics />,
-    chat: <ChatDashboard />,
     tickets: <TicketsView />,
     lineChart: <VisitorAnalytics />,
-    pieChart: <ChatPieChart />,
     botAdmin: (
       <>
-        <ChatGeoChart />
-        <ChatActivityChart />
       </>
     ),
     server: <ServerStatus />,
