@@ -16,11 +16,6 @@ const HideNativeCursor = createGlobalStyle`
   }
 `;
 
-const RING_RED = "#b40f3a";
-const RING_RED_GLOW = "rgba(180,15,58,.55)";
-const RING_BLUE = "#3bb4ff";
-const RING_BLUE_GLOW = "rgba(59,180,255,.55)";
-
 const Ring = styled.div`
   position: fixed;
   z-index: 2147483647; /* Maximum possible z-index - above everything */
