@@ -374,7 +374,7 @@ export default function CharacterScroll() {
   const stageRef = useRef(null);
 
   // Faser (for total høyde)
-  const HERO_PHASE = 60;
+  const HERO_PHASE = 25;
   const ZOOM_PHASE = 90;
   const TEXT_PHASE = 260;
   const FADE_PHASE = 40;
@@ -417,9 +417,59 @@ export default function CharacterScroll() {
     };
 
     let bounds = getBounds();
+    let targetY = window.scrollY;
+    let smoothY = window.scrollY;
+    let rafSmooth = null;
 
-    const handleScroll = () => {
-      const y = window.scrollY;
+    // hvor mye delay du vil ha (lavere = mer glide)
+    const SMOOTHING = 0.12;
+    
+    // Momentum/ice skating variables
+    let scrollVelocity = 0;
+    let lastScrollY = window.scrollY;
+    let momentumScroll = null;
+    let isMomentumActive = false;
+    let scrollEndTimer = null;
+
+    const handleMomentumScroll = () => {
+      if (!isMomentumActive) return;
+      
+      // Apply friction (ice resistance) - more glide
+      scrollVelocity *= 0.965; // More glide, less brake
+      
+      // Apply velocity to scroll position
+      const newScrollY = window.scrollY + scrollVelocity;
+      window.scrollTo(0, newScrollY);
+      
+      // Stop when velocity is very small
+      if (Math.abs(scrollVelocity) < 0.1) {
+        isMomentumActive = false;
+        scrollVelocity = 0;
+        if (momentumScroll) {
+          cancelAnimationFrame(momentumScroll);
+          momentumScroll = null;
+        }
+        return;
+      }
+      
+      momentumScroll = requestAnimationFrame(handleMomentumScroll);
+    };
+
+    const startMomentum = (velocity) => {
+      if (isMomentumActive) return;
+      
+      scrollVelocity = velocity;
+      isMomentumActive = true;
+      
+      // Stop any existing momentum
+      if (momentumScroll) {
+        cancelAnimationFrame(momentumScroll);
+      }
+      
+      momentumScroll = requestAnimationFrame(handleMomentumScroll);
+    };
+
+    const update = (y) => {
       const raw = (y - bounds.start) / bounds.length;
       const progress = clamp(raw, 0, 1);
 
@@ -427,7 +477,7 @@ export default function CharacterScroll() {
         stageRef.current.style.setProperty("--stage-opacity", progress > 0 ? "1" : "0");
       }
 
-      const HERO_RATIO = 0.12;
+      const HERO_RATIO = 0.07;
 
       // HERO
       if (progress < HERO_RATIO) {
@@ -589,10 +639,56 @@ export default function CharacterScroll() {
       });
     };
 
+    const tick = () => {
+      // smooth toward target
+      smoothY += (targetY - smoothY) * SMOOTHING;
+
+      update(smoothY);
+
+      // fortsett til vi er "nær nok"
+      if (Math.abs(targetY - smoothY) > 0.5) {
+        rafSmooth = requestAnimationFrame(tick);
+      } else {
+        rafSmooth = null;
+      }
+    };
+
+    const handleScroll = () => {
+      const y = window.scrollY;
+        targetY = window.scrollY;
+      
+      // Calculate scroll velocity for momentum
+      const currentVelocity = y - lastScrollY;
+      lastScrollY = y;
+      if (!rafSmooth) {
+    rafSmooth = requestAnimationFrame(tick);
+  }
+      
+      // Clear existing scroll end timer
+      if (scrollEndTimer) {
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = null;
+      }
+      
+      // Set timer to detect when scrolling stops
+      scrollEndTimer = setTimeout(() => {
+        // Start momentum if user was scrolling fast and then stopped
+        if (!isMomentumActive && Math.abs(currentVelocity) > 0.8) { 
+          // Start ice skating effect with current scroll velocity
+          startMomentum(currentVelocity * 0.55); 
+        }
+      }, 50); 
+    };
+
     const handleResize = () => {
       bounds = getBounds();
-      handleScroll();
+      update(smoothY);
     };
+
+    // Initialize targetY and smoothY
+    targetY = window.scrollY;
+    smoothY = window.scrollY;
+    update(smoothY);
 
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -600,6 +696,15 @@ export default function CharacterScroll() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
+      if (scrollEndTimer) {
+        clearTimeout(scrollEndTimer);
+      }
+      if (momentumScroll) {
+        cancelAnimationFrame(momentumScroll);
+      }
+      if (rafSmooth) {
+        cancelAnimationFrame(rafSmooth);
+      }
     };
   }, [CREATURES, TOTAL_HEIGHT, renderIndex]);
 

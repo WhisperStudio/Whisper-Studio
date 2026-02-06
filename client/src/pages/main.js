@@ -663,18 +663,21 @@ function App() {
               </SmallCard>
 
               {/* Small Card 2 (Community Event) */}
-              <SmallCard ref={el => (smallRefs.current[1] = el)} to="/events">
+              <SmallCard >
                 <CardImage image={placeholderImage3} />
                 <CardContent>
                   <div>
-                    <CardDate>January 15, 2025</CardDate>
-                    <CardTitle>Community Event</CardTitle>
-                    <CardDescription>
-                      Join our upcoming community event and compete for exclusive rewards.
-                      Don't miss this chance to showcase your skills!
-                    </CardDescription>
-                  </div>
-                  <CardButton as="div">Join Now</CardButton> 
+                    <span className="card-date">Jan, 2026</span>
+                  <h3 className="card-title">Imposter Game</h3>
+                  <p className="card-description" style={{ fontFamily: 'none' }}>
+                    Try out our new imposter game! It's a fun way to test out who is the best lier among your friends.
+                  </p>
+                </div>
+                <button className="card-button">
+                  <a href="https://games.vintrastudio.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    Play Now
+                  </a>
+                </button>
                 </CardContent>
               </SmallCard>
             </SmallCardContainer>

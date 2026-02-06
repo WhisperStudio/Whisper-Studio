@@ -311,13 +311,17 @@ export default function VotePage() {
               />
               <div className="card-content">
                 <div>
-                  <span className="card-date">January 15, 2025</span>
-                  <h3 className="card-title">Community Event</h3>
+                  <span className="card-date">Jan, 2026</span>
+                  <h3 className="card-title">Imposter Game</h3>
                   <p className="card-description" style={{ fontFamily: 'none' }}>
-                    Join our upcoming community event and compete for exclusive rewards. Don’t miss out!
+                    Try out our new imposter game! It's a fun way to test out who is the best lier among your friends.
                   </p>
                 </div>
-                <button className="card-button">Join Now</button>
+                <button className="card-button">
+                  <a href="https://games.vintrastudio.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    Play Now
+                  </a>
+                </button>
               </div>
             </div>
           </div>
