@@ -1,0 +1,21 @@
+/* Cursor fix - ensure all buttons are clickable */
+button, [role="button"], .btn, [onclick], [data-action] {
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+/* Show normal cursor over chat widget */
+[data-chatbot-id], [data-chatbot-id] *,
+.chat-widget, .chat-widget *,
+.chat-bubble, .chat-bubble *,
+.chat-button, .chat-button *,
+iframe[src*="chat"] {
+  cursor: auto !important;
+}
+
+/* Custom cursor ring on top */
+.cursor-ring, [class*="Ring"] {
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
