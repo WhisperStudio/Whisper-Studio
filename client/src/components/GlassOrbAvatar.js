@@ -488,7 +488,7 @@ const getChristmasBaseColor = (x, y) => {
           }
         }
 
-        // Explosions
+        // Explosions.
         explosions.forEach((explosion) => {
           const distToExplosion = Math.sqrt(
             (particleX - explosion.x) ** 2 +
