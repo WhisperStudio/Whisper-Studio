@@ -675,7 +675,7 @@ function App() {
                 </div>
                 <button className="card-button">
                   <a href="https://games.vintrastudio.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    Play Now
+                    Play Nows
                   </a>
                 </button>
                 </CardContent>
