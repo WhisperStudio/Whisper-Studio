@@ -4,7 +4,6 @@ import {
   FiZap, FiMessageCircle, FiChevronDown, FiChevronUp, FiDatabase, FiShield, FiGlobe
 } from 'react-icons/fi';
 import { FaCcVisa, FaCcMastercard, FaPaypal } from 'react-icons/fa';
-import Header from '../../components/header';
 import Footer from '../../components/footer';
 import './CSS/WebPage.css';
 
@@ -224,7 +223,6 @@ Konfigurasjon:
 
   return (
     <>
-      <Header />
       <div className="page-wrapper">
         <main className="content">
           <div className="lang-switch">

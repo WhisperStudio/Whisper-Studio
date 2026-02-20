@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import Vintra from '../images/VINTRA.png';
 import Studio from '../images/STUDIO.png';
 import VOTE_V from '../images/Vote_V.png';
+
+import { StoneArrow } from './stonearrow';
 
 /* ===================== TIMING CONSTANTS ===================== */
 /* ENKLE TIMINGS - Juster disse for å endre animasjonshastighet */
@@ -229,17 +232,28 @@ const MobileNavItem = styled.a`
 /* ===================== Scroll to top ===================== */
 
 const ScrollTopButton = styled.button`
-  position: absolute;
-  top: 100%;
-  right: 4rem;
-  margin-top: 0.5rem;
-  width: 2.8rem; height: 2.8rem;
+  position: fixed !important;
+  inset: unset !important;
+  top: 6.25rem !important;
+  right: 2rem !important;
+  left: unset !important;
+  bottom: unset !important;
+  transform: none;
+  margin: 0;
+  padding: 0;
+  width: fit-content;
   background: transparent; border: none; cursor: pointer;
   display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   align-items: center; justify-content: center;
   transition: transform 0.2s ease;
+  z-index: 9999;
   &:hover { transform: translateY(-2px); }
-  svg { width: 3.4rem; height: 3.4rem; fill: #fff; }
+  svg { fill: #fff; }
+
+  @media (max-width: 768px) {
+    top: 5rem;
+    right: 1rem;
+  }
 `;
 
 /* ===================== VINTRA/STUDIO <-> V overgang ===================== */
@@ -354,6 +368,11 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [hasScrolledFromTop, setHasScrolledFromTop] = useState(false);
   const [showTop, setShowTop] = useState(false);
+  const [scrollTopPortalEl] = useState(() => {
+    const el = document.createElement('div');
+    el.setAttribute('data-scrolltop-portal', '');
+    return el;
+  });
 
   // Desktop hover state - using refs for independent animations
   const navItemRefs = useRef({});
@@ -371,6 +390,13 @@ const Header = () => {
     // Ensure we're at the top when navigating to new pages
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.appendChild(scrollTopPortalEl);
+    return () => {
+      scrollTopPortalEl.remove();
+    };
+  }, [scrollTopPortalEl]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -494,69 +520,71 @@ const Header = () => {
   };
 
   return (
-    <HeaderContainer $isScrolled={isScrolled}>
-      <Logo href="/" $textColor={textColor} $isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
-        <Logodiv $isScrolled={isScrolled}>
-          <LogoStage>
-            <VintraImg src={Vintra} alt="Vintra" $isScrolled={isScrolled} />
-            <StudioImg src={Studio} alt="Studio" $isScrolled={isScrolled} />
-            <VoteVImg src={VOTE_V} alt="V" $isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
-          </LogoStage>
-        </Logodiv>
-      </Logo>
+    <>
+      <HeaderContainer $isScrolled={isScrolled}>
+        <Logo href="/" $textColor={textColor} $isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
+          <Logodiv $isScrolled={isScrolled}>
+            <LogoStage>
+              <VintraImg src={Vintra} alt="Vintra" $isScrolled={isScrolled} />
+              <StudioImg src={Studio} alt="Studio" $isScrolled={isScrolled} />
+              <VoteVImg src={VOTE_V} alt="V" $isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
+            </LogoStage>
+          </Logodiv>
+        </Logo>
 
-      {/* DESKTOP NAV */}
-      <NavMenu $isScrolled={isScrolled}>
-        {items.map((item, idx) => (
-          <NavItem
-            key={item.href}
-            ref={el => navItemRefs.current[idx] = el}
-            href={item.href}
-            $textColor={textColor}
-            onMouseEnter={() => handleMouseEnter(idx)}
-            onMouseLeave={() => handleMouseLeave(idx)}
-          >
-            {item.label}
-          </NavItem>
-        ))}
-      </NavMenu>
+        {/* DESKTOP NAV */}
+        <NavMenu $isScrolled={isScrolled}>
+          {items.map((item, idx) => (
+            <NavItem
+              key={item.href}
+              ref={el => navItemRefs.current[idx] = el}
+              href={item.href}
+              $textColor={textColor}
+              onMouseEnter={() => handleMouseEnter(idx)}
+              onMouseLeave={() => handleMouseLeave(idx)}
+            >
+              {item.label}
+            </NavItem>
+          ))}
+        </NavMenu>
 
-      <ScrollTopButton
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        $visible={showTop}
-        aria-label="Scroll to top"
-      >
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 6V18M12 6L7 11M12 6L17 11" stroke="#ffffff" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </ScrollTopButton>
+        {/* HAMBURGER (mobile) */}
+        <HamburgerButton onClick={toggleMenu} $isOpen={menuState.isOpen} $textColor={textColor}>
+          <span /><span /><span />
+        </HamburgerButton>
 
-      {/* HAMBURGER (mobile) */}
-      <HamburgerButton onClick={toggleMenu} $isOpen={menuState.isOpen} $textColor={textColor}>
-        <span /><span /><span />
-      </HamburgerButton>
+        {/* MOBILE NAV */}
+        <MobileNavMenu
+          $isOpen={menuState.isOpen}
+          $isVisible={menuState.isVisible}
+        >
+          {items.map((item, idx) => (
+            <MobileNavItem
+              key={item.href}
+              href={item.href}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleMenu();
+                setTimeout(() => { window.location.href = item.href; }, 300);
+              }}
+            >
+              {item.label}
+            </MobileNavItem>
+          ))}
+        </MobileNavMenu>
+      </HeaderContainer>
 
-      {/* MOBILE NAV */}
-      <MobileNavMenu
-        $isOpen={menuState.isOpen}
-        $isVisible={menuState.isVisible}
-      >
-        {items.map((item, idx) => (
-          <MobileNavItem
-            key={item.href}
-            href={item.href}
-            onClick={(e) => {
-              e.preventDefault();
-              toggleMenu();
-              setTimeout(() => { window.location.href = item.href; }, 300);
-            }}
-          >
-            {item.label}
-          </MobileNavItem>
-        ))}
-      </MobileNavMenu>
-    </HeaderContainer>
+      {createPortal(
+        <ScrollTopButton
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          $visible={showTop}
+          aria-label="Scroll to top"
+        >
+          <StoneArrow size={90} color="#ffffff" />
+        </ScrollTopButton>,
+        scrollTopPortalEl
+      )}
+    </>
   );
 };
 

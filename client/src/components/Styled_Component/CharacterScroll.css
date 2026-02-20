@@ -1,41 +1,49 @@
-/* Root wrapper / bakgrunn */
+/* ═══════════════════════════════════════════════════════════
+   ROOT WRAPPER / BAKGRUNN
+   ═══════════════════════════════════════════════════════════ */
 .component-wrapper {
   --accent: #29e1ff;
+  --accent-dim: color-mix(in oklab, var(--accent) 55%, transparent);
   position: relative;
   width: 100%;
   color: #fff;
   background:
-    linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 8%, rgba(0,0,0,0) 15%),
-    radial-gradient(120vmax 90vmax at 50% 110%, rgba(0,0,0,.55), transparent 65%),
+    linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 8%, rgba(0,0,0,0) 15%),
+    radial-gradient(120vmax 90vmax at 50% 110%, rgba(0,0,0,.6), transparent 65%),
     linear-gradient(135deg,
-      color-mix(in oklab, var(--accent) 18%, transparent) 0%,
-      color-mix(in oklab, var(--accent) 8%, transparent) 28%,
+      color-mix(in oklab, var(--accent) 14%, transparent) 0%,
+      color-mix(in oklab, var(--accent) 5%, transparent) 30%,
       rgba(0,0,0,0) 60%),
-    #0b0c13;
-  transition: background .35s ease;
+    #080910;
+  transition: background .45s ease, --accent .45s ease;
 }
+
+/* Grain overlay */
 .component-wrapper::after {
   content: "";
   position: absolute;
   inset: -40px;
   pointer-events: none;
   z-index: 1;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
-  opacity: .30;
-  filter: contrast(120%);
+  opacity: .28;
+  filter: contrast(125%);
 }
 
-/* Scroll container */
+/* ═══════════════════════════════════════════════════════════
+   SCROLL CONTAINER
+   ═══════════════════════════════════════════════════════════ */
 .scroll-container {
   position: relative;
   height: var(--total-height, 800vh);
 }
 
-/* Hero */
+/* ═══════════════════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════════════════ */
 .hero {
   position: sticky;
-  background: #000;  /* helt sort */
   top: 0;
   width: 100%;
   height: 100vh;
@@ -49,26 +57,57 @@
   transform: scale(var(--hero-scale, 1)) translateZ(0);
   transition: none;
   visibility: visible;
+  background: radial-gradient(ellipse 80% 60% at 50% 120%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%), #080910;
 }
-.hero .kicker {
-  color:#a3f1ff;
-  font-weight:800;
-  letter-spacing:.18em;
-  font-size:12px;
-  text-transform:uppercase;
-  position: relative;
-  animation: none !important;
-}
-.hero .kicker::after { content: none !important; }
-.hero h1 {
-  font-size: clamp(48px, 8vw, 132px);
-  line-height:.9; margin:.15em 0 .2em; letter-spacing:.01em;
-  position: relative;
-}
-.hero h1::after { content: none !important; }
-.hero p { max-width: 82ch; margin:0 auto; color:rgba(255,255,255,.85); line-height:1.8; }
 
-/* Stage */
+.hero .kicker {
+  color: color-mix(in oklab, var(--accent) 85%, #fff);
+  font-weight: 800;
+  letter-spacing: .22em;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 1.2em;
+  opacity: .75;
+}
+
+.hero h1 {
+  font-size: clamp(52px, 9vw, 140px);
+  line-height: .88;
+  margin: 0 0 .4em;
+  letter-spacing: -.01em;
+  font-weight: 900;
+}
+
+.hero p {
+  max-width: 72ch;
+  margin: 0 auto;
+  color: rgba(255,255,255,.65);
+  line-height: 1.9;
+  font-size: clamp(14px, 1.6vw, 18px);
+}
+
+/* Scroll hint */
+.hero::after {
+  content: "scroll";
+  position: absolute;
+  bottom: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  animation: hero-scroll-hint 2.2s ease-in-out infinite;
+}
+
+@keyframes hero-scroll-hint {
+  0%, 100% { opacity: .3; transform: translateX(-50%) translateY(0); }
+  50% { opacity: .7; transform: translateX(-50%) translateY(4px); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ZOOM STAGE
+   ═══════════════════════════════════════════════════════════ */
 .zoom-stage {
   position: sticky;
   top: 0;
@@ -79,30 +118,38 @@
   opacity: var(--stage-opacity, 0);
   pointer-events: none;
 }
-.zoom-stage::before{
-  content:"";
-  position:absolute; inset:0; pointer-events:none; z-index:3;
+
+/* top + bottom vignette */
+.zoom-stage::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 3;
   background:
-    linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0) 22%),
-    linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0) 22%);
+    linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,0) 28%),
+    linear-gradient(to top,    rgba(0,0,0,.65), rgba(0,0,0,0) 28%);
   mix-blend-mode: multiply;
-  opacity: .7; /* tune .5–.85 */
-}
-.zoom-stage::after{
-  content:"";
-  position:absolute; inset:0; pointer-events:none;
-  background:
-    radial-gradient(120vmax 90vmax at 30% 50%,
-      color-mix(in oklab, var(--accent) 12%, transparent) 0%,
-      transparent 55%),
-    radial-gradient(80vmax 70vmax at 82% 50%,
-      rgba(0,0,0,.45) 0%,
-      transparent 70%);
-  mix-blend-mode: soft-light;
-  opacity:.38;
+  opacity: .75;
 }
 
-/* Creature image */
+/* accent glow + right shadow */
+.zoom-stage::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120vmax 90vmax at 28% 50%,
+      color-mix(in oklab, var(--accent) 10%, transparent) 0%,
+      transparent 52%),
+    radial-gradient(80vmax 70vmax at 85% 50%,
+      rgba(0,0,0,.5) 0%,
+      transparent 70%);
+  mix-blend-mode: soft-light;
+  opacity: .42;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CREATURE IMAGE
+   ═══════════════════════════════════════════════════════════ */
 .creature-image {
   position: absolute;
   top: 50%;
@@ -113,192 +160,270 @@
   max-width: 140vw;
   max-height: 140vh;
   object-fit: cover;
-  transform: translate(-50%, -50%) scale(var(--zoom, 0.1)) translateZ(0);
+  transform: translate(-50%, -50%) scale(var(--zoom, 0.06)) translateZ(0);
   opacity: var(--opacity, 0);
   border-radius: 20px;
   will-change: transform, opacity;
   pointer-events: none;
+  /* Smooth the per-frame updates so jumps don't show */
+  transition: opacity 0.08s linear, transform 0.08s linear;
 
   filter:
-    brightness(0.98) contrast(1.04) saturate(1.04)
-    drop-shadow(0 6px 22px color-mix(in oklab, var(--accent) 10%, rgba(0,0,0,.48)))
-    drop-shadow(0 0 42px color-mix(in oklab, var(--accent) 14%, rgba(0,0,0,.34)));
-
-  --left-keep: 60%;
-  --left-soft: 100%;
-  --right-keep: 60%;
-  --right-soft: 100%;
-  --top-keep: 60%;
-  --top-soft: 100%;
-  --bottom-keep: 60%;
-  --bottom-soft: 100%;
+    brightness(0.97) contrast(1.05) saturate(1.06)
+    drop-shadow(0 8px 28px color-mix(in oklab, var(--accent) 8%, rgba(0,0,0,.5)))
+    drop-shadow(0 0 52px color-mix(in oklab, var(--accent) 12%, rgba(0,0,0,.35)));
 
   --feather-x: 45%;
   --feather-y: 50%;
-  --feather-hard: 86%;
-  --feather-soft: 98%;
+  --feather-hard: 84%;
+  --feather-soft: 97%;
 
   -webkit-mask-image:
     radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
       #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)),
-    linear-gradient(to left,
-      #000 0%, #000 var(--left-keep), rgba(0,0,0,0) var(--left-soft)),
-    linear-gradient(to right,
-      #000 0%, #000 var(--right-keep), rgba(0,0,0,0) var(--right-soft));
+    linear-gradient(to left, #000 0%, #000 60%, rgba(0,0,0,0) 100%),
+    linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,0) 100%);
   mask-image:
     radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
       #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)),
-    linear-gradient(to left,
-      #000 0%, #000 var(--left-keep), rgba(0,0,0,0) var(--left-soft)),
-    linear-gradient(to right,
-      #000 0%, #000 var(--right-keep), rgba(0,0,0,0) var(--right-soft));
-
+    linear-gradient(to left, #000 0%, #000 60%, rgba(0,0,0,0) 100%),
+    linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,0) 100%);
   -webkit-mask-composite: source-in, source-in;
-          mask-composite: intersect;
+  mask-composite: intersect;
 }
 
-@media (min-width: 1400px){
-  .creature-image { left: 28%; }
+@media (min-width: 1400px) {
+  .creature-image { left: 27%; }
 }
 
-@media (max-width: 900px){
-  .creature-image{
-    --left-keep: 8%;
-    --left-soft: 16%;
-    --right-keep: 72%;
-    --right-soft: 96%;
-    --feather-hard: 88%;
-    --feather-soft: 99%;
+@media (max-width: 900px) {
+  .creature-image {
+    --feather-hard: 86%;
+    --feather-soft: 98%;
   }
 }
 
-/* Text overlay */
+/* ═══════════════════════════════════════════════════════════
+   TEXT OVERLAY
+   ═══════════════════════════════════════════════════════════ */
 .text-overlay {
-  position: absolute; right: 6vw; top: 50%;
+  position: absolute;
+  right: 5.5vw;
+  top: 50%;
   transform: translateY(-50%);
-  z-index: 30; max-width: 560px;
+  z-index: 30;
+  max-width: 540px;
   opacity: var(--text-opacity, 0);
+  /* Smooth the JS-driven opacity changes */
+  transition: opacity 0.06s linear;
 }
-.text-overlay .header { margin: 0 0 6px; }
-.text-overlay .eyebrow {
-  position: relative; color:#a3f1ff; font-weight:800; letter-spacing:.18em;
-  font-size:11px; text-transform:uppercase; margin-bottom: 8px;
-  animation: none !important; opacity: .85;
-}
-.text-overlay .eyebrow::after{ content: none !important; }
 
-/* Divider */
-.text-overlay .header::after{
+/* ── EYEBROW ── */
+.text-overlay .eyebrow {
+  color: color-mix(in oklab, var(--accent) 90%, #fff);
+  font-weight: 800;
+  letter-spacing: .22em;
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  opacity: .8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-overlay .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: color-mix(in oklab, var(--accent) 80%, transparent);
+}
+
+/* ── DIVIDER under heading ── */
+.text-overlay .header {
+  margin: 0 0 0;
+}
+
+.text-overlay .header::after {
   content: "";
   display: block;
-  margin-top: 14px;
+  margin-top: 16px;
   height: 1px;
   width: 100%;
-  background: linear-gradient(to right, rgba(255,255,255,.16), rgba(255,255,255,.04));
+  background: linear-gradient(to right,
+    color-mix(in oklab, var(--accent) 30%, transparent),
+    rgba(255,255,255,.06) 60%,
+    transparent);
 }
 
-/* Transparent scroll area (med dynamiske fade-bånd) */
-.text-overlay .scrollWrap{
-  
-  /* Justerbare knotter */
-  --copy-top: 24px;                 /* vertikal offset fra header (px) */
-  --copy-min: 460px;                /* minste høyde */
-  --copy-viewport: 65vh;            /* ønsket viewport (vh) */
-  --copy-max: 900px;                /* maks høyde */
-  --top-fade-base: 6%;              /* grunn-tykkelse top fade */
-  --bottom-fade-base: 6%;           /* grunn-tykkelse bunn fade */
-
-  /* Dynamiske verdier settes fra JS, men har defaults her */
+/* ── SCROLL WRAP – text starts lower, holds visible longer ── */
+.text-overlay .scrollWrap {
   --top-fade: 8%;
   --bottom-fade: 10%;
 
   position: relative;
-  top: var(--copy-top);
-  height: clamp(var(--copy-min), var(--copy-viewport), var(--copy-max));
+  /* START offset – controls how low the text begins */
+  top: 28px;
+  /* Height: how much text is visible at once */
+  height: clamp(420px, 60vh, 780px);
   overflow: hidden;
   padding: 0;
-  border-radius: 0;
   background: transparent;
-  backdrop-filter: none;
-  box-shadow: none;
-  border: none;
 
-  /* mykere mask: hindrer at topplinjer peeker for tidlig */
   mask-image: linear-gradient(to bottom,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,1) var(--top-fade),
-      rgba(0,0,0,1) calc(100% - var(--bottom-fade)),
-      rgba(0,0,0,0) 100%);
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,1) var(--top-fade),
+    rgba(0,0,0,1) calc(100% - var(--bottom-fade)),
+    rgba(0,0,0,0) 100%);
 }
-.text-overlay .body{
+
+.text-overlay .body {
   transform: translateY(var(--content-offset, 0px));
   will-change: transform;
-  padding-top: 8px;               /* ekstra luft fra divider */
+  padding-top: 6px;
 }
 
-/* Body copy */
-.text-overlay p{
-  color:rgba(255,255,255,.95);
-  line-height:1.9;
-  margin:0 0 16px;
-  font-size:16px;
+/* ── BODY COPY ── */
+.text-overlay p {
+  color: rgba(255,255,255,.93);
+  line-height: 1.9;
+  margin: 0 0 18px;
+  font-size: 15.5px;
   font-weight: 500;
 }
-.text-overlay .details{
+
+.text-overlay .details {
   margin-top: 0;
-  padding-top: 140px;             /* ekstra head-start */
+  padding-top: 120px;
   font-family: "Coming Soon", cursive;
   font-weight: 400;
   font-style: normal;
-  font-size: 17px;
+  font-size: 16.5px;
   line-height: 1.95;
-  color: rgba(255,255,255,.98);
-  text-shadow: 0 1px 1px rgba(0,0,0,.22);
+  color: rgba(255,255,255,.95);
 }
 
-.scroll-reveal-text .word.hl{
-  color: color-mix(in oklab, var(--accent) 92%, #fff);
+/* ── HIGHLIGHTED WORDS ── */
+.scroll-reveal-text .word.hl {
+  color: color-mix(in oklab, var(--accent) 95%, #fff);
   font-weight: 900;
-  text-shadow: 0 0.8px 0 rgba(0,0,0,.25), 0 0 10px color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
-/* Tags */
-.text-overlay .tags{
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(255,255,255,.12);
-  opacity:.9; font-size:13px; letter-spacing:.02em; color: rgba(255,255,255, 0.78);
-  font-weight: 600;
+/* ── TAGS ── */
+.text-overlay .tags {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .08em;
+  color: color-mix(in oklab, var(--accent) 60%, rgba(255,255,255,.5));
+  text-transform: uppercase;
 }
 
-/* Halo */
-.halo{
-  position: absolute; width: 80vmin; height: 80vmin; border-radius: 50%;
-  z-index: 1; pointer-events: none; top: 50%; left: 50%;
+/* ═══════════════════════════════════════════════════════════
+   HALO
+   ═══════════════════════════════════════════════════════════ */
+.halo {
+  position: absolute;
+  width: 75vmin;
+  height: 75vmin;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(var(--halo-scale, 0));
-  filter: blur(46px) saturate(1.08);
+  filter: blur(52px) saturate(1.1);
   mix-blend-mode: screen;
   opacity: var(--halo-opacity, 0);
-  background: radial-gradient(closest-side, var(--halo-color) 0%, transparent 70%);
+  background: radial-gradient(closest-side, var(--halo-color) 0%, transparent 72%);
   will-change: transform, opacity;
 }
 
-/* ScrollFloat (overskrift) */
+/* ═══════════════════════════════════════════════════════════
+   SCROLL FLOAT  (heading character-by-character)
+   ═══════════════════════════════════════════════════════════ */
 .scroll-float { overflow: hidden; }
+
 .scroll-float-text {
   display: inline-block;
-  font-size: clamp(28px, 3.2vw, 48px);
+  font-size: clamp(30px, 3.4vw, 52px);
   font-weight: 900;
   text-align: left;
-  line-height: 1.1;
+  line-height: 1.08;
+  letter-spacing: -.01em;
 }
-.char  { display: inline-block; opacity: 0; transform: translateY(6px) scale(.98); }
 
-/* ScrollReveal (copy) */
-.scroll-reveal { margin: 20px 0; }
-.scroll-reveal-text {
-  font-size: clamp(1.6rem, 4vw, 3rem);
-  line-height: 1.5;
-  font-weight: 600;
+.char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
 }
-.word { display: inline-block; opacity: 0; filter: blur(1.2px); } /* starter usynlig */
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL REVEAL  (word-by-word body)
+   ═══════════════════════════════════════════════════════════ */
+.scroll-reveal {
+  margin: 0;
+}
+
+.scroll-reveal-text {
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  line-height: 1.88;
+  font-weight: 500;
+}
+
+/* Each word starts invisible and blurred – JS/GSAP drives them in */
+.word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(1.5px);
+  transition: none; /* driven purely by GSAP */
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUBTLE ACCENT LINE left side of text panel
+   ═══════════════════════════════════════════════════════════ */
+.text-overlay::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 10%;
+  width: 1px;
+  height: 80%;
+  background: linear-gradient(to bottom,
+    transparent,
+    color-mix(in oklab, var(--accent) 35%, transparent) 30%,
+    color-mix(in oklab, var(--accent) 35%, transparent) 70%,
+    transparent);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CREATURE INDEX INDICATOR  (small dot row – optional)
+   ═══════════════════════════════════════════════════════════ */
+.creature-index {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.creature-index-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  transition: background .3s ease, transform .3s ease;
+}
+
+.creature-index-dot.active {
+  background: var(--accent);
+  transform: scale(1.8);
+}
