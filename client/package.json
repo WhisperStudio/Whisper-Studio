@@ -65,6 +65,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "preinstall": "rm -rf node_modules/.cache",
     "dev": "react-scripts start",
     "start": "react-scripts start",
     "build": "react-scripts build",
