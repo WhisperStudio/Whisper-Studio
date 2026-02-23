@@ -44,12 +44,15 @@ const throttle = (func, limit) => {
   };
 };
 
-/* ---------- Global Styles (Forbedret) ---------- */
+/* ---------- Global Styles (Norse Edition) ---------- */
 const GlobalStyle = createGlobalStyle`
   :root {
-    --color-dark: #0e0c0d;
-    --color-light-text: #fff;
-    --color-accent: #4a86ff;
+    --color-dark: #0B0F14;
+    --color-light-text: #E0E0E0;
+    --color-accent: #C7A44C;
+    --color-accent-dark: #8B5E3C;
+    --color-bg-card: #1A1510;
+    --color-ember: #FF5A1F;
     --header-height: 60px;
     
     @media (max-width: 768px) {
@@ -73,7 +76,7 @@ const GlobalStyle = createGlobalStyle`
     overflow-x: hidden;
     background: var(--color-dark);
     color: var(--color-light-text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Cinzel', 'Cormorant', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 `;
 
@@ -279,54 +282,80 @@ const ButtonContainer = styled.div`
 `;
 
 const PlayButton = styled(BaseButton)`
-  background: white;
-  color: #333;
-  border-color: white;
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #D4AF84 0%, #C7A44C 100%);
+  color: #0B0F14;
+  border-color: #8B6F47;
+  box-shadow: 
+    0 8px 25px rgba(199, 164, 76, 0.35),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  font-family: 'Cinzel', serif;
   
   &:hover { 
-    background: #555;
-    color: white;
-    border-color: white;
+    background: linear-gradient(135deg, #E5C896 0%, #D4AF84 100%);
+    color: #0B0F14;
+    border-color: #C7A44C;
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      0 15px 40px rgba(199, 164, 76, 0.5),
+      inset 0 1px 0 rgba(255,255,255,0.3);
   }
 `;
 
 const WatchTrailerButton = styled(BaseButton)`
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(199, 164, 76, 0.1);
+  color: #C7A44C;
+  border-color: rgba(199, 164, 76, 0.6);
   backdrop-filter: blur(10px);
   font-weight: 600;
+  font-family: 'Cinzel', serif;
+  box-shadow: inset 0 1px 0 rgba(199,164,76,0.2);
   
   &:hover { 
-    background: white; 
-    color: black;
+    background: linear-gradient(135deg, #2A2420 0%, #1A1410 100%);
+    color: #D4AF84;
+    border-color: #C7A44C;
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.3);
+    box-shadow: 
+      0 15px 40px rgba(199, 164, 76, 0.3),
+      inset 0 1px 0 rgba(255,255,255,0.15);
   }
 `;
 
-/* ---------- News + Cards (Ekstremt forbedret responsivitet) ---------- */
+/* ---------- News + Cards (Norse Edition) ---------- */
 const NewsSection = styled.section`
   position: relative;
   width: 100%;
   padding: clamp(60px, 10vw, 120px) 5% clamp(40px, 8vw, 100px); 
   box-sizing: border-box;
-  background: var(--color-dark); 
+  background: linear-gradient(180deg, #0B0F14 0%, #0F1219 50%, #0B0F14 100%);
   z-index: 10;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80vw 60vh at 50% 0%, rgba(199, 164, 76, 0.08), transparent 60%),
+      radial-gradient(ellipse 100vw 80vh at 50% 100%, rgba(139, 30, 30, 0.06), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 `;
 
 const NewsSectionTitle = styled.h2`
   font-size: clamp(2.5rem, 6vw, 5rem); 
   margin-bottom: clamp(40px, 8vw, 80px); 
-  color: white;
+  color: #C7A44C;
   text-align: center; 
   font-weight: 900; 
   letter-spacing: 3px;
   text-transform: uppercase;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  font-family: 'Cinzel', serif;
+  text-shadow: 
+    0 2px 4px rgba(0,0,0,0.8),
+    0 0 20px rgba(199,164,76,0.2),
+    0 0 40px rgba(0,0,0,0.3);
   
   will-change: transform, opacity;
 `;
@@ -346,21 +375,40 @@ const CardContainer = styled.div`
 
 const Card = styled(Link)`
   text-decoration: none; 
-  background: linear-gradient(145deg, rgba(26, 26, 26, 0.95), rgba(40, 40, 40, 0.95));
-  color: white;
-  border-radius: 25px; 
+  background: linear-gradient(135deg, rgba(20, 18, 15, 0.95) 0%, rgba(30, 25, 20, 0.9) 100%);
+  color: #E0E0E0;
+  border-radius: 12px; 
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(199,164,76,0.15),
+    0 0 20px rgba(0,0,0,0.4);
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(199, 164, 76, 0.2);
   will-change: transform, box-shadow, border-color; 
-  will-change: transform, opacity;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(199,164,76,0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 1;
+    pointer-events: none;
+  }
   
   &:hover { 
     transform: translateY(-10px) scale(1.01); 
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 
+      0 16px 40px rgba(199,164,76,0.25),
+      inset 0 1px 0 rgba(199,164,76,0.3),
+      0 0 30px rgba(199,164,76,0.1);
+    border-color: rgba(199, 164, 76, 0.4);
+    
+    &::before {
+      opacity: 1;
+    }
   }
 
   &:active {
@@ -421,34 +469,59 @@ const CardContent = styled.div`
 const CardTitle = styled.h3`
   font-size: ${p => (p.$large ? 'clamp(2rem, 4vw, 3.2rem)' : 'clamp(1.5rem, 3vw, 2.4rem)')}; 
   font-weight: 900; 
-  color: #fff; 
+  color: #D4AF84; 
   margin-bottom: clamp(15px, 2vw, 25px); 
   line-height: 1.1;
   letter-spacing: -0.02em;
+  font-family: 'Cinzel', serif;
 `;
 
 const CardDescription = styled.p`
   font-size: ${p => (p.$large ? 'clamp(1rem, 1.5vw, 1.5rem)' : 'clamp(0.9rem, 1.2vw, 1.2rem)')}; 
-  color: rgba(255,255,255,0.85); 
+  color: rgba(224,224,224,0.85); 
   line-height: 1.6; 
   margin-bottom: clamp(20px, 3vw, 35px);
   font-weight: 400;
+  font-family: 'Cinzel', serif;
 `;
 
 const CardButton = styled(BaseButton)`
   padding: 16px 32px; 
-  background: linear-gradient(135deg, #4a86ff, #6c5ce7);
-  color: white;
-  border: none; 
+  background: linear-gradient(135deg, #2A2420 0%, #1A1410 100%);
+  color: #D4AF84;
+  border: 2px solid #8B6F47;
   font-size: 1.1rem; 
   font-weight: 700;
   text-transform: uppercase; 
   letter-spacing: 1px;
   align-self: flex-start;
-  box-shadow: 0 8px 25px rgba(74, 134, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+  font-family: 'Cinzel', serif;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(199,164,76,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
   
   &:hover { 
-    background: linear-gradient(135deg, #3a76e8, #5b4cdb);
+    background: linear-gradient(135deg, #3A3430 0%, #2A2420 100%);
+    border-color: #C7A44C;
+    box-shadow: 
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      0 8px 24px rgba(199,164,76,0.3),
+      0 0 20px rgba(199,164,76,0.1);
+    transform: translateY(-2px);
+    
+    &::before {
+      opacity: 1;
+    }
   }
   
   @media (max-width: 768px) {
@@ -460,10 +533,13 @@ const CardButton = styled(BaseButton)`
 
 const CardDate = styled.span`
   font-size: 0.9rem;
-  color: rgba(255,255,255,0.7); 
+  color: #A39E8E; 
   margin-bottom: 20px; 
   display: block; 
   font-weight: 600;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 `;
 
 /* ---------- Component ---------- */

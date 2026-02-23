@@ -3,13 +3,36 @@ import styled from 'styled-components';
 
 const CountdownWrapper = styled.div`
   font-size: 1.5rem;
-  color: rgba(200, 200, 200, 0.8);
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  color: #C7A44C;
+  text-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(199, 164, 76, 0.3);
   margin-top: 1rem;
   text-align: center;
   display: flex;
   justify-content: center;
-  gap: 1rem; /* Gir mellomrom mellom hvert <span> */
+  gap: 1.2rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  
+  span {
+    background: linear-gradient(135deg, rgba(199,164,76,0.1), rgba(199,164,76,0.05));
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(199,164,76,0.3);
+    border-radius: 6px;
+    min-width: 60px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  
+  span:hover {
+    background: linear-gradient(135deg, rgba(199,164,76,0.15), rgba(199,164,76,0.08));
+    border-color: rgba(199,164,76,0.5);
+    box-shadow: 
+      inset 0 1px 0 rgba(255,255,255,0.15),
+      0 0 8px rgba(199,164,76,0.2);
+  }
 `;
 
 const Countdown = () => {
