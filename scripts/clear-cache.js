@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
+const { execSync } = require('child_process');
 
-// Nuclear option: remove entire node_modules from both possible paths, then reinstall
+// Remove entire node_modules from both possible sandbox paths
 const dirs = [
   '/vercel/share/v0-project/client/node_modules',
   '/vercel/share/v0-next-shadcn/client/node_modules',
