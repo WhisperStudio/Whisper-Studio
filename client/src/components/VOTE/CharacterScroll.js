@@ -356,7 +356,7 @@ export default function CharacterScroll() {
   const TOTAL_HEIGHT = HERO_PHASE + CREATURES.length * PHASE_LENGTH + 60;
 
   // Image stays at scale 1.0 until exit phase begins
-  const HOLD_BEFORE_FADE = (ZOOM_PHASE + TEXT_PHASE) / PHASE_LENGTH; // ~0.82
+ // const HOLD_BEFORE_FADE = (ZOOM_PHASE + TEXT_PHASE) / PHASE_LENGTH; // ~0.82
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -484,7 +484,7 @@ export default function CharacterScroll() {
       // Only maps over the TEXT zone (zoomEnd → textEnd)
       const textStart   = zoomEnd;
       const tProg       = clamp((phaseRaw - textStart) / (textEnd - textStart), 0, 1);
-      const textDone    = tProg >= 0.998;
+      //const textDone    = tProg >= 0.998;
 
       // ── EXIT progress ─────────────────────────────────────
       // Goes 0→1 during EXIT_PHASE zone (textEnd → 1.0)
@@ -647,7 +647,7 @@ export default function CharacterScroll() {
       if (momentumRaf)    cancelAnimationFrame(momentumRaf);
       if (rafSmooth)      cancelAnimationFrame(rafSmooth);
     };
-  }, [CREATURES, TOTAL_HEIGHT, renderIndex]);
+  }, [CREATURES, TOTAL_HEIGHT, renderIndex, PHASE_LENGTH]);
 
   const currentCreature = renderIndex >= 0 ? CREATURES[renderIndex] : null;
 
