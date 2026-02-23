@@ -6,9 +6,15 @@
   src: url('../../Fonts/Norse-KaWl.otf') format('opentype');
 }
 
+@font-face {
+  font-family: 'Cinzel';
+  src: url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
+}
+
 body {
-  background: #fff;
+  background: #0B0F14;
   overflow-x: hidden;
+  color: #E0E0E0;
 }
 
 /* ===================== Layout ===================== */
@@ -192,8 +198,13 @@ body {
 .top-text {
   font-size: 3rem;
   font-family: 'Cinzel', serif;
-  color: rgba(200,200,200,0.8);
-  text-shadow: 0 0 15px rgba(0,0,0,0.8);
+  color: #C7A44C;
+  text-shadow: 
+    0 2px 8px rgba(0,0,0,0.9),
+    0 0 20px rgba(199,164,76,0.3),
+    0 0 40px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
@@ -225,9 +236,14 @@ body {
 .under-text {
   font-size: 2rem;
   font-family: 'Cinzel', serif;
-  color: rgba(200,200,200,0.8);
-  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  color: #C7A44C;
+  text-shadow: 
+    0 2px 8px rgba(0,0,0,0.9),
+    0 0 15px rgba(199,164,76,0.25),
+    0 0 30px rgba(0,0,0,0.4);
   display: block;
+  letter-spacing: 1.5px;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -241,13 +257,37 @@ body {
   padding: .8rem 1.5rem;
   font-size: 1.2rem;
   font-family: 'Cinzel', serif;
-  background: #444; color: #fff;
-  border: 2px solid #aaa;
-  border-radius: 5px;
+  background: linear-gradient(135deg, #2A2420 0%, #1A1410 100%);
+  color: #D4AF84;
+  border: 2px solid #8B6F47;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background .3s;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
 }
-.play-music-button:hover { background: #666; }
+
+.play-music-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,165,0,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.play-music-button:hover {
+  background: linear-gradient(135deg, #3A3430 0%, #2A2420 100%);
+  border-color: #C7A44C;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 8px 20px rgba(199,164,76,0.3);
+  transform: translateY(-2px);
+}
+
+.play-music-button:hover::before {
+  opacity: 1;
+}
 
 @media (max-width: 768px) {
   .play-music-button {
@@ -301,15 +341,39 @@ body {
   position: fixed;
   bottom: 2rem; left: 2rem;
   padding: .8rem 1.2rem;
-  font-family: 'Norse', serif;
-  background: #333; color: #fff;
-  border: 2px solid #e0c097;
-  border-radius: 5px;
+  font-family: 'Cinzel', serif;
+  background: linear-gradient(135deg, #2A2420 0%, #1A1410 100%);
+  color: #D4AF84;
+  border: 2px solid #8B6F47;
+  border-radius: 8px;
   cursor: pointer;
   z-index: 9999;
-  transition: background .3s, transform .3s;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
 }
-.mute-button:hover { background: #444; transform: scale(1.05); }
+
+.mute-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,165,0,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.mute-button:hover {
+  background: linear-gradient(135deg, #3A3430 0%, #2A2420 100%);
+  border-color: #C7A44C;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 8px 20px rgba(199,164,76,0.3);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.mute-button:hover::before {
+  opacity: 1;
+}
 
 @media (max-width: 768px) {
   .mute-button {
@@ -322,10 +386,35 @@ body {
 
 /* ===================== News ===================== */
 .news-section {
-  background: #0a0a0a;
+  background: linear-gradient(180deg, #0B0F14 0%, #0F1219 50%, #0B0F14 100%);
   padding: 100px 5% 80px;
   box-sizing: border-box;
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.news-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 80vw 60vh at 50% 0%, rgba(199, 164, 76, 0.08), transparent 60%),
+    radial-gradient(ellipse 100vw 80vh at 50% 100%, rgba(139, 30, 30, 0.06), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.news-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 50%, transparent 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" seed="2"/></filter><rect width="100" height="100" fill="black" filter="url(%23noise)"/></svg>');
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @media (max-width: 768px) {
@@ -335,14 +424,21 @@ body {
 }
 
 .news-section-title {
-  color: #fff;
+  color: #D4AF84;
   font-size: 4rem;
   text-align: center;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   margin-top: 40px;
   margin-bottom: 80px;
+  font-family: 'Cinzel', serif;
+  text-shadow: 
+    0 2px 4px rgba(0,0,0,0.8),
+    0 0 20px rgba(199,164,76,0.2),
+    0 0 40px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {
@@ -360,22 +456,53 @@ body {
   gap: 30px;
   max-width: 1600px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 @media(max-width:1024px) {
   .card-grid { grid-template-columns: 1fr; }
 }
 
 .base-card {
-  background: #1a1a1a;
-  color: #fff;
-  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(20, 18, 15, 0.95) 0%, rgba(30, 25, 20, 0.9) 100%);
+  color: #E0E0E0;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(199,164,76,0.15),
+    0 0 20px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
-  transition: transform .3s, box-shadow .3s;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid rgba(199,164,76,0.2);
+  position: relative;
+  overflow: hidden;
 }
-.base-card:hover { transform: translateY(-10px); }
+
+.base-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(199,164,76,0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.base-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 
+    0 16px 40px rgba(199,164,76,0.25),
+    inset 0 1px 0 rgba(199,164,76,0.3),
+    0 0 30px rgba(199,164,76,0.1);
+  border-color: rgba(199,164,76,0.4);
+}
+
+.base-card:hover::before {
+  opacity: 1;
+}
 
 .large-card { grid-row: span 2; }
 @media(max-width:1024px) {
@@ -421,18 +548,23 @@ body {
 }
 
 .card-date {
-  color: rgba(255,255,255,0.6);
+  color: #A39E8E;
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 15px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .card-title {
-  color: #fff;
+  color: #D4AF84;
   font-size: 2rem;
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 20px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: -0.02em;
 }
 .card-title.large { font-size: 2.8rem; }
 
@@ -447,10 +579,11 @@ body {
 }
 
 .card-description {
-  color: rgba(255,255,255,0.8);
+  color: rgba(224, 224, 224, 0.75);
   font-size: 1rem;
   line-height: 1.8;
   margin-bottom: 30px;
+  font-family: 'Cinzel', serif;
 }
 .card-description.large { font-size: 1.4rem; }
 
@@ -458,19 +591,43 @@ body {
   padding: 14px 28px;
   margin-top: auto;
   margin-bottom: auto;
-  background: #1a1a1a;
-  color: #fff;
-  border: 2px rgba(158, 158, 158, 0.78) solid;
-  border-radius: 50px;
+  background: linear-gradient(135deg, #2A2420 0%, #1A1410 100%);
+  color: #D4AF84;
+  border: 2px solid #8B6F47;
+  border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;
   align-self: flex-start;
-  transition: border ease-in-out;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  font-family: 'Cinzel', serif;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
 }
+
+.card-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(199,164,76,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
 .card-button:hover {
-  border: 2px rgba(158, 158, 158, 0.78) solid;
-  box-shadow: 0 10px 20px rgba(100, 100, 100, 0.4);
+  background: linear-gradient(135deg, #3A3430 0%, #2A2420 100%);
+  border-color: #C7A44C;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    0 8px 24px rgba(199,164,76,0.3),
+    0 0 20px rgba(199,164,76,0.1);
+  transform: translateY(-2px);
+}
+
+.card-button:hover::before {
+  opacity: 1;
 }

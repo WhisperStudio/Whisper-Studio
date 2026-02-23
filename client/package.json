@@ -65,6 +65,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "preinstall": "rm -rf node_modules/.cache",
+    "dev": "react-scripts start",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -90,3 +92,4 @@
   },
   "proxy": "http://142.93.237.94:8001"
 }
+

@@ -23,7 +23,7 @@ const GlobalStyle = createGlobalStyle`
   }
     @font-face {
       font-family: 'Chill';
-      src: url(${Chill}) format('truetype'); /* Sørg for at formatet er riktig */
+      src: url(${Chill}) format('truetype');
       font-weight: normal;
       font-style: normal;
     }
@@ -31,9 +31,9 @@ const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Norse', sans-serif;
-    background-color: #0d0d0d;
-    color: white;
+    font-family: 'Cinzel', 'Chill', sans-serif;
+    background-color: #0B0F14;
+    color: #E0E0E0;
   }
 `;
 
@@ -41,7 +41,17 @@ const Container = styled.div`
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background: #0d0d0d;
+  background: linear-gradient(180deg, #0B0F14 0%, #0F1219 50%, #0B0F14 100%);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80vw 60vh at 50% 100%, rgba(139, 30, 30, 0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
 `;
 
 const BackgroundVideo = styled.video`
@@ -99,17 +109,22 @@ const TextBox = styled.div`
   }
 
   h2 {
-    font-family: 'Norse', sans-serif;
+    font-family: 'Cinzel', serif;
     font-size: 54px;
     margin-bottom: 60px;
-    color: #e0c097;
+    color: #C7A44C;
+    text-shadow: 
+      0 2px 6px rgba(0,0,0,0.8),
+      0 0 20px rgba(199,164,76,0.25);
+    font-weight: 700;
+    letter-spacing: 1.5px;
   }
 
   p {
-    font-family: 'Chill', sans-serif;
+    font-family: 'Chill', serif;
     font-size: 25px;
     line-height: 1.4;
-   
+    color: #E0E0E0;
   }
   
   @media (max-width: 768px) {
