@@ -144,6 +144,9 @@ const Section = styled.section`
   padding: calc(var(--header) + 56px) 0 120px; /* never collide with header */
   isolation: isolate;
   overflow: hidden; /* 🔥 sørger for at ingenting "lyser" utenfor seksjonen */
+  color: ${C.text};
+  font-family: "Cinzel", ui-serif, Georgia, "Times New Roman", serif;
+  letter-spacing: 0.01em;
   
   @media (max-width: 768px) {
     padding: calc(var(--header) + 30px) 0 80px;
@@ -190,13 +193,18 @@ const H1 = styled.h1`
   margin:0; font-size: clamp(30px, 2.6vw + 18px, 56px); letter-spacing:-.02em;
   color: ${C.text};
   text-shadow: 0 0 28px rgba(255, 90, 31, 0.12), 0 18px 80px rgba(0,0,0,0.75);
+  font-family: "Cinzel", ui-serif, Georgia, "Times New Roman", serif;
   
   @media (max-width: 768px) {
     font-size: clamp(24px, 6vw, 36px);
   }
 `;
 const Sub = styled.p`
-  margin:.3rem 0 0; color:${C.subtle}; max-width: 70ch;
+  margin:.3rem 0 0;
+  max-width: 70ch;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  color: rgba(233, 226, 211, 0.78);
+  letter-spacing: 0.02em;
   
   @media (max-width: 768px) {
     font-size: 0.95rem;
@@ -339,6 +347,7 @@ const Title = styled.span`
   font-weight: 800;
   letter-spacing: .2px;
   color: ${C.text};
+  font-family: "Cinzel", ui-serif, Georgia, "Times New Roman", serif;
 `;
 const Badge = styled.span`
   font-size: 12px;
@@ -351,8 +360,6 @@ const Badge = styled.span`
     inset 0 0 12px rgba(199,164,76,.06),
     0 6px 20px rgba(0,0,0,.35);
 `;
-const Tags = styled.div` display:flex; gap:8px; flex-wrap:wrap; `;
-const Tag = styled.span` font-size:11px; padding:4px 8px; border-radius:999px; color:${C.subtle}; background:rgba(199,164,76,.06); border:1px solid rgba(199,164,76,.14); `;
 
 const Actions = styled.div` position:absolute; top:12px; right:12px; display:flex; gap:8px; `;
 const Ghost = styled.button`
@@ -372,28 +379,60 @@ const Ghost = styled.button`
 `;
 
 // ---------- Lightbox ----------
-// 🔹 Nye navigasjons-knapper til Lightbox
+// 🔹 Navigasjons-knapper: matcher pilene i footer-link hover (⟩ + gull)
 const NavArrow = styled.button`
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%) scale(2);
-  ${p => p.left ? "left: 200px;" : "right: 200px;"}
-  background: rgba(10,12,16,.78);
-  border: 1px solid rgba(199,164,76,.22);
-  color: ${C.text};
-  width: 54px;
-  height: 54px;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  ${p => 
+    p.$left 
+      ? "left: calc(50vw - min(94vw, 1280px) / 2 - 100px) !important;" 
+      : "right: calc(50vw - min(94vw, 1280px) / 2 - 100px) !important;"
+  }
+  background: rgba(10,12,16,.55);
+  border: none;
+  color: rgba(235,215,165,0.84);
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .2s, transform .2s, border-color .2s;
-  
+  transition: color 0.25s, transform 0.25s, border-color 0.25s, background 0.25s;
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+
+  &::before {
+    content: '⟩';
+    display: block;
+    font-size: 30px;
+    line-height: 1;
+    color: #c8922a;
+    transition: color 0.25s, transform 0.25s;
+    transform: ${p => (p.$left ? "rotate(180deg)" : "none")};
+  }
 
   &:hover {
-    background: rgba(0,0,0,0.72);
-    border-color: rgba(255, 90, 31, 0.35);
-   
+    background: rgba(0,0,0,0.68);
+    border-color: none);
+    transform: translateY(-50%) scale(1.02);
+
+    &::before {
+      color: #f0c040;
+      transform: ${p => (p.$left ? "rotate(180deg) translateX(2px)" : "translateX(2px)")};
+    }
+  }
+
+  &:focus-visible { outline: 2px solid ${C.gold}; outline-offset: 2px; }
+
+  @media (max-width: 900px) {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    ${p => (p.$left ? "left: 16px;" : "right: 16px;")}
+
+    &::before { font-size: 26px; }
   }
 `;
 
@@ -401,9 +440,10 @@ const Dimmer = styled(motion.div)`
   position:fixed;
   inset:0;
   background: rgba(5,7,10,.88);
-  z-index:1000;
+  z-index:999999;
   display:grid;
   place-items:center;
+  overflow: hidden;
 `;
 const Panel = styled(motion.div)`
   width:min(94vw, 1280px); max-height:88dvh; display:grid; grid-template-rows: 1fr auto; gap: 10px;
@@ -412,6 +452,7 @@ const Panel = styled(motion.div)`
   border-radius:22px;
   box-shadow:${C.shadow};
   overflow:hidden;
+  position: relative;
 `;
 const FullImg = styled.img` width:100%; height:100%; object-fit:contain; background:#06070b; `;
 const Bar = styled.div` display:flex; justify-content:space-between; align-items:center; padding:12px 16px; `;
@@ -597,6 +638,37 @@ export default function GallerySection({ headerHeight }){
 
   // lightbox
   const [open, setOpen] = useState(false); const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!open) return;
+
+    const body = document.body;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const prev = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+    };
+
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+
+    // Force hide chat widget when modal opens
+    body.setAttribute('data-artwork-modal-open', 'true');
+
+    return () => {
+      body.style.overflow = prev.overflow;
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      window.scrollTo(0, scrollY);
+      
+      // Show chat widget again when modal closes
+      body.removeAttribute('data-artwork-modal-open');
+    };
+  }, [open]);
   useEffect(()=>{
     const onKey = (e)=>{ if(!open) return; if(e.key==='Escape') setOpen(false); if(e.key==='ArrowRight') setIdx(i=> (i+1) % Math.min(visible, data.length)); if(e.key==='ArrowLeft') setIdx(i=> (i-1+Math.min(visible,data.length)) % Math.min(visible,data.length)); };
     window.addEventListener('keydown', onKey); return ()=> window.removeEventListener('keydown', onKey);
@@ -693,17 +765,13 @@ export default function GallerySection({ headerHeight }){
       {/* Lightbox */}
       <AnimatePresence>
   {open && (
-    <Dimmer onClick={()=> setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <Dimmer data-artwork-modal="true" onClick={()=> setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      {/* 🔹 Venstre/Høyre piler - absolute posisjon i Dimmer */}
+      <NavArrow $left onClick={(e) => { e.stopPropagation(); setIdx(i=> (i-1+Math.min(visible,data.length)) % Math.min(visible,data.length)); }} aria-label="Previous" />
+      <NavArrow onClick={(e) => { e.stopPropagation(); setIdx(i=> (i+1) % Math.min(visible,data.length)); }} aria-label="Next" />
+      
       <Panel onClick={e=> e.stopPropagation()} initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .98 }}>
         <FullImg src={data[idx]?.img} alt={data[idx]?.title || 'Image'} />
-
-        {/* 🔹 Venstre/Høyre piler */}
-        <NavArrow left onClick={()=> setIdx(i=> (i-1+Math.min(visible,data.length)) % Math.min(visible,data.length))} aria-label="Previous">
-          <Icon name="left" size={18} />
-        </NavArrow>
-        <NavArrow onClick={()=> setIdx(i=> (i+1) % Math.min(visible,data.length))} aria-label="Next">
-          <Icon name="right" size={18} />
-        </NavArrow>
 
         {/* 🔹 Close-knapp nederst */}
         <Bar>
@@ -775,9 +843,6 @@ function GridItem({ it, i, onOpen }){
         <Title>{it.title}</Title>
         <Badge>{it.category}</Badge>
       </Meta>
-      <Tags>
-        {it.tags?.map(t=> <Tag key={t}>#{t}</Tag>)}
-      </Tags>
     </Card>
   );
 }
@@ -800,9 +865,6 @@ function MasonryItem({ it, i, onOpen }){
         <Title>{it.title}</Title>
         <Badge>{it.category}</Badge>
       </Meta>
-      <Tags>
-        {it.tags?.map(t=> <Tag key={t}>#{t}</Tag>)}
-      </Tags>
     </MasonryCard>
   );
 }

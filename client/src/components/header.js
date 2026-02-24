@@ -41,12 +41,21 @@ const V_POSITION = {
 const HeaderContainer = styled.header`
   position: fixed;
   top: 0; left: 0; right: 0;
-  z-index: 1000;
+  z-index: 900;
   height: ${({ $isScrolled }) => ($isScrolled ? '70px' : '100px')};
   padding: 1.5rem 4rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  
+  /* Hide header when artwork modal is open */
+  body[data-artwork-modal-open="true"] & {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(-100%) !important;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  }
   
   /* Solid background for nav area */
   background: linear-gradient(
@@ -159,7 +168,7 @@ const HamburgerButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  z-index: 1002;
+  z-index: 902;
   width: 30px; height: 20px;
   position: relative;
   @media (max-width: 768px) { display: block; }
@@ -247,7 +256,7 @@ const ScrollTopButton = styled.button`
   display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   align-items: center; justify-content: center;
   transition: transform 0.2s ease;
-  z-index: 9999;
+  z-index: 950;
   &:hover { transform: translateY(-2px); }
   svg { fill: #fff; }
 
