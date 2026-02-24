@@ -28,20 +28,31 @@ const GlobalStyle = createGlobalStyle`
       font-style: normal;
     }
 
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Norse', sans-serif;
-    background-color: #0d0d0d;
-    color: white;
-  }
+  body { margin: 0; padding: 0; }
 `;
 
 const Container = styled.div`
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background: #0d0d0d;
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(139, 30, 30, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 85% 25%, rgba(199, 164, 76, 0.10), transparent 55%),
+    linear-gradient(180deg, #05070A 0%, #0B0F14 40%, #06080C 100%);
+`;
+
+const Smoke = styled.div`
+  position: absolute;
+  inset: -12% -12% -12% -12%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.28;
+  background:
+    radial-gradient(closest-side at 18% 25%, rgba(255,255,255,0.08), transparent 60%),
+    radial-gradient(closest-side at 76% 18%, rgba(255,255,255,0.06), transparent 62%),
+    radial-gradient(closest-side at 55% 74%, rgba(255,255,255,0.07), transparent 60%),
+    radial-gradient(closest-side at 32% 82%, rgba(255,255,255,0.05), transparent 62%);
+  filter: blur(22px) contrast(110%);
 `;
 
 const BackgroundVideo = styled.video`
@@ -76,14 +87,14 @@ const DarkOverlay = styled.div`
     rgba(0, 0, 0, 0.8) 95%,
     rgba(0, 0, 0, 1) 100%
   );
-  z-index: 2;
+  z-index: 3;
 `;
 
 const TextBox = styled.div`
   position: relative;
   top: 2vh;
   left: 48vh;
-  z-index: 3;
+  z-index: 4;
   width: 35%;
   max-width: 800px;
   margin: 40vh auto 0 auto;
@@ -102,13 +113,16 @@ const TextBox = styled.div`
     font-family: 'Norse', sans-serif;
     font-size: 54px;
     margin-bottom: 60px;
-    color: #e0c097;
+    color: rgba(199, 164, 76, 0.92);
+    text-shadow: 0 0 30px rgba(255, 90, 31, 0.14), 0 18px 70px rgba(0,0,0,0.78);
   }
 
   p {
     font-family: 'Chill', sans-serif;
     font-size: 25px;
     line-height: 1.4;
+    color: rgba(233, 226, 211, 0.88);
+    text-shadow: 0 14px 60px rgba(0,0,0,0.68);
    
   }
   
@@ -240,6 +254,7 @@ function ScrollAnimation2() {
           preload="metadata"
           $isFading={isFading}
         />
+        <Smoke />
         <DarkOverlay />
 
         {/* Only the “About the game” text remains */}
@@ -247,9 +262,9 @@ function ScrollAnimation2() {
           ref={textRef}
           className={isTextVisible ? 'active' : ''}
         >
-          <h2>Coming soon</h2>
+          <h2>Witness the Prophecy</h2>
           <p>
-          Our game is currently under development, and we’re excited to announce that we plan to release it in 2026 on the Epic Games Store!
+          The realm is under construction. The veil lifts in 2026—arriving on the Epic Games Store.
           </p>
           <Countdown/>
         </TextBox>

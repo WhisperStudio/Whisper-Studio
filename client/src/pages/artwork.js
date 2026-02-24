@@ -5,16 +5,6 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { AnimatePresence, motion } from "framer-motion";
 
-// ============================================================================
-//  VINTRA – DARK / NEON EDITION
-//  - ZERO global CSS, zero Header/Footer, safe drop-in
-//  - Honors header height via CSS var --vs-header-height or prop headerHeight
-//  - Ultra dark, neon accents, parallax hero, particles, sticky pro toolbar
-//  - View modes (Grid / Masonry), Search, Multi-filter, Sort, Quick actions
-//  - Fancy hover (parallax tilt + shine), skeletons, infinite loading
-//  - Upgraded 3D viewer
-// ============================================================================
-
 // ---------- Assets ----------
 import backgroundImage from "../bilder/bg.webp";
 import placeholderImage1 from "../bilder/assets_task_01jr7m94hseeqad46rhaa8vhrq_img_0.webp";
@@ -29,6 +19,92 @@ import placeholderImage9 from "../bilder/Nøkken.png";
 import placeholderImage10 from "../bilder/Troll.png";
 import placeholderImage11 from "../bilder/HorseAndGirl.png";
 import placeholderImage12 from "../bilder/Pesta.png";
+
+const Icon = ({ name, size = 18 }) => {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    "aria-hidden": "true",
+    focusable: "false",
+  };
+
+  if (name === "close") {
+    return (
+      <svg {...common}>
+        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "left") {
+    return (
+      <svg {...common}>
+        <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === "right") {
+    return (
+      <svg {...common}>
+        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === "download") {
+    return (
+      <svg {...common}>
+        <path d="M12 3v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M8 10l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 21h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === "link") {
+    return (
+      <svg {...common}>
+        <path d="M10 13a5 5 0 0 1 0-7l1.4-1.4a5 5 0 0 1 7 7L17 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 11a5 5 0 0 1 0 7l-1.4 1.4a5 5 0 0 1-7-7L7 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === "grid") {
+    return (
+      <svg {...common}>
+        <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z" fill="currentColor" opacity="0.9" />
+      </svg>
+    );
+  }
+  if (name === "masonry") {
+    return (
+      <svg {...common}>
+        <path d="M4 4h7v10H4V4Zm9 0h7v6h-7V4ZM4 16h7v4H4v-4Zm9-4h7v8h-7v-8Z" fill="currentColor" opacity="0.9" />
+      </svg>
+    );
+  }
+  if (name === "stage") {
+    return (
+      <svg {...common}>
+        <path d="M12 3l8 5v8l-8 5-8-5V8l8-5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M12 8v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M8.5 10.5L12 8l3.5 2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return null;
+};
+
+// ============================================================================
+//  VINTRA – DARK / NEON EDITION
+//  - ZERO global CSS, zero Header/Footer, safe drop-in
+//  - Honors header height via CSS var --vs-header-height or prop headerHeight
+//  - Ultra dark, neon accents, parallax hero, particles, sticky pro toolbar
+//  - View modes (Grid / Masonry), Search, Multi-filter, Sort, Quick actions
+//  - Fancy hover (parallax tilt + shine), skeletons, infinite loading
+//  - Upgraded 3D viewer
+// ============================================================================
 
 const RAW = [
   { id: 1, img: placeholderImage2, category: "Creatures", sub: "Friendly", title: "Nisse", tags:["gnome","friendly","folk"] },
@@ -49,16 +125,16 @@ const RAW = [
 
 // ---------- Theme (scoped) ----------
 const C = {
-  bg: "#050608",
-  panel: "rgba(255,255,255,.04)",
-  border: "rgba(255,255,255,.10)",
-  text: "#E8EAED",
-  subtle: "#9AA0A6",
-  neonA: "#8B5CFF",
-  neonB: "#00E7FF",
-  neonC: "#00FFA3",
+  bg: "#05070A",
+  panel: "rgba(10,12,16,.86)",
+  border: "rgba(199,164,76,.18)",
+  text: "#E9E2D3",
+  subtle: "rgba(233,226,211,.70)",
+  gold: "#C7A44C",
+  fire: "#FF5A1F",
+  blood: "#8B1E1E",
   radius: 18,
-  shadow: "0 22px 60px rgba(0,0,0,.45)",
+  shadow: "0 28px 90px rgba(0,0,0,.62)",
 };
 
 // ---------- Layout ----------
@@ -78,10 +154,17 @@ const Backdrop = styled.div`
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   &::before{ content:""; position:absolute; inset:-20% -10%;
     background:
-      radial-gradient(80vmax 70vmax at 85% 0%, rgba(139,92,255,.12), transparent 60%),
-      radial-gradient(70vmax 70vmax at 20% 100%, rgba(0,231,255,.10), transparent 60%),
+      radial-gradient(100vmax 80vmax at 85% 0%, rgba(139,30,30,.16), transparent 60%),
+      radial-gradient(90vmax 75vmax at 15% 100%, rgba(199,164,76,.12), transparent 62%),
+      radial-gradient(70vmax 60vmax at 50% 20%, rgba(255,90,31,.08), transparent 64%),
       url(${backgroundImage}) center/cover no-repeat;
-    opacity:.16; filter: saturate(.9) contrast(1.04);
+    opacity:.16; filter: saturate(.75) contrast(1.06);
+  }
+  &::after{ content:""; position:absolute; inset:0;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.38) 45%, rgba(0,0,0,.75) 100%),
+      radial-gradient(1200px 700px at 50% 10%, rgba(255,255,255,.05), transparent 60%);
+    opacity:.9;
   }
 `;
 
@@ -105,8 +188,8 @@ const Hero = styled.div`
 const TitleBlock = styled.div``;
 const H1 = styled.h1`
   margin:0; font-size: clamp(30px, 2.6vw + 18px, 56px); letter-spacing:-.02em;
-  background: linear-gradient(90deg, #fff, #9fdcff 40%, #b7a2ff 70%);
-  -webkit-background-clip:text; background-clip:text; color:transparent;
+  color: ${C.text};
+  text-shadow: 0 0 28px rgba(255, 90, 31, 0.12), 0 18px 80px rgba(0,0,0,0.75);
   
   @media (max-width: 768px) {
     font-size: clamp(24px, 6vw, 36px);
@@ -123,7 +206,12 @@ const Sub = styled.p`
 
 const Toolbar = styled.div`
   position: sticky; top: calc(var(--header) + 10px); z-index: 5;
-  display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items:center; backdrop-filter: blur(6px);
+  display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items:center;
+  background: linear-gradient(180deg, rgba(5,7,10,.72), rgba(5,7,10,.40));
+  border: 1px solid ${C.border};
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 22px 80px rgba(0,0,0,.45);
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -135,10 +223,9 @@ const Toolbar = styled.div`
 const GlassDivider = styled.div`
   grid-column: 1 / -1; height: 1px; margin: 2px 0 4px;
   background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.18), rgba(255,255,255,.04));
-  border: 1px solid rgba(255,255,255,.10);
+  border: 1px solid rgba(199,164,76,.14);
   border-radius: 999px;
-  box-shadow: inset 0 0 10px rgba(255,255,255,.08);
-  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 10px rgba(199,164,76,.08);
 `;
 
 const Controls = styled.div`
@@ -152,21 +239,22 @@ const Controls = styled.div`
 
 const Pill = styled.button`
   appearance: none;
-  border: 1px solid ${p => p.active ? "rgba(255,255,255,.22)" : C.border};
+  border: 1px solid ${p => p.active ? "rgba(199,164,76,.34)" : C.border};
   color: ${p => p.active ? C.text : C.subtle};
-  background: ${p => p.active ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.03)"};
+  background: ${p => p.active
+    ? "linear-gradient(180deg, rgba(199,164,76,.16), rgba(10,12,16,.65))"
+    : "linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.12))"};
   border-radius: 999px;
   padding: 10px 16px;
   font-weight: 800;
   cursor: pointer;
   transition: .15s ease;
-  backdrop-filter: blur(8px);
   box-shadow: ${p => p.active
-    ? "inset 0 0 14px rgba(255,255,255,.10), 0 6px 18px rgba(0,0,0,.35)"
+    ? "inset 0 0 14px rgba(199,164,76,.10), 0 10px 22px rgba(0,0,0,.45)"
     : "none"};
 
   &:hover { transform: translateY(-1px); }
-  &:focus-visible { outline: 2px solid ${C.neonB}; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid ${C.gold}; outline-offset: 2px; }
   
   @media (max-width: 768px) {
     padding: 8px 12px;
@@ -212,7 +300,14 @@ const Masonry = styled(Grid)`
 const Card = styled(motion.div)`
   grid-column: span 4; /* 3-up */
   display:flex; flex-direction:column; gap:10px; color:inherit; text-decoration:none;
-  background:${C.panel}; border:1px solid ${C.border}; border-radius:${C.radius}px; padding:12px; box-shadow:${C.shadow};
+  background:
+    radial-gradient(600px 280px at 18% 12%, rgba(199,164,76,.10), transparent 70%),
+    radial-gradient(560px 260px at 88% 18%, rgba(255,90,31,.08), transparent 72%),
+    linear-gradient(145deg, rgba(18,20,24,.90), rgba(6,8,12,.86));
+  border:1px solid ${C.border};
+  border-radius:${C.radius}px;
+  padding:12px;
+  box-shadow:${C.shadow};
   position:relative; overflow:hidden; cursor: zoom-in;
   &:hover .shine{ opacity:1; transform: translate3d(0,0,0) rotate(15deg); }
 `;
@@ -243,27 +338,37 @@ const Meta = styled.div` display:flex; justify-content:space-between; align-item
 const Title = styled.span`
   font-weight: 800;
   letter-spacing: .2px;
-  color: #fff;                 /* 🔥 hvit tekst */
+  color: ${C.text};
 `;
 const Badge = styled.span`
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
   color: ${C.text};
-  background: rgba(255,255,255,.06);                 /* 🔥 mørk glass */
-  border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(6px);
+  background: rgba(199,164,76,.10);
+  border: 1px solid rgba(199,164,76,.18);
   box-shadow:
-    inset 0 0 12px rgba(255,255,255,.06),
+    inset 0 0 12px rgba(199,164,76,.06),
     0 6px 20px rgba(0,0,0,.35);
 `;
 const Tags = styled.div` display:flex; gap:8px; flex-wrap:wrap; `;
-const Tag = styled.span` font-size:11px; padding:4px 8px; border-radius:999px; color:${C.subtle}; background:rgba(255,255,255,.05); border:1px solid ${C.border}; `;
+const Tag = styled.span` font-size:11px; padding:4px 8px; border-radius:999px; color:${C.subtle}; background:rgba(199,164,76,.06); border:1px solid rgba(199,164,76,.14); `;
 
 const Actions = styled.div` position:absolute; top:12px; right:12px; display:flex; gap:8px; `;
 const Ghost = styled.button`
-  appearance:none; border:1px solid ${C.border}; background:rgba(10,12,16,.6); color:${C.text};
-  padding:8px 10px; border-radius:12px; cursor:pointer; backdrop-filter: blur(6px);
+  appearance:none;
+  border:1px solid ${C.border};
+  background: linear-gradient(180deg, rgba(199,164,76,.08), rgba(0,0,0,.18));
+  color:${C.text};
+  padding:8px 10px;
+  border-radius:12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+
+  &:hover { transform: translateY(-1px); border-color: rgba(199,164,76,.34); }
 `;
 
 // ---------- Lightbox ----------
@@ -273,36 +378,64 @@ const NavArrow = styled.button`
   top: 50%;
   transform: translateY(-50%) scale(2);
   ${p => p.left ? "left: 200px;" : "right: 200px;"}
-  background: rgba(0,0,0,0.45);
-  border: none;
-  color: #fff;
-  font-size: 26px;
-  font-weight: bold;
-  width: 50px;
-  height: 50px;
+  background: rgba(10,12,16,.78);
+  border: 1px solid rgba(199,164,76,.22);
+  color: ${C.text};
+  width: 54px;
+  height: 54px;
   cursor: pointer;
-  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .2s, transform .2s;
+  transition: background .2s, transform .2s, border-color .2s;
   
 
   &:hover {
-    background: rgba(0,0,0,0.65);
+    background: rgba(0,0,0,0.72);
+    border-color: rgba(255, 90, 31, 0.35);
    
   }
 `;
 
 const Dimmer = styled(motion.div)`
-  position:fixed; inset:0; background:rgba(5,6,8,.78); backdrop-filter: blur(10px); z-index:1000; display:grid; place-items:center;
+  position:fixed;
+  inset:0;
+  background: rgba(5,7,10,.88);
+  z-index:1000;
+  display:grid;
+  place-items:center;
 `;
 const Panel = styled(motion.div)`
   width:min(94vw, 1280px); max-height:88dvh; display:grid; grid-template-rows: 1fr auto; gap: 10px;
-  background:${C.panel}; border:1px solid ${C.border}; border-radius:22px; box-shadow:${C.shadow}; overflow:hidden;
+  background: linear-gradient(145deg, rgba(18,20,24,.92), rgba(6,8,12,.90));
+  border:1px solid ${C.border};
+  border-radius:22px;
+  box-shadow:${C.shadow};
+  overflow:hidden;
 `;
 const FullImg = styled.img` width:100%; height:100%; object-fit:contain; background:#06070b; `;
 const Bar = styled.div` display:flex; justify-content:space-between; align-items:center; padding:12px 16px; `;
+
+const ViewToggle = styled.button`
+  appearance:none;
+  border: 1px solid ${C.border};
+  background: rgba(0,0,0,.18);
+  color: ${C.text};
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+
+  &[data-active="true"]{
+    border-color: rgba(199,164,76,.34);
+    background: rgba(199,164,76,.10);
+  }
+
+  &:hover{ transform: translateY(-1px); }
+`;
 
 // ---------- 3D Viewer ----------
 function Viewer3D(){
@@ -479,8 +612,8 @@ export default function GallerySection({ headerHeight }){
       <Wrap>
         <Hero>
           <TitleBlock>
-            <H1>Vintra Gallery</H1>
-            <Sub>Dark, cinematic showcase of creatures and worlds. Refine with filters or switch to the neon 3D stage.</Sub>
+            <H1>Archive of the North</H1>
+            <Sub>A weathered gallery of creatures and realms — sketched in soot, ink, and old firelight.</Sub>
           </TitleBlock>
         </Hero>
 
@@ -492,7 +625,12 @@ export default function GallerySection({ headerHeight }){
                 {c}
               </Pill>
             ))}
-            <Pill active={view==="3d"} onClick={()=> setView('3d')}>3D Stage</Pill>
+            <Pill active={view==="3d"} onClick={()=> setView('3d')}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <Icon name="stage" size={16} />
+                3D Stage
+              </span>
+            </Pill>
 
             {/* Search + Sort på samme rad til høyre */}
             <div style={{ display:'flex', gap:10, alignItems:'center' }}>
@@ -519,32 +657,14 @@ export default function GallerySection({ headerHeight }){
           {/* View toggle */}
           {view!=="3d" && (
             <div style={{ display:'flex', gap:8, justifySelf:'end' }}>
-              <button 
-                style={{ 
-                  padding: '8px 12px', 
-                  background: view==='grid' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  borderRadius: '12px', 
-                  color: '#fff', 
-                  cursor: 'pointer' 
-                }} 
-                onClick={()=> setView('grid')}
-              >
+              <ViewToggle data-active={view === 'grid'} onClick={()=> setView('grid')}>
+                <Icon name="grid" size={16} />
                 Grid
-              </button>
-              <button 
-                style={{ 
-                  padding: '8px 12px', 
-                  background: view==='masonry' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  borderRadius: '12px', 
-                  color: '#fff', 
-                  cursor: 'pointer' 
-                }} 
-                onClick={()=> setView('masonry')}
-              >
+              </ViewToggle>
+              <ViewToggle data-active={view === 'masonry'} onClick={()=> setView('masonry')}>
+                <Icon name="masonry" size={16} />
                 Masonry
-              </button>
+              </ViewToggle>
             </div>
           )}
         </Toolbar>
@@ -578,16 +698,37 @@ export default function GallerySection({ headerHeight }){
         <FullImg src={data[idx]?.img} alt={data[idx]?.title || 'Image'} />
 
         {/* 🔹 Venstre/Høyre piler */}
-        <NavArrow left onClick={()=> setIdx(i=> (i-1+Math.min(visible,data.length)) % Math.min(visible,data.length))}>
-          ←
+        <NavArrow left onClick={()=> setIdx(i=> (i-1+Math.min(visible,data.length)) % Math.min(visible,data.length))} aria-label="Previous">
+          <Icon name="left" size={18} />
         </NavArrow>
-        <NavArrow onClick={()=> setIdx(i=> (i+1) % Math.min(visible,data.length))}>
-          →
+        <NavArrow onClick={()=> setIdx(i=> (i+1) % Math.min(visible,data.length))} aria-label="Next">
+          <Icon name="right" size={18} />
         </NavArrow>
 
         {/* 🔹 Close-knapp nederst */}
         <Bar>
-          <Ghost onClick={()=> setOpen(false)}>Close ✕</Ghost>
+          <Ghost onClick={()=> setOpen(false)} aria-label="Close">
+            <Icon name="close" size={16} />
+            Close
+          </Ghost>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Ghost
+              onClick={() => {
+                const current = data[idx];
+                if (!current?.img) return;
+                const a = document.createElement("a");
+                a.href = current.img;
+                a.download = `${current.title || "art"}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+              aria-label="Download"
+            >
+              <Icon name="download" size={16} />
+              Download
+            </Ghost>
+          </div>
         </Bar>
       </Panel>
     </Dimmer>
@@ -611,8 +752,20 @@ function GridItem({ it, i, onOpen }){
       whileHover={{ y: -3 }} whileTap={{ scale: .985 }} aria-label={`Open ${it.title}`}
     >
       <Actions className="actions">
-        <Ghost onClick={(e)=>{ e.stopPropagation(); navigator.clipboard?.writeText(window.location.href + `#${it.id}`); }}>Copy Link</Ghost>
-        <Ghost as="a" href={it.img} download onClick={e=> e.stopPropagation()}>Download</Ghost>
+        <Ghost
+          onClick={(e)=>{
+            e.stopPropagation();
+            navigator.clipboard?.writeText(window.location.href + `#${it.id}`);
+          }}
+          aria-label="Copy link"
+        >
+          <Icon name="link" size={16} />
+          Link
+        </Ghost>
+        <Ghost as="a" href={it.img} download onClick={e=> e.stopPropagation()} aria-label="Download">
+          <Icon name="download" size={16} />
+          Save
+        </Ghost>
       </Actions>
       <Thumb>
         <LazyImg src={it.img} alt={it.title} />

@@ -42,6 +42,7 @@ const HeaderContainer = styled.header`
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 1000;
+  height: ${({ $isScrolled }) => ($isScrolled ? '70px' : '100px')};
   padding: 1.5rem 4rem;
   display: flex;
   justify-content: space-between;

@@ -263,7 +263,7 @@ export default function VotePage() {
           <img className="center-rune" src={rune} alt="Rune" />
         </div>
 
-        <h2 className="news-section-title">Latest Updates</h2>
+        <h2 className="news-section-title">Saga of the Woods</h2>
 
         <div className="card-grid">
           <div className="large-card base-card">
@@ -273,14 +273,14 @@ export default function VotePage() {
             />
             <div className="card-content large">
               <div>
-                <span className="card-date">June 20, 2025</span>
-                <h3 className="card-title large">V.O.T.E Update</h3>
+                <span className="card-date">Saga Entry — June 20, 2025</span>
+                <h3 className="card-title large">Carved Into the Bark of Time</h3>
                 <p className="card-description large" style={{ fontFamily: 'none' }}>
                   We are currently working on the games map, animations, characters and story.
                   Check out our Art gallery where you can explore some of the characters and destinations we are currently making.
                 </p>
               </div>
-              <button className="card-button">Learn More</button>
+              <button className="card-button">Read the Entry</button>
             </div>
           </div>
 
@@ -293,13 +293,13 @@ export default function VotePage() {
               <div className="card-content">
                 <div>
                   <span className="card-date">V.O.T.E</span>
-                  <h3 className="card-title">Art Gallery</h3>
+                  <h3 className="card-title">The Archives</h3>
                   <p className="card-description" style={{ fontFamily: 'none' }}>
                     Check out our art gallery of the landscape and creatures you might see in the game.
                   </p>
                 </div>
                 <Link to="/artwork" style={{ textDecoration: 'none' }}>
-                  <button className="card-button">Explore</button>
+                  <button className="card-button">Enter the Archives</button>
                 </Link>
               </div>
             </div>
@@ -319,7 +319,7 @@ export default function VotePage() {
                 </div>
                 <button className="card-button">
                   <a href="https://games.vintrastudio.com/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    Play Now
+                    Enter the Realm
                   </a>
                 </button>
               </div>
