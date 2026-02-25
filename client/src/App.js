@@ -16,6 +16,7 @@ import Login       from './pages/login';
 import Artwork     from './pages/artwork';
 import PostLogin   from './pages/PostLogin';
 import BugReportPage from './pages/BugReportPage';
+import TestLanding from './pages/TestLanding';
 
 // NEW: Web development promo + estimator page
 // Make sure this file exists, e.g. src/pages/WebDevPromoPage.jsx
@@ -87,6 +88,7 @@ function App() {
           <Route path="/careers"        element={<MainLayout><Careers /></MainLayout>} />
           <Route path="/artwork"        element={<MainLayout><Artwork /></MainLayout>} />
           <Route path="/post-login"     element={<MainLayout><PostLogin /></MainLayout>} />
+          <Route path="/test-landing"    element={<TestLanding />} />
           
           {/* NEW route: Websites promo + estimator */}
           <Route
