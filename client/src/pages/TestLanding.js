@@ -1,31 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import React from 'react';
 import GlassOrbAvatar from '../components/GlassOrbAvatar';
-
-const CONFIG = {
-  bubbleCount: 80,
-  minRadius: 6,
-  maxRadius: 26,
-  minSpeed: 0.2,
-  maxSpeed: 0.9,
-  driftStrength: 0.3,
-};
-
-const createBubble = (width, height) => {
-  const radius = Math.random() * (CONFIG.maxRadius - CONFIG.minRadius) + CONFIG.minRadius;
-
-  return {
-    x: Math.random() * width,
-    y: height + radius + Math.random() * height * 0.3,
-    radius,
-    speed: Math.random() * (CONFIG.maxSpeed - CONFIG.minSpeed) + CONFIG.minSpeed,
-    drift: (Math.random() - 0.5) * CONFIG.driftStrength,
-    driftPhase: Math.random() * Math.PI * 2,
-    hue: Math.floor(Math.random() * 40) + 190,
-  };
-};
 
 const styles = {
   container: {
