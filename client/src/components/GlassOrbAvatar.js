@@ -8,8 +8,9 @@ const GlassOrbAvatar = ({
   className,
   size = 40,
   skin = 'default', // 'default' | 'juleskin'
+  glyph = 'A',
 }) => {
-  const [ setIsHovered] = useState(false); // only for React if you need it elsewhere
+  const [isHovered, setIsHovered] = useState(false); // only for React if you need it elsewhere
   const mouseRef = useRef({ x: null, y: null });
   const hoveredRef = useRef(false);
   const colorStateRef = useRef('idle');
@@ -173,62 +174,71 @@ const GlassOrbAvatar = ({
       b: Math.round(mix(a.b, b.b, t)),
     });
 
-    // -----------------------------
-    // Rune shape (Thurisaz)
-    // -----------------------------
-    const sampleLine = (ax, ay, bx, by, steps) => {
-      const pts = [];
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        pts.push({ x: ax + (bx - ax) * t, y: ay + (by - ay) * t });
-      }
-      return pts;
-    };
+// -----------------------------
+// Glyph -> points (from font, precise & customizable)
+// -----------------------------
+const buildGlyphPoints = (char) => {
+  const off = document.createElement('canvas');
+  const offSize = 220; // higher = more detail
+  off.width = offSize;
+  off.height = offSize;
 
-    // -----------------------------
-// -----------------------------
-// Rune shape (ᚨ / Ansuz) - SOLID (no gaps)
-// stem + two right-leaning arms, with stroke-fill thickness
-// -----------------------------
-const buildAnsuzPoints = () => {
+  const octx = off.getContext('2d');
+  if (!octx) return [{ x: 0, y: 0 }];
+
+  // clear
+  octx.clearRect(0, 0, offSize, offSize);
+
+  // style: white glyph on black
+  octx.fillStyle = 'black';
+  octx.fillRect(0, 0, offSize, offSize);
+
+  // choose a font that looks good (change freely)
+  // try: 'Cinzel', 'Trajan Pro', 'Georgia', 'Times New Roman', etc.
+  const fontSize = 170;
+  octx.font = `900 ${fontSize}px Times New Roman`;
+  octx.textAlign = 'center';
+  octx.textBaseline = 'middle';
+  octx.fillStyle = 'white';
+
+  // draw glyph centered
+  octx.fillText(char?.slice(0, 1) || 'A', offSize / 2, offSize / 2 + 6);
+
+  // read pixels
+  const img = octx.getImageData(0, 0, offSize, offSize).data;
+
+  // sampling settings (tweak for density)
+  const step = 2;        // lower = more points
+  const threshold = 45;  // alpha/brightness threshold
   const pts = [];
 
-  // helper: add thickness by stamping offsets around each sampled point
-  const addStroke = (linePts, dxs, dys) => {
-    const out = [];
-    for (const p of linePts) {
-      for (const dx of dxs) for (const dy of dys) out.push({ x: p.x + dx, y: p.y + dy });
+  for (let y = 0; y < offSize; y += step) {
+    for (let x = 0; x < offSize; x += step) {
+      const i = (y * offSize + x) * 4;
+      const r = img[i];
+      const g = img[i + 1];
+      const b = img[i + 2];
+
+      // since background is black and text is white:
+      const brightness = (r + g + b) / 3;
+      if (brightness > 255 - threshold) {
+        // normalize to -1..1 space
+        const nx = (x / offSize) * 2 - 1;
+        const ny = (y / offSize) * 2 - 1;
+
+        // flip Y to match your coordinate expectations
+        const glyphScale = 1.5;
+        pts.push({ x: nx * glyphScale, y: ny * glyphScale });
+      }
     }
-    return out;
-  };
+  }
 
-  // left stem
-  const xStem = -0.35;
-  const stem = sampleLine(xStem, -0.85, xStem, 0.85, 140);
-
-  // arms (two diagonals to the right)
-  const topArm = sampleLine(xStem, -0.35, 0.55, -0.60, 110);
-  const midArm = sampleLine(xStem, 0.05, 0.45, -0.12, 95);
-
-  // stroke thickness (tune these for fill vs perf)
-  // (more offsets = more filled = fewer gaps)
-  const stemDX = [-0.08, -0.05, -0.025, 0, 0.025, 0.05, 0.08];
-  const stemDY = [-0.03, 0, 0.03];
-
-  const armDX = [-0.05, -0.025, 0, 0.025, 0.05];
-  const armDY = [-0.03, 0, 0.03];
-
-  pts.push(
-    ...addStroke(stem, stemDX, stemDY),
-    ...addStroke(topArm, armDX, armDY),
-    ...addStroke(midArm, armDX, armDY)
-  );
-
-  return pts;
+  // fallback
+  return pts.length ? pts : [{ x: 0, y: 0 }];
 };
 
 // swap rune points source:
-const runeNorm = buildAnsuzPoints();
+const runeNorm = buildGlyphPoints(glyph);
 
     const runeTargets = () => {
       const radius = centerRadius * 0.78;
@@ -308,14 +318,27 @@ const runeNorm = buildAnsuzPoints();
   return arr;
 };
     const initGoldDots = () => {
-  const base = 400;
-  const count = Math.max(260, Math.min(900, Math.floor(base * (sizePx / 420))));
-
   goldTargets = runeTargets();
 
-  // spread indices across the WHOLE rune, then shuffle so it doesn't look striped
+  // hvor "kompleks" glyphen er (antall tilgjengelige target-punkter)
+  const complexity = goldTargets.length;
+
+  // styring:
+  const minDots = 160;     // aldri under dette (så ikke tomt)
+  const maxDots = 1250;     // aldri over dette (performance)
+  const density = 0.45;    // dots per target-point (0.2–0.7 er typisk bra)
+
+  // skaler også litt med størrelse, så større orb får litt flere dots:
+  const sizeFactor = Math.max(0.85, Math.min(1.35, sizePx / 420));
+
+  const count = Math.max(
+    minDots,
+    Math.min(maxDots, Math.floor(complexity * density * sizeFactor))
+  );
+
+  // spread indices across the WHOLE rune, then shuffle
   const idx = Array.from({ length: count }, (_, i) =>
-    Math.floor((i / (count - 1)) * (goldTargets.length - 1))
+    Math.floor((i / Math.max(1, count - 1)) * Math.max(1, goldTargets.length - 1))
   );
   shuffleInPlace(idx);
 
@@ -333,7 +356,6 @@ const runeNorm = buildAnsuzPoints();
       ringRadius: rr,
       ringSpeed: (Math.random() * 0.010 + 0.004) * (Math.random() < 0.5 ? 1 : -1),
 
-      // IMPORTANT: now covers full rune (including arms)
       runeIndex: idx[i],
     };
   });
@@ -402,7 +424,8 @@ const runeNorm = buildAnsuzPoints();
       ctx.shadowColor = 'transparent';
 
       const goldRGB = { r: 255, g: 196, b: 70 };
-      const dotR = mix(3.0, 5.2, goldBlend) * (sizePx / 500);
+      const goldDotScale = 0.9;
+      const dotR = mix(3.0, 5.2, goldBlend) * (sizePx / 500) * goldDotScale;
 
       for (const d of goldDots) {
         const ringRGB = getRingColorRGB(d.runeIndex * 13);
@@ -582,7 +605,7 @@ const runeNorm = buildAnsuzPoints();
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       ro.disconnect();
     };
-  }, [colorPalettes]);
+  }, [colorPalettes, glyph]);
 
   const portalBackground =
     'radial-gradient(circle at 50% 50%, ' +

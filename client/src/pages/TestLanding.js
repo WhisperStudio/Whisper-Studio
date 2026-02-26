@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import GlassOrbAvatar from '../components/GlassOrbAvatar';
 
 const styles = {
@@ -30,13 +30,21 @@ const styles = {
 };
 
 function TestLanding() {
+  const [glyph, setGlyph] = useState("A");
+
   return (
+    
     <div style={styles.container}>
+      <input
+        value={glyph}
+        onChange={(e) => setGlyph(e.target.value.toUpperCase().slice(0, 1))}
+        maxLength={1}
+      />
       <div style={styles.avatarContainer}>
         {/*<GlassOrbAvatar size={400} />*/}
       </div>
       <div style={styles.smallAvatarContainer}>
-        <GlassOrbAvatar size={80} />
+        <GlassOrbAvatar size={100} glyph={glyph}/>
       </div>
     </div>
   );
