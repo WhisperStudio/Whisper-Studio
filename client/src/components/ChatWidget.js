@@ -10,7 +10,7 @@ export function ChatWidget() {
 
     script.src = 'https://chat.vintrastudio.com/api/widget.js';
 
-    script.setAttribute('data-chatbot-id', '716f8b0b-7008-403f-876b-ecab719aee02');
+    script.setAttribute('data-chatbot-id', '0ec5b8f2-42fd-4029-90e8-0c5d6d98bc98');
 
     script.async = true;
 
