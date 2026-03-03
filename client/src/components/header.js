@@ -269,7 +269,7 @@ const ScrollTopButton = styled.button`
 /* ===================== VINTRA/STUDIO <-> V overgang ===================== */
 
 /* Animasjoner for V */
-const spinGrow = keyframes`
+const spinV = keyframes`
   from { 
     opacity: 0; 
     transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
@@ -280,7 +280,7 @@ const spinGrow = keyframes`
   }
 `;
 
-const spinBack = keyframes`
+const spinOutV = keyframes`
   from { 
     opacity: 1; 
     transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
@@ -290,19 +290,27 @@ const spinBack = keyframes`
     transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
   }
 `;
+
+const AnimText = keyframes`
+  from { 
+    opacity: 1; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
+    visibility: visible;
+  }
+  to { 
+    opacity: 0; 
+    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
+    visibility: hidden;
+  }
+`;
+
 
 /* VINTRA bilde - forsvinner og kommer tilbake */
 const VintraImg = styled.img`
   height: 50px;
   margin-bottom: 10px;
-  opacity: ${({ $isScrolled }) => ($isScrolled ? 0 : 1)};
-  visibility: ${({ $isScrolled }) => ($isScrolled ? 'hidden' : 'visible')};
-  transition: 
-    opacity ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
-    visibility 0ms ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
-  transition-delay: ${({ $isScrolled }) => ($isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
   pointer-events: none;
-  
+  animation: ${AnimText} ${TIMING.LOGO_FADE_IN}ms ease-in-out;
   @media (max-width: 768px) {
     display: none;
   }
@@ -344,13 +352,13 @@ const VoteVImg = styled.img`
       const totalDelay = TIMING.LOGO_FADE_OUT + TIMING.V_DELAY;
       return css`
         visibility: visible;
-        animation: ${spinGrow} ${TIMING.V_SPIN_IN}ms ease-out ${totalDelay}ms forwards;
+        animation: ${spinV} ${TIMING.V_SPIN_IN}ms ease-out ${totalDelay}ms forwards;
       `;
     } else if ($hasScrolledFromTop) {
       // Scrollet opp - V forsvinner FØRST, så kommer logoene
       return css`
         visibility: visible;
-        animation: ${spinBack} ${TIMING.V_SPIN_OUT}ms ease-in forwards;
+        animation: ${spinOutV} ${TIMING.V_SPIN_OUT}ms ease-in backwards;
       `;
     }
     return css`
