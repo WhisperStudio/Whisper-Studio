@@ -298,12 +298,6 @@ const LetterImg = styled.img`
   }
 `;
 
-/* (valgfritt) holder plassen så layout ikke “hopper” når logo er ute */
-const LogoSpacer = styled.div`
-  width: 1px;
-  height: 55px;
-`;
-
 /* ===================== Component ===================== */
 
 const Header = () => {
