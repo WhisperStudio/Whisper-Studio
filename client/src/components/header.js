@@ -3,10 +3,6 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 
-// Fjern disse (vi skjuler gammel logo)
-// import Vintra from '../images/VINTRA.png';
-// import Studio from '../images/STUDIO.png';
-
 import Vote_V from '../images/Vote_V.png';
 import Vote_I from '../images/Vote-I.png';
 import Vote_N from '../images/Vote-N.png';
@@ -53,7 +49,7 @@ const HeaderContainer = styled.header`
   -webkit-backdrop-filter: blur(8px);
   transition: all 0.3s ease-in-out;
 
-  @media (max-width: 768px) { 
+  @media (max-width: 768px) {
     padding: 1rem 2rem;
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(10px);
@@ -96,6 +92,7 @@ const NavMenu = styled.nav`
   @media (max-width: 768px) { display: none; }
 `;
 
+/* Underline animations */
 const slideInFromLeft = keyframes`
   0%   { transform: scaleX(0); transform-origin: left center; }
   100% { transform: scaleX(1); transform-origin: left center; }
@@ -245,7 +242,7 @@ const ScrollTopButton = styled.button`
   }
 `;
 
-/* ===================== NEW: Letter logo (VINTRA / STUDIO) ===================== */
+/* ===================== Letter logo animations ===================== */
 
 const wordIn = keyframes`
   from { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(2px); }
@@ -265,22 +262,27 @@ const LetterLogoWrap = styled.div`
   pointer-events: none;
 `;
 
-/* Radene er relative, bokstavene er absolute => ingen “gap” mellom bokstaver */
+/* ✅ Nå kan du flytte hele raden med $y */
 const LetterRow = styled.div`
   position: relative;
-  height: ${({ $row }) => ($row === 0 ? '42px' : '42px')};
+  height: 42px;
   width: ${({ $width }) => `${$width}px`};
   line-height: 0;
+  transform: translateY(${({ $y }) => `${$y ?? 0}px`});
 `;
 
+/* ✅ Studio kan flyttes både X og Y */
 const StudioIndent = styled.div`
-  transform: translateX(22px); /* STUDIO litt mer til høyre enn VINTRA */
+  transform: translate(${({ $x }) => `${$x ?? 0}px`}, ${({ $y }) => `${$y ?? 0}px`});
 `;
 
 const LetterImg = styled.img`
   position: absolute;
   left: ${({ $x }) => `${$x}px`};
+
+  /* ✅ Bokstavens egen top-offset (kombineres med row sin translateY) */
   top: ${({ $y }) => `${$y ?? 0}px`};
+
   height: ${({ $height }) => ($height ? `${$height}px` : '36px')};
   width: auto;
   display: block;
@@ -306,9 +308,8 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
 
-  // styrer om bokstav-logo skal animere inn/ut
   const [logoPhase, setLogoPhase] = useState('enter'); // 'enter' | 'exit'
-  const [logoCycle, setLogoCycle] = useState(0);       // for å re-trigger animasjon
+  const [logoCycle, setLogoCycle] = useState(0);
 
   const [scrollTopPortalEl] = useState(() => {
     const el = document.createElement('div');
@@ -316,10 +317,8 @@ const Header = () => {
     return el;
   });
 
-  // Desktop hover state - using refs for independent animations
   const navItemRefs = useRef({});
 
-  // Bokstav-mapping
   const letterMap = {
     V: Vote_V,
     I: Vote_I,
@@ -333,57 +332,112 @@ const Header = () => {
     O: Vote_O,
   };
 
-  const topWord = ['V', 'I', 'N', 'T', 'R', 'A'];      // VINTRA
-  const bottomWord = ['S', 'T', 'U', 'D', 'I', 'O'];   // STUDIO
+  const topWord = ['V', 'I', 'N', 'T', 'R', 'A'];
+  const bottomWord = ['S', 'T', 'U', 'D', 'I', 'O'];
 
-  /* ========= Positioning / Kerning / Sizing ========= */
+  /* ========= YOU CAN TWEAK THESE ========= */
 
-  // Base "advance" (hvor mye hver bokstav flyttes videre)
-  const ADVANCE = 26; // juster for tett/luftig spacing
+  // ✅ Flytt hele VINTRA-raden opp/ned
+  const VINTRA_ROW_Y = 20;
 
-  // Kerning/offset per bokstav (fine-tuning). Positive = mer til høyre.
-  const KERN_TOP = { V: 0, I: -2, N: 1, T: 0, R: 0, A: 1 };
-  const KERN_BOT = { S: 0, T: 0, U: 1, D: 1, I: -2, O: 4 }; // O litt mer til høyre
+  // ✅ Flytt hele STUDIO-raden opp/ned (i tillegg til indent)
+  const STUDIO_ROW_Y = 6;
 
-  // Egenspesifikk størrelse + micro-pos for spesifikke bokstaver (V og O)
+  // ✅ Flytt hele STUDIO-blokken til høyre/opp/ned
+  const STUDIO_SHIFT_X = 114;
+  const STUDIO_SHIFT_Y = 0;
+
+  // ✅ Tracking (negativ = tettere)
+  const TRACKING_TOP = -10;
+  const TRACKING_BOT = -10;
+
+  // ✅ Kerning (x justering)
+  const KERN_TOP = { V: 0, I: -14, N: -20, T: -33, R: -44, A: -45 };
+  const KERN_BOT = { S: 0, T: -6, U: -8, D: -10, I: -20, O: -30 };
+
+  // ✅ Bokstav-spesifikk størrelse + x/y
+  const DEFAULT_H = 36;
   const SPECIAL = {
-    V: { h: 42, y: -2, x: 1 },  // større V + litt til høyre + litt opp
-    O: { h: 40, y: 0,  x: 3 },  // større O + litt til høyre
+    V: { h: 64, y: -10, x: 2 },
+    O: { h: 44, y: 0, x: 0 },
+    I: {h: 32, y: 6},
+    N: {h: 33, y: 6},
+    T: {h: 48, y: -8},
+    R: {h: 33, y:6},
+    A: {y: 3},
+
+    // Eksempel: juster topp per bokstav (legg til flere her)
+    // I: { h: 36, y: 2, x: 0 },
+    // T: { h: 36, y: -1, x: 0 },
   };
 
-  const computePositions = (letters, kernMap) => {
+  // ✅ Alternativ: egen Y-map (hvis du vil utenfor SPECIAL)
+  const Y_TOP = { /* V: -2, I: 0, ... */ };
+  const Y_BOT = { /* S: 0, T: 1, ... */ };
+
+  const [measures, setMeasures] = useState({
+    top: Array(topWord.length).fill(0),
+    bot: Array(bottomWord.length).fill(0),
+  });
+
+  const handleMeasure = (row, index, ch, e) => {
+    const img = e.currentTarget;
+
+    const spec = SPECIAL[ch];
+    const h = spec?.h ?? DEFAULT_H;
+
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const scaledW = Math.round(ratio * h);
+
+    setMeasures(prev => {
+      const next = { ...prev, [row]: [...prev[row]] };
+      next[row][index] = scaledW;
+      return next;
+    });
+  };
+
+  const computePositionsMeasured = (letters, widths, kernMap, tracking, yMap) => {
     let x = 0;
-    return letters.map((ch) => {
-      const kern = kernMap[ch] ?? 0;
+
+    return letters.map((ch, i) => {
       const spec = SPECIAL[ch];
-      const pos = {
-        ch,
-        x: x + kern + (spec?.x ?? 0),
-        y: spec?.y ?? 0,
-        h: spec?.h ?? 36,
-      };
-      x += ADVANCE;
+      const h = spec?.h ?? DEFAULT_H;
+
+      // ✅ bokstavens y kommer fra SPECIAL.y + evt yMap
+      const y = (spec?.y ?? 0) + (yMap?.[ch] ?? 0);
+
+      const kern = kernMap[ch] ?? 0;
+      const extraX = spec?.x ?? 0;
+
+      const pos = { ch, x: x + kern + extraX, y, h };
+
+      const w = widths[i] || 22; // fallback før vi har målt
+      x += w + tracking;
+
       return pos;
     });
   };
 
-  const topPositions = computePositions(topWord, KERN_TOP);
-  const botPositions = computePositions(bottomWord, KERN_BOT);
+  const topPositions = computePositionsMeasured(topWord, measures.top, KERN_TOP, TRACKING_TOP, Y_TOP);
+  const botPositions = computePositionsMeasured(bottomWord, measures.bot, KERN_BOT, TRACKING_BOT, Y_BOT);
 
-  // Total bredde for rad-container (så alt får plass)
-  const ROW_WIDTH = (Math.max(topWord.length, bottomWord.length) * ADVANCE) + 60;
+  const ROW_WIDTH =
+    Math.max(
+      topPositions.length
+        ? (topPositions[topPositions.length - 1].x + (measures.top[topWord.length - 1] || 40))
+        : 260,
+      botPositions.length
+        ? (botPositions[botPositions.length - 1].x + (measures.bot[bottomWord.length - 1] || 40))
+        : 260
+    ) + 40;
 
   /* ===================== Effects ===================== */
 
-  // Reset scroll state when navigating to new pages
   useEffect(() => {
     setIsScrolled(false);
     setShowTop(false);
-
-    // På ny side: spill intro på nytt
     setLogoPhase('enter');
     setLogoCycle(c => c + 1);
-
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -394,7 +448,6 @@ const Header = () => {
     };
   }, [scrollTopPortalEl]);
 
-  // Init + scroll
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
@@ -402,9 +455,6 @@ const Header = () => {
       setIsScrolled(y >= 50);
       setShowTop(y >= 200);
 
-      // Scroll-trigger for logo:
-      // - ned (>=50): exit
-      // - helt opp (0): enter
       if (y >= 50 && logoPhase !== 'exit') {
         setLogoPhase('exit');
         setLogoCycle(c => c + 1);
@@ -419,7 +469,6 @@ const Header = () => {
       setIsScrolled(y >= 50);
       setShowTop(y >= 200);
 
-      // På refresh mid-scroll: hold logo i exit (uten å trigge intro)
       if (y >= 50) {
         setLogoPhase('exit');
       } else {
@@ -450,7 +499,6 @@ const Header = () => {
     { href: '/contact',             label: 'Support' },
   ];
 
-  // Uavhengige underline animasjoner
   const handleMouseEnter = (idx) => {
     const el = navItemRefs.current[idx];
     if (!el) return;
@@ -483,10 +531,9 @@ const Header = () => {
     }
   };
 
-  // Delays: vi staggers litt for mer “film”
   const letterDelay = (rowIdx, letterIdx) => {
-    const base = rowIdx === 0 ? 0 : 120; // bottom word starter litt etter
-    const step = 55;                     // avstand mellom bokstaver i tid
+    const base = rowIdx === 0 ? 0 : 120;
+    const step = 55;
     return base + letterIdx * step;
   };
 
@@ -502,7 +549,8 @@ const Header = () => {
           <Logodiv>
             <LogoStage>
               <LetterLogoWrap aria-label="Vintra Studio">
-                <LetterRow $row={0} $width={ROW_WIDTH}>
+                {/* ✅ VINTRA row with adjustable Y */}
+                <LetterRow $width={ROW_WIDTH} $y={VINTRA_ROW_Y}>
                   {topPositions.map((p, i) => (
                     <LetterImg
                       key={`top-${logoCycle}-${p.ch}-${i}`}
@@ -514,12 +562,14 @@ const Header = () => {
                       $y={p.y}
                       $height={p.h}
                       draggable={false}
+                      onLoad={(e) => handleMeasure('top', i, p.ch, e)}
                     />
                   ))}
                 </LetterRow>
 
-                <StudioIndent>
-                  <LetterRow $row={1} $width={ROW_WIDTH}>
+                {/* ✅ STUDIO block with adjustable X and Y + row Y */}
+                <StudioIndent $x={STUDIO_SHIFT_X} $y={STUDIO_SHIFT_Y}>
+                  <LetterRow $width={ROW_WIDTH} $y={STUDIO_ROW_Y}>
                     {botPositions.map((p, i) => (
                       <LetterImg
                         key={`bot-${logoCycle}-${p.ch}-${i}`}
@@ -531,14 +581,12 @@ const Header = () => {
                         $y={p.y}
                         $height={p.h}
                         draggable={false}
+                        onLoad={(e) => handleMeasure('bot', i, p.ch, e)}
                       />
                     ))}
                   </LetterRow>
                 </StudioIndent>
               </LetterLogoWrap>
-
-              {/* Om du vil holde litt plass når logo er ute (valgfritt) */}
-              {/* {logoPhase === 'exit' && <LogoSpacer />} */}
             </LogoStage>
           </Logodiv>
         </Logo>
