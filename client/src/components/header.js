@@ -2,39 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
-import Vintra from '../images/VINTRA.png';
-import Studio from '../images/STUDIO.png';
-import VOTE_V from '../images/Vote_V.png';
+
+// Fjern disse (vi skjuler gammel logo)
+// import Vintra from '../images/VINTRA.png';
+// import Studio from '../images/STUDIO.png';
+
+import Vote_V from '../images/Vote_V.png';
+import Vote_I from '../images/Vote-I.png';
+import Vote_N from '../images/Vote-N.png';
+import Vote_T from '../images/Vote-T.png';
+import Vote_R from '../images/Vote-R.png';
+import Vote_A from '../images/Vote-A.png';
+
+import Vote_S from '../images/Vote-S.png';
+import Vote_U from '../images/Vote-U.png';
+import Vote_D from '../images/Vote-D.png';
+import Vote_O from '../images/Vote-O.png';
 
 import { StoneArrow } from './stonearrow';
-
-/* ===================== TIMING CONSTANTS ===================== */
-/* ENKLE TIMINGS - Juster disse for å endre animasjonshastighet */
-const TIMING = {
-  // Fase 1: VINTRA og STUDIO forsvinner
-  LOGO_FADE_OUT: 500,           // Hvor raskt VINTRA/STUDIO forsvinner (ms)
-  
-  // Fase 2: Pause før V kommer
-  V_DELAY: 50,                 // Pause mellom fade out og V animasjon (ms)
-  
-  // Fase 3: V kommer inn
-  V_SPIN_IN: 700,               // Hvor raskt V spinner inn (ms)
-  
-  // Fase 4: Tilbake - V forsvinner
-  V_SPIN_OUT: 700,              // Hvor raskt V spinner ut (ms)
-  
-  // Fase 5: Pause før logoer kommer tilbake
-  LOGO_DELAY_BACK: 150,         // Pause før VINTRA/STUDIO kommer tilbake (ms)
-  
-  // Fase 6: VINTRA og STUDIO kommer tilbake
-  LOGO_FADE_IN: 700,            // Hvor raskt VINTRA/STUDIO kommer tilbake (ms)
-};
-
-/* Justér V-ens posisjon (i px) */
-const V_POSITION = {
-  X: -14,  // Horisontal offset
-  Y: -2,   // Vertikal offset
-};
 
 /* ===================== Header Shell ===================== */
 
@@ -47,8 +32,7 @@ const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
-  /* Hide header when artwork modal is open */
+
   body[data-artwork-modal-open="true"] & {
     opacity: 0 !important;
     visibility: hidden !important;
@@ -56,8 +40,7 @@ const HeaderContainer = styled.header`
     transform: translateY(-100%) !important;
     transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
   }
-  
-  /* Solid background for nav area */
+
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 1) 0%,
@@ -65,14 +48,11 @@ const HeaderContainer = styled.header`
     rgba(0, 0, 0, 0.8) 85%,
     rgba(0, 0, 0, 0) 100%
   );
-  
-  /* Blur effect for smooth fade */
+
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  
-  /* Smooth transition */
   transition: all 0.3s ease-in-out;
-  
+
   @media (max-width: 768px) { 
     padding: 1rem 2rem;
     background: rgba(0, 0, 0, 0.95);
@@ -98,10 +78,10 @@ const Logodiv = styled.div`
   z-index: 0;
 `;
 
-/* A liten scene slik at V-en kan ligge absolutti forhold til logoen */
+/* Scene for logo-elements */
 const LogoStage = styled.div`
   position: relative;
-  height: 55px;            /* høyeste av de tre elementene */
+  height: 55px;
   display: flex;
   align-items: flex-end;
 `;
@@ -116,7 +96,6 @@ const NavMenu = styled.nav`
   @media (max-width: 768px) { display: none; }
 `;
 
-/* Underline animations */
 const slideInFromLeft = keyframes`
   0%   { transform: scaleX(0); transform-origin: left center; }
   100% { transform: scaleX(1); transform-origin: left center; }
@@ -223,11 +202,11 @@ const MobileNavItem = styled.a`
   position: relative;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  
+
   &:last-of-type {
     border-bottom: none;
   }
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -266,116 +245,63 @@ const ScrollTopButton = styled.button`
   }
 `;
 
-/* ===================== VINTRA/STUDIO <-> V overgang ===================== */
+/* ===================== NEW: Letter logo (VINTRA / STUDIO) ===================== */
 
-/* Animasjoner for V */
-const spinV = keyframes`
-  from { 
-    opacity: 0; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
-  }
+const wordIn = keyframes`
+  from { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
 `;
 
-const spinOutV = keyframes`
-  from { 
-    opacity: 1; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
-  }
-  to { 
-    opacity: 0; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
-  }
+const wordOut = keyframes`
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.98); filter: blur(2px); }
 `;
 
-const AnimText = keyframes`
-  from { 
-    opacity: 1; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(0deg) scale(1); 
-    visibility: visible;
-  }
-  to { 
-    opacity: 0; 
-    transform: translate(${V_POSITION.X}px, ${V_POSITION.Y}px) rotate(360deg) scale(1.25); 
-    visibility: hidden;
-  }
-`;
-
-
-/* VINTRA bilde - forsvinner og kommer tilbake */
-const VintraImg = styled.img`
-  height: 50px;
-  margin-bottom: 10px;
+const LetterLogoWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
   pointer-events: none;
-  animation: ${AnimText} ${TIMING.LOGO_FADE_IN}ms ease-in-out;
-  @media (max-width: 768px) {
-    display: none;
-  }
 `;
 
-/* STUDIO bilde - forsvinner og kommer tilbake */
-const StudioImg = styled.img`
-  height: 45px;
-  opacity: ${({ $isScrolled }) => ($isScrolled ? 0 : 1)};
-  visibility: ${({ $isScrolled }) => ($isScrolled ? 'hidden' : 'visible')};
-  transition: 
-    opacity ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms ease-in-out,
-    visibility 0ms ${({ $isScrolled }) => ($isScrolled ? TIMING.LOGO_FADE_OUT : TIMING.LOGO_FADE_IN)}ms;
-  transition-delay: ${({ $isScrolled }) => ($isScrolled ? '0ms' : `${TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK}ms`)};
-  pointer-events: none;
-  
-  @media (max-width: 768px) {
-    display: none;
-  }
+/* Radene er relative, bokstavene er absolute => ingen “gap” mellom bokstaver */
+const LetterRow = styled.div`
+  position: relative;
+  height: ${({ $row }) => ($row === 0 ? '42px' : '42px')};
+  width: ${({ $width }) => `${$width}px`};
+  line-height: 0;
 `;
 
-/* V-en som spinner og skaleres - kommer først etter logoene er borte */
-const VoteVImg = styled.img`
+const StudioIndent = styled.div`
+  transform: translateX(22px); /* STUDIO litt mer til høyre enn VINTRA */
+`;
+
+const LetterImg = styled.img`
   position: absolute;
-  left: 0;
-  top: 0;
-  height: 55px;
-  pointer-events: none;
+  left: ${({ $x }) => `${$x}px`};
+  top: ${({ $y }) => `${$y ?? 0}px`};
+  height: ${({ $height }) => ($height ? `${$height}px` : '36px')};
+  width: auto;
+  display: block;
+  opacity: 0;
   transform-origin: center;
 
-  /* Default: completely hidden */
-  opacity: 0;
-  visibility: hidden;
-
-  /* Animasjonslogikk */
-  ${({ $isScrolled, $hasScrolledFromTop }) => {
-    if ($isScrolled && $hasScrolledFromTop) {
-      // Scrollet ned - V kommer inn ETTER logoene er borte
-      const totalDelay = TIMING.LOGO_FADE_OUT + TIMING.V_DELAY;
-      return css`
-        visibility: visible;
-        animation: ${spinV} ${TIMING.V_SPIN_IN}ms ease-out ${totalDelay}ms forwards;
-      `;
-    } else if ($hasScrolledFromTop) {
-      // Scrollet opp - V forsvinner FØRST, så kommer logoene
-      return css`
-        visibility: visible;
-        animation: ${spinOutV} ${TIMING.V_SPIN_OUT}ms ease-in backwards;
-      `;
-    }
-    return css`
-      opacity: 0;
-      visibility: hidden;
-      animation: none;
-    `;
-  }}
+  ${({ $phase, $delay }) =>
+    $phase === 'enter'
+      ? css`animation: ${wordIn} 650ms cubic-bezier(.2,.8,.2,1) ${$delay}ms forwards;`
+      : css`animation: ${wordOut} 450ms cubic-bezier(.4,0,.2,1) ${$delay}ms forwards;`}
 
   @media (max-width: 768px) {
-    position: static;
-    height: 45px;
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: none !important;
-    transform: none !important;
+    height: ${({ $height }) =>
+      $height ? `${Math.max(16, Math.round($height * 0.6))}px` : '18px'};
   }
+`;
+
+/* (valgfritt) holder plassen så layout ikke “hopper” når logo er ute */
+const LogoSpacer = styled.div`
+  width: 1px;
+  height: 55px;
 `;
 
 /* ===================== Component ===================== */
@@ -384,8 +310,12 @@ const Header = () => {
   const location = useLocation();
   const [menuState, setMenuState] = useState({ isOpen: false, isVisible: false });
   const [isScrolled, setIsScrolled] = useState(false);
-  const [hasScrolledFromTop, setHasScrolledFromTop] = useState(false);
   const [showTop, setShowTop] = useState(false);
+
+  // styrer om bokstav-logo skal animere inn/ut
+  const [logoPhase, setLogoPhase] = useState('enter'); // 'enter' | 'exit'
+  const [logoCycle, setLogoCycle] = useState(0);       // for å re-trigger animasjon
+
   const [scrollTopPortalEl] = useState(() => {
     const el = document.createElement('div');
     el.setAttribute('data-scrolltop-portal', '');
@@ -395,17 +325,71 @@ const Header = () => {
   // Desktop hover state - using refs for independent animations
   const navItemRefs = useRef({});
 
-  // Track if user has scrolled from the very top
-  const hasScrolledFromTopRef = useRef(false);
+  // Bokstav-mapping
+  const letterMap = {
+    V: Vote_V,
+    I: Vote_I,
+    N: Vote_N,
+    T: Vote_T,
+    R: Vote_R,
+    A: Vote_A,
+    S: Vote_S,
+    U: Vote_U,
+    D: Vote_D,
+    O: Vote_O,
+  };
+
+  const topWord = ['V', 'I', 'N', 'T', 'R', 'A'];      // VINTRA
+  const bottomWord = ['S', 'T', 'U', 'D', 'I', 'O'];   // STUDIO
+
+  /* ========= Positioning / Kerning / Sizing ========= */
+
+  // Base "advance" (hvor mye hver bokstav flyttes videre)
+  const ADVANCE = 26; // juster for tett/luftig spacing
+
+  // Kerning/offset per bokstav (fine-tuning). Positive = mer til høyre.
+  const KERN_TOP = { V: 0, I: -2, N: 1, T: 0, R: 0, A: 1 };
+  const KERN_BOT = { S: 0, T: 0, U: 1, D: 1, I: -2, O: 4 }; // O litt mer til høyre
+
+  // Egenspesifikk størrelse + micro-pos for spesifikke bokstaver (V og O)
+  const SPECIAL = {
+    V: { h: 42, y: -2, x: 1 },  // større V + litt til høyre + litt opp
+    O: { h: 40, y: 0,  x: 3 },  // større O + litt til høyre
+  };
+
+  const computePositions = (letters, kernMap) => {
+    let x = 0;
+    return letters.map((ch) => {
+      const kern = kernMap[ch] ?? 0;
+      const spec = SPECIAL[ch];
+      const pos = {
+        ch,
+        x: x + kern + (spec?.x ?? 0),
+        y: spec?.y ?? 0,
+        h: spec?.h ?? 36,
+      };
+      x += ADVANCE;
+      return pos;
+    });
+  };
+
+  const topPositions = computePositions(topWord, KERN_TOP);
+  const botPositions = computePositions(bottomWord, KERN_BOT);
+
+  // Total bredde for rad-container (så alt får plass)
+  const ROW_WIDTH = (Math.max(topWord.length, bottomWord.length) * ADVANCE) + 60;
+
+  /* ===================== Effects ===================== */
 
   // Reset scroll state when navigating to new pages
   useEffect(() => {
-    setHasScrolledFromTop(false);
     setIsScrolled(false);
     setShowTop(false);
-    hasScrolledFromTopRef.current = false;
 
-    // Ensure we're at the top when navigating to new pages
+    // På ny side: spill intro på nytt
+    setLogoPhase('enter');
+    setLogoCycle(c => c + 1);
+
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -416,63 +400,43 @@ const Header = () => {
     };
   }, [scrollTopPortalEl]);
 
+  // Init + scroll
   useEffect(() => {
     const onScroll = () => {
-      const scrollY = window.scrollY;
+      const y = window.scrollY;
 
-      // Always check current scroll position first
-      setIsScrolled(scrollY >= 50);
+      setIsScrolled(y >= 50);
+      setShowTop(y >= 200);
 
-      // Only enable V animation if user scrolls from the very top (0) to > 0
-      if (scrollY === 0) {
-        setIsScrolled(false);
-        // Don't reset hasScrolledFromTop immediately - let CSS animation complete
-      } else if (hasScrolledFromTopRef.current === false && scrollY > 0) {
-        // Only trigger when user actively scrolls from 0 to > 0
-        setHasScrolledFromTop(true);
-        hasScrolledFromTopRef.current = true;
+      // Scroll-trigger for logo:
+      // - ned (>=50): exit
+      // - helt opp (0): enter
+      if (y >= 50 && logoPhase !== 'exit') {
+        setLogoPhase('exit');
+        setLogoCycle(c => c + 1);
+      } else if (y === 0 && logoPhase !== 'enter') {
+        setLogoPhase('enter');
+        setLogoCycle(c => c + 1);
       }
-
-      setShowTop(scrollY >= 200);
     };
 
-    // More robust initialization - ensure V is hidden on load
-    const initializeScroll = () => {
-      // CRITICAL: Always start with V hidden, regardless of scroll position
-      setHasScrolledFromTop(false);
-      setIsScrolled(false);
-      hasScrolledFromTopRef.current = false;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      setIsScrolled(y >= 50);
+      setShowTop(y >= 200);
 
-      // Check current scroll position
-      const scrollY = window.scrollY;
-      setIsScrolled(scrollY >= 50);
-      setShowTop(scrollY >= 200);
-
-      // V logo should NEVER be visible on page load/refresh
-      // Animation only triggers when user scrolls from 0 to > 0
-      // If scrollY > 0 on load, keep V hidden - user didn't scroll from top
-    };
-
-    // Use requestAnimationFrame for more reliable initialization
-    requestAnimationFrame(initializeScroll);
+      // På refresh mid-scroll: hold logo i exit (uten å trigge intro)
+      if (y >= 50) {
+        setLogoPhase('exit');
+      } else {
+        setLogoPhase('enter');
+        setLogoCycle(c => c + 1);
+      }
+    });
 
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // Separate effect to handle state reset after reverse animation
-  useEffect(() => {
-    if (hasScrolledFromTop && !isScrolled) {
-      // User scrolled back to top - reset state after ALL animations complete
-      const totalAnimationTime = TIMING.V_SPIN_OUT + TIMING.LOGO_DELAY_BACK + TIMING.LOGO_FADE_IN;
-      const timer = setTimeout(() => {
-        setHasScrolledFromTop(false);
-        hasScrolledFromTopRef.current = false;
-      }, totalAnimationTime + 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [hasScrolledFromTop, isScrolled]);
+  }, [logoPhase]);
 
   const toggleMenu = () => {
     if (menuState.isOpen) {
@@ -492,25 +456,19 @@ const Header = () => {
     { href: '/contact',             label: 'Support' },
   ];
 
-  // Uavhengige animasjoner - direkte DOM-manipulasjon
+  // Uavhengige underline animasjoner
   const handleMouseEnter = (idx) => {
     const el = navItemRefs.current[idx];
     if (!el) return;
 
-    // Fjern exit-animasjonen hvis den kjører
     el.classList.remove('nav-slide-out');
 
-    // Hvis enter-animasjon allerede kjører, restart den
     if (el.classList.contains('nav-slide-in')) {
       el.classList.remove('nav-slide-in');
-      // Dobbel requestAnimationFrame sikrer restart
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          el.classList.add('nav-slide-in');
-        });
+        requestAnimationFrame(() => el.classList.add('nav-slide-in'));
       });
     } else {
-      // Første gang - bare legg til klassen
       el.classList.add('nav-slide-in');
     }
   };
@@ -519,33 +477,74 @@ const Header = () => {
     const el = navItemRefs.current[idx];
     if (!el) return;
 
-    // Fjern enter-animasjonen hvis den kjører
     el.classList.remove('nav-slide-in');
 
-    // Hvis exit-animasjon allerede kjører, restart den
     if (el.classList.contains('nav-slide-out')) {
       el.classList.remove('nav-slide-out');
-      // Dobbel requestAnimationFrame sikrer restart
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          el.classList.add('nav-slide-out');
-        });
+        requestAnimationFrame(() => el.classList.add('nav-slide-out'));
       });
     } else {
-      // Første gang - bare legg til klassen
       el.classList.add('nav-slide-out');
     }
+  };
+
+  // Delays: vi staggers litt for mer “film”
+  const letterDelay = (rowIdx, letterIdx) => {
+    const base = rowIdx === 0 ? 0 : 120; // bottom word starter litt etter
+    const step = 55;                     // avstand mellom bokstaver i tid
+    return base + letterIdx * step;
   };
 
   return (
     <>
       <HeaderContainer $isScrolled={isScrolled}>
-        <Logo href="/" $textColor={textColor} $isScrolled={isScrolled} onClick={() => window.location.href = '/'}>
-          <Logodiv $isScrolled={isScrolled}>
+        <Logo
+          href="/"
+          $textColor={textColor}
+          $isScrolled={isScrolled}
+          onClick={() => window.location.href = '/'}
+        >
+          <Logodiv>
             <LogoStage>
-              <VintraImg src={Vintra} alt="Vintra" $isScrolled={isScrolled} />
-              <StudioImg src={Studio} alt="Studio" $isScrolled={isScrolled} />
-              <VoteVImg src={VOTE_V} alt="V" $isScrolled={isScrolled} $hasScrolledFromTop={hasScrolledFromTopRef.current} />
+              <LetterLogoWrap aria-label="Vintra Studio">
+                <LetterRow $row={0} $width={ROW_WIDTH}>
+                  {topPositions.map((p, i) => (
+                    <LetterImg
+                      key={`top-${logoCycle}-${p.ch}-${i}`}
+                      src={letterMap[p.ch]}
+                      alt={p.ch}
+                      $phase={logoPhase}
+                      $delay={letterDelay(0, i)}
+                      $x={p.x}
+                      $y={p.y}
+                      $height={p.h}
+                      draggable={false}
+                    />
+                  ))}
+                </LetterRow>
+
+                <StudioIndent>
+                  <LetterRow $row={1} $width={ROW_WIDTH}>
+                    {botPositions.map((p, i) => (
+                      <LetterImg
+                        key={`bot-${logoCycle}-${p.ch}-${i}`}
+                        src={letterMap[p.ch]}
+                        alt={p.ch}
+                        $phase={logoPhase}
+                        $delay={letterDelay(1, i)}
+                        $x={p.x}
+                        $y={p.y}
+                        $height={p.h}
+                        draggable={false}
+                      />
+                    ))}
+                  </LetterRow>
+                </StudioIndent>
+              </LetterLogoWrap>
+
+              {/* Om du vil holde litt plass når logo er ute (valgfritt) */}
+              {/* {logoPhase === 'exit' && <LogoSpacer />} */}
             </LogoStage>
           </Logodiv>
         </Logo>
@@ -572,11 +571,8 @@ const Header = () => {
         </HamburgerButton>
 
         {/* MOBILE NAV */}
-        <MobileNavMenu
-          $isOpen={menuState.isOpen}
-          $isVisible={menuState.isVisible}
-        >
-          {items.map((item, idx) => (
+        <MobileNavMenu $isOpen={menuState.isOpen} $isVisible={menuState.isVisible}>
+          {items.map((item) => (
             <MobileNavItem
               key={item.href}
               href={item.href}
