@@ -90,7 +90,7 @@ const DarkTransition = styled.div`
   top:-10px;
   left: 0;
   right: 0;
-  height: 500px;
+  height: 100%;
   background: linear-gradient(
     to bottom,
     transparent 0%,
