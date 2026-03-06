@@ -161,224 +161,158 @@ const HamburgerButton = styled.button`
     display: block;
     height: 2px;
     border-radius: 2px;
-    transition: all 0.28s cubic-bezier(.4,0,.2,1);
+    transition: all 0.25s cubic-bezier(.4,0,.2,1);
     transform-origin: center;
-    background: ${({ $isOpen }) =>
-      $isOpen ? '#c8922a' : 'rgba(235, 215, 165, 0.88)'};
+    position: absolute;
   }
 
+  /* Line 1 — top bar → first arm of X */
   span:nth-child(1) {
-    width: ${({ $isOpen }) => ($isOpen ? '22px' : '22px')};
-    transform: ${({ $isOpen }) => ($isOpen ? 'translateY(7px) rotate(45deg)' : 'none')};
+    width: 20px;
+    background: ${({ $isOpen }) => $isOpen ? '#c8922a' : 'rgba(235, 215, 165, 0.88)'};
+    transform: ${({ $isOpen }) => $isOpen
+      ? 'translateY(0px) rotate(45deg)'
+      : 'translateY(-6px) rotate(0deg)'};
   }
+
+  /* Line 2 — middle bar → hidden when X */
   span:nth-child(2) {
-    width: 16px;
-    align-self: ${({ $isOpen }) => ($isOpen ? 'center' : 'flex-end')};
-    opacity: ${({ $isOpen }) => ($isOpen ? 0 : 1)};
-    transform: ${({ $isOpen }) => ($isOpen ? 'scaleX(0)' : 'none')};
+    width: 14px;
+    background: rgba(235, 215, 165, 0.88);
+    transform: ${({ $isOpen }) => $isOpen ? 'scaleX(0)' : 'translateX(3px)'};
+    opacity: ${({ $isOpen }) => $isOpen ? 0 : 1};
   }
+
+  /* Line 3 — bottom bar → second arm of X */
   span:nth-child(3) {
-    width: ${({ $isOpen }) => ($isOpen ? '22px' : '22px')};
-    transform: ${({ $isOpen }) => ($isOpen ? 'translateY(-7px) rotate(-45deg)' : 'none')};
+    width: 20px;
+    background: ${({ $isOpen }) => $isOpen ? '#c8922a' : 'rgba(235, 215, 165, 0.88)'};
+    transform: ${({ $isOpen }) => $isOpen
+      ? 'translateY(0px) rotate(-45deg)'
+      : 'translateY(6px) rotate(0deg)'};
   }
 `;
 
 /* ===================== Mobile Menu ===================== */
 
 const menuSlideIn = keyframes`
-  0%   { opacity: 0; transform: translateX(100%); }
-  100% { opacity: 1; transform: translateX(0); }
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
 `;
 const menuSlideOut = keyframes`
-  0%   { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; transform: translateX(100%); }
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
 `;
 
 const MobileNavMenu = styled.nav`
   display: ${({ $isVisible }) => ($isVisible ? 'flex' : 'none')};
   flex-direction: column;
   position: fixed;
-  top: 0; right: 0; bottom: 0;
-  width: min(320px, 88vw);
-  height: 100dvh;            /* ✅ viktig: stabil høyde på mobil */
-  z-index: 1000;
+  top: ${({ $isScrolled }) => ($isScrolled ? '56px' : '70px')};
+  left: 0;
+  right: 0;
+  z-index: 997;
 
-  background:
-    linear-gradient(
-      160deg,
-      #1e1609 0%,
-      #130e05 40%,
-      #0d0904 100%
-    );
+  background: rgba(13, 9, 4, 0.98);
+  border-top: 2px solid rgba(200, 146, 42, 0.5);
+  border-bottom: 1px solid rgba(200, 146, 42, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 
-  border-left: 1px solid rgba(200, 146, 42, 0.22);
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.7), -2px 0 12px rgba(200, 146, 42, 0.08);
-
-  padding: 0;
+  padding: 0.3rem 0 0.6rem 0;
   overflow: hidden;
 
-  min-height: 0;             /* ✅ viktig i flex layouts */
   animation: ${({ $isOpen }) => ($isOpen ? menuSlideIn : menuSlideOut)}
-    0.32s cubic-bezier(.4,0,.2,1) forwards;
+    0.2s cubic-bezier(.4,0,.2,1) forwards;
 `;
 
-/* Decorative top bar in the mobile menu */
 const MenuTopBar = styled.div`
-  height: 3px;
-  background: linear-gradient(90deg, #7a5520 0%, #c8922a 40%, #f5cc48 70%, #c8922a 100%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(245,204,72,0.4) 40%, rgba(245,204,72,0.4) 60%, transparent 100%);
   flex-shrink: 0;
-`;
-
-/* Close button area at top of panel */
-const MenuHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.1rem 1.4rem 0.8rem 1.6rem;
-  flex-shrink: 0;
-`;
-
-const MenuBrandLabel = styled.span`
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(200, 146, 42, 0.7);
-`;
-
-const MenuCloseBtn = styled.button`
-  background: none;
-  border: 1px solid rgba(200, 146, 42, 0.25);
-  border-radius: 6px;
-  width: 32px; height: 32px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(235, 215, 165, 0.7);
-  font-size: 1.1rem;
-  line-height: 1;
-  transition: all 0.18s ease;
-
-  &:hover {
-    border-color: rgba(200, 146, 42, 0.6);
-    color: #c8922a;
-    background: rgba(200, 146, 42, 0.08);
-  }
+  margin-bottom: 0.2rem;
 `;
 
 const MenuDivider = styled.div`
   height: 1px;
-  margin: 0 1.4rem;
-  background: linear-gradient(90deg, rgba(200,146,42,0.3) 0%, rgba(200,146,42,0.08) 100%);
+  margin: 0.1rem 1.2rem;
+  background: rgba(200, 146, 42, 0.1);
   flex-shrink: 0;
 `;
 
 const MenuItemsWrap = styled.div`
-  flex: 1;
-  min-height: 0;             /* ✅ THIS is the key */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
-  display: flex;             /* ✅ gjør at items stackes fint */
+  display: flex;
   flex-direction: column;
-  gap: 2px;
-
-  padding: 0.5rem 0 2rem 0;
-
-  &::-webkit-scrollbar { width: 3px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: rgba(200,146,42,0.3); border-radius: 2px; }
 `;
 
-const mobileItemSlide = keyframes`
-  from { opacity: 0; transform: translateX(18px); }
-  to   { opacity: 1; transform: translateX(0); }
+const mobileItemFade = keyframes`
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 `;
 
 const MobileNavItem = styled.a`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.95rem 1.6rem;
-  color: rgba(235, 215, 165, 0.84);
+  justify-content: space-between;
+  padding: 0.85rem 1.4rem;
+  color: rgba(235, 215, 165, 0.88);
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  font-size: 0.9rem;
   font-weight: 600;
   position: relative;
-  transition: color 0.18s ease, background 0.18s ease, padding-left 0.18s ease;
+  transition: color 0.15s ease, background 0.15s ease, padding-left 0.15s ease;
 
-  animation: ${({ $isOpen }) => ($isOpen ? mobileItemSlide : 'none')}
-    0.35s cubic-bezier(.4,0,.2,1) both;
-  animation-delay: ${({ $index }) => `${0.05 + $index * 0.055}s`};
+  animation: ${({ $isOpen }) => ($isOpen ? mobileItemFade : 'none')}
+    0.25s cubic-bezier(.4,0,.2,1) both;
+  animation-delay: ${({ $index }) => `${0.04 + $index * 0.045}s`};
 
   &::before {
     content: '';
     position: absolute;
     left: 0; top: 50%;
     transform: translateY(-50%) scaleY(0);
-    width: 3px; height: 60%;
+    width: 2px; height: 55%;
     background: linear-gradient(180deg, #f5cc48, #c8922a);
     border-radius: 0 2px 2px 0;
-    transition: transform 0.18s ease;
+    transition: transform 0.15s ease;
   }
 
-  &:hover {
+  &:hover, &:active {
     color: #f5cc48;
     background: rgba(200, 146, 42, 0.07);
-    padding-left: 1.9rem;
+    padding-left: 1.7rem;
 
     &::before {
       transform: translateY(-50%) scaleY(1);
     }
   }
-
-  &:active {
-    background: rgba(200, 146, 42, 0.12);
-    color: #f5cc48;
-  }
 `;
 
 const MenuItemArrow = styled.span`
-  margin-left: auto;
-  color: rgba(200, 146, 42, 0.4);
-  font-size: 0.7rem;
-  transition: color 0.18s ease, transform 0.18s ease;
+  color: rgba(200, 146, 42, 0.35);
+  font-size: 0.75rem;
+  transition: color 0.15s ease, transform 0.15s ease;
 
   ${MobileNavItem}:hover & {
-    color: rgba(245, 204, 72, 0.7);
+    color: rgba(245, 204, 72, 0.6);
     transform: translateX(3px);
   }
 `;
 
-/* Bottom area with subtle branding */
-const MenuFooter = styled.div`
-  padding: 1rem 1.6rem 1.4rem;
-  flex-shrink: 0;
-  border-top: 1px solid rgba(200, 146, 42, 0.1);
-`;
-
-const MenuFooterText = styled.p`
-  font-size: 0.6rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(200, 146, 42, 0.35);
-  margin: 0;
-`;
-
-/* Overlay behind the panel */
+/* Overlay — starts BELOW the header so it never covers the hamburger/X button */
 const MobileOverlay = styled.div`
   display: ${({ $isVisible }) => ($isVisible ? 'block' : 'none')};
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 999;
-  backdrop-filter: blur(2px);
+  top: ${({ $isScrolled }) => ($isScrolled ? '56px' : '70px')};
+  left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 996;
   animation: ${({ $isOpen }) => ($isOpen
-    ? css`${keyframes`from{opacity:0}to{opacity:1}`} 0.25s ease forwards`
-    : css`${keyframes`from{opacity:1}to{opacity:0}`} 0.3s ease forwards`
+    ? css`${keyframes`from{opacity:0}to{opacity:1}`} 0.2s ease forwards`
+    : css`${keyframes`from{opacity:1}to{opacity:0}`} 0.25s ease forwards`
   )};
 `;
 
@@ -497,17 +431,91 @@ const ScrollDriven = styled.span`
   ${({ $isV, $y }) =>
     $isV
       ? css`
-          top: calc(${$y ?? 0}px + var(--p) * ${22 - ($y ?? 0) + 10}px);
+          /*
+            V ANIMATION — "The Stamp"
+            ─────────────────────────────────────────────────────────
+            V waits until the other letters are gone (p > 0.5),
+            then does its own thing: bounces UP slightly like it's
+            excited, then STAMPS down and slightly right into its
+            final "solo" position in the shrunken header.
+
+            PHASES (via --_vp = 0→1, starts when p=0.5):
+
+            UP BOUNCE (vp 0→0.35):
+              V pops upward (-18px) and scales up fast (1.0→1.25)
+              Rotates -12deg (leans left, like winding up)
+
+            STAMP DOWN (vp 0.35→0.75):
+              Comes crashing down, overshoots (+8px below rest),
+              rotates to +8deg (leans right, momentum)
+              Scale hits 1.4 (squash on impact)
+
+            SETTLE (vp 0.75→1.0):
+              Pulls back up to final position (+0px translateY)
+              Rotates back to 0deg
+              Scale settles at 1.35
+
+            translateX: drifts right gently throughout (0 → +14px)
+            top: stays anchored, interpolates -12px → 6px
+          */
+          --_vp: clamp(0.0, (var(--p) - 0.5) / 0.5, 1.0);
+
+          /* === UP BOUNCE === */
+          --_up: clamp(0.0, var(--_vp) / 0.35, 1.0);
+          /* === STAMP (0.35 → 0.75) === */
+          --_stamp: clamp(0.0, (var(--_vp) - 0.35) / 0.40, 1.0);
+          /* === SETTLE (0.75 → 1.0) === */
+          --_settle: clamp(0.0, (var(--_vp) - 0.75) / 0.25, 1.0);
+
+          /* translateY:
+             up bounce: 0 → -18px
+             stamp:     -18px → +6px  (18+6=24px range)
+             settle:    +6px → 0px    (pull back up)
+          */
+          --_ty-up:     calc(var(--_up)     * -18px);
+          --_ty-stamp:  calc(var(--_stamp)  *  24px);
+          --_ty-settle: calc(var(--_settle) * -6px);
+
+          /* rotation:
+             up:     0 → -14deg (wind-up lean left)
+             stamp:  -14deg → +10deg (slams right)  = +24deg range
+             settle: +10deg → 0deg
+          */
+          --_rot-up:     calc(var(--_up)     * -14deg);
+          --_rot-stamp:  calc(var(--_stamp)  *  24deg);
+          --_rot-settle: calc(var(--_settle) * -10deg);
+
+          /* scale:
+             up:     1.0 → 1.22  (anticipation stretch)
+             stamp:  1.22 → 1.42 (impact squash/grow)
+             settle: 1.42 → 1.35 (relax)
+          */
+          --_sc-base:   1.0;
+          --_sc-up:     calc(var(--_up)    * 0.22);
+          --_sc-stamp:  calc(var(--_stamp) * 0.20);
+          --_sc-settle: calc(var(--_settle) * -0.07);
+
+          /* translateX: gentle rightward drift */
+          --_tx: calc(var(--_vp) * 14px);
+
+          top: calc(${$y ?? 0}px + var(--_vp) * ${22 - ($y ?? 0) + 6}px);
           opacity: 1;
           transform:
-            translateY(calc(var(--p) * -18px))
-            rotate(calc(var(--p) * 360deg))
-            scale(calc(1.0 + var(--p) * 0.55));
+            translateX(var(--_tx))
+            translateY(calc(var(--_ty-up) + var(--_ty-stamp) + var(--_ty-settle)))
+            rotate(calc(var(--_rot-up) + var(--_rot-stamp) + var(--_rot-settle)))
+            scale(calc(var(--_sc-base) + var(--_sc-up) + var(--_sc-stamp) + var(--_sc-settle)));
           will-change: transform, top;
         `
       : css`
           top: ${$y ?? 0}px;
-          --_sp: clamp(0.0, (var(--p) - (1.0 - var(--ls)) * 0.6) / 0.4, 1.0);
+          /*
+            Tighter stagger so A and O don't lag:
+            Window shrunk from 0.6/0.4 → 0.35/0.65
+            All letters now complete within a much tighter p band,
+            so the last ones (A, O) finish at almost the same time as the first.
+          */
+          --_sp: clamp(0.0, (var(--p) - (1.0 - var(--ls)) * 0.35) / 0.65, 1.0);
           opacity: calc(1.0 - var(--_sp));
           transform:
             translateY(calc(var(--_sp) * -220px))
@@ -870,46 +878,42 @@ const Header = () => {
         </HamburgerButton>
       </HeaderContainer>
 
-      {/* MOBILE OVERLAY */}
+      {/* MOBILE OVERLAY — click outside to close */}
       <MobileOverlay
         $isOpen={menuState.isOpen}
         $isVisible={menuState.isVisible}
+        $isScrolled={isScrolled}
         onClick={closeMenu}
       />
 
-      {/* MOBILE SLIDE-IN PANEL */}
-      <MobileNavMenu $isOpen={menuState.isOpen} $isVisible={menuState.isVisible}>
+      {/* MOBILE DROP-DOWN MENU — appears below header */}
+      <MobileNavMenu
+        $isOpen={menuState.isOpen}
+        $isVisible={menuState.isVisible}
+        $isScrolled={isScrolled}
+      >
         <MenuTopBar />
-
-        <MenuHeader>
-          <MenuBrandLabel>Vintra Studio</MenuBrandLabel>
-          <MenuCloseBtn onClick={closeMenu} aria-label="Close menu">✕</MenuCloseBtn>
-        </MenuHeader>
-
-        <MenuDivider />
 
         <MenuItemsWrap>
           {items.map((item, idx) => (
-            <MobileNavItem
-              key={item.href}
-              href={item.href}
-              $isOpen={menuState.isOpen}
-              $index={idx}
-              onClick={(e) => {
-                e.preventDefault();
-                closeMenu();
-                setTimeout(() => { window.location.href = item.href; }, 320);
-              }}
-            >
-              {item.label}
-              <MenuItemArrow>›</MenuItemArrow>
-            </MobileNavItem>
+            <React.Fragment key={item.href}>
+              <MobileNavItem
+                href={item.href}
+                $isOpen={menuState.isOpen}
+                $index={idx}
+                onClick={(e) => {
+                  e.preventDefault();
+                  closeMenu();
+                  setTimeout(() => { window.location.href = item.href; }, 220);
+                }}
+              >
+                {item.label}
+                <MenuItemArrow>›</MenuItemArrow>
+              </MobileNavItem>
+              {idx < items.length - 1 && <MenuDivider />}
+            </React.Fragment>
           ))}
         </MenuItemsWrap>
-
-        <MenuFooter>
-          <MenuFooterText>© Vintra Studio</MenuFooterText>
-        </MenuFooter>
       </MobileNavMenu>
 
       {createPortal(
