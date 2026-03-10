@@ -1,8 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import "../Styled_Component/CharacterScroll.css";
 
 export default function HeroHeader() {
   const runes = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
+  const heroRef = useRef(null);
+  const emblemRef = useRef(null);
+  const orbRef = useRef(null);
 
   const stars = useMemo(() => {
     return Array.from({ length: 80 }, (_, i) => ({
@@ -26,10 +29,85 @@ export default function HeroHeader() {
       delay: `${Math.random() * 9}s`,
     }));
   }, [runes]);
+  useEffect(() => {
+  const orb = orbRef.current;
+  const emblem = emblemRef.current;
+  const hero = heroRef.current;
+
+  if (!orb || !emblem || !hero) return;
+
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+  const updateOrb = () => {
+    const scrollY = window.scrollY;
+
+    const heroRect = hero.getBoundingClientRect();
+    const emblemRect = emblem.getBoundingClientRect();
+
+    const emblemCenterX = emblemRect.left + emblemRect.width / 2;
+    const emblemCenterY = emblemRect.top + emblemRect.height / 2;
+
+    // Når toppen av hero treffer 200px fra toppen av viewport
+    const heroTop = heroRect.top;
+
+    const triggerStart = 200;
+    const triggerEnd = -120;
+
+    // progress: 0 når heroTop = 200
+    // progress: 1 når heroTop = -120
+    const progress = clamp((triggerStart - heroTop) / (triggerStart - triggerEnd), 0, 1);
+
+    // skjul helt før trigger
+    if (heroTop > triggerStart) {
+      orb.style.opacity = "0";
+      orb.style.transform = "translate(-50%, -50%) scale(0.2)";
+      orb.style.left = `${emblemCenterX}px`;
+      orb.style.top = `${emblemCenterY}px`;
+      return;
+    }
+
+    orb.style.opacity = "1";
+
+    // start = sentrum av symbolet
+    const startX = emblemCenterX;
+    const startY = emblemCenterY;
+
+    // slutt = omtrent midten av skjermen
+    const endX = window.innerWidth / 2;
+    const endY = window.innerHeight / 2;
+
+    // lerp fra symbol -> midten av skjermen
+    const baseX = startX + (endX - startX) * progress;
+    const baseY = startY + (endY - startY) * progress;
+
+    // flyt når den først er aktiv
+    const floatStrength = 1 + progress;
+    const floatX = Math.sin(scrollY * 0.004) * 10 * floatStrength;
+    const floatY = Math.cos(scrollY * 0.0032) * 7 * floatStrength;
+
+    const x = baseX + floatX;
+    const y = baseY + floatY;
+
+    const scale = 0.25 + progress * 0.85;
+
+    orb.style.left = `${x}px`;
+    orb.style.top = `${y}px`;
+    orb.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  };
+
+  updateOrb();
+  window.addEventListener("scroll", updateOrb, { passive: true });
+  window.addEventListener("resize", updateOrb);
+
+  return () => {
+    window.removeEventListener("scroll", updateOrb);
+    window.removeEventListener("resize", updateOrb);
+  };
+}, []);
 
   return (
     <div className="hero-page">
-      <section className="hero-header">
+      <section className="hero-header" ref={heroRef}>
         <div className="hero-stars">
           {stars.map((star) => (
             <span
@@ -46,7 +124,7 @@ export default function HeroHeader() {
             />
           ))}
         </div>
-
+          <div ref={orbRef} className="goldenOrb"></div>
         <div className="hero-runes">
           {floatingRunes.map((rune) => (
             <span
@@ -66,6 +144,7 @@ export default function HeroHeader() {
         </div>
 
         <svg
+          ref={emblemRef}
           className="hero-emblem"
           viewBox="0 0 200 200"
           xmlns="http://www.w3.org/2000/svg"

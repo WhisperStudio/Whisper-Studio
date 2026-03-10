@@ -170,6 +170,24 @@
     transform: translateY(0);
   }
 }
+.goldenOrb {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 30;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.2);
+  background: radial-gradient(circle, #ffd37a 0%, #c8922a 58%, #8f4e00 78%, rgba(0,0,0,0) 100%);
+  box-shadow:
+    0 0 12px rgba(200,146,42,0.95),
+    0 0 30px rgba(200,146,42,0.45),
+    0 0 70px rgba(217,79,0,0.22);
+  transition: opacity 0.2s linear;
+}
 
 .scroll-cue {
   position: absolute;
