@@ -1,429 +1,210 @@
-/* ═══════════════════════════════════════════════════════════
-   ROOT WRAPPER / BAKGRUNN
-   ═══════════════════════════════════════════════════════════ */
-.component-wrapper {
-  --accent: #29e1ff;
-  --accent-dim: color-mix(in oklab, var(--accent) 55%, transparent);
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  --parchment: #f2e8c9;
+  --dark-wood: #0a0500;
+  --rune-gold: #c8922a;
+  --ember: #d94f00;
+  --frost: #8ab4c9;
+  --accent: #c8922a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.hero-page {
+  min-height: 4000px;
+  background: var(--dark-wood);
+  color: var(--parchment);
+  font-family: 'IM Fell English', serif;
+  overflow-x: hidden;
   position: relative;
-  width: 100%;
-  color: #fff;
-  background:
-    linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 8%, rgba(0,0,0,0) 15%),
-    radial-gradient(120vmax 90vmax at 50% 110%, rgba(0,0,0,.6), transparent 65%),
-    linear-gradient(135deg,
-      color-mix(in oklab, var(--accent) 14%, transparent) 0%,
-      color-mix(in oklab, var(--accent) 5%, transparent) 30%,
-      rgba(0,0,0,0) 60%),
-    #080910;
-  transition: background .45s ease, --accent .45s ease;
 }
 
-/* Grain overlay */
-.component-wrapper::after {
-  content: "";
-  position: absolute;
-  inset: -40px;
-  pointer-events: none;
-  z-index: 1;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
-  opacity: .28;
-  filter: contrast(125%);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SCROLL CONTAINER
-   ═══════════════════════════════════════════════════════════ */
-.scroll-container {
+.hero-header {
   position: relative;
-  height: var(--total-height, 800vh);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HERO
-   ═══════════════════════════════════════════════════════════ */
-.hero {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  height: 100vh;
+  height: 1000px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  text-align: center;
-  z-index: 10;
-  opacity: var(--hero-opacity, 1);
-  transform: scale(var(--hero-scale, 1)) translateZ(0);
-  transition: none;
-  visibility: visible;
-  background: radial-gradient(ellipse 80% 60% at 50% 120%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%), #080910;
-}
-
-.hero .kicker {
-  color: color-mix(in oklab, var(--accent) 85%, #fff);
-  font-weight: 800;
-  letter-spacing: .22em;
-  font-size: 11px;
-  text-transform: uppercase;
-  margin-bottom: 1.2em;
-  opacity: .75;
-}
-
-.hero h1 {
-  font-size: clamp(52px, 9vw, 140px);
-  line-height: .88;
-  margin: 0 0 .4em;
-  letter-spacing: -.01em;
-  font-weight: 900;
-}
-
-.hero p {
-  max-width: 72ch;
-  margin: 0 auto;
-  color: rgba(255,255,255,.65);
-  line-height: 1.9;
-  font-size: clamp(14px, 1.6vw, 18px);
-}
-
-/* Scroll hint */
-.hero::after {
-  content: "scroll";
-  position: absolute;
-  bottom: 2.4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  letter-spacing: .3em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.3);
-  animation: hero-scroll-hint 2.2s ease-in-out infinite;
-}
-
-@keyframes hero-scroll-hint {
-  0%, 100% { opacity: .3; transform: translateX(-50%) translateY(0); }
-  50% { opacity: .7; transform: translateX(-50%) translateY(4px); }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ZOOM STAGE
-   ═══════════════════════════════════════════════════════════ */
-.zoom-stage {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  height: 100vh;
+  justify-content: center;
   overflow: hidden;
-  z-index: 15;
-  opacity: var(--stage-opacity, 0);
-  pointer-events: none;
-}
-
-/* top + bottom vignette */
-.zoom-stage::before {
-  content: "";
-  position: absolute; inset: 0;
-  pointer-events: none; z-index: 3;
-  background:
-    linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,0) 28%),
-    linear-gradient(to top,    rgba(0,0,0,.65), rgba(0,0,0,0) 28%);
-  mix-blend-mode: multiply;
-  opacity: .75;
-}
-
-/* accent glow + right shadow */
-.zoom-stage::after {
-  content: "";
-  position: absolute; inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(120vmax 90vmax at 28% 50%,
-      color-mix(in oklab, var(--accent) 10%, transparent) 0%,
-      transparent 52%),
-    radial-gradient(80vmax 70vmax at 85% 50%,
-      rgba(0,0,0,.5) 0%,
-      transparent 70%);
-  mix-blend-mode: soft-light;
-  opacity: .42;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   CREATURE IMAGE
-   ═══════════════════════════════════════════════════════════ */
-.creature-image {
-  position: absolute;
-  top: 50%;
-  left: 30%;
+  background: radial-gradient(ellipse at 50% 55%, #3a1400 0%, #0a0500 70%);
   z-index: 2;
-  width: 100vmin;
-  height: 100vmin;
-  max-width: 140vw;
-  max-height: 140vh;
-  object-fit: cover;
-  transform: translate(-50%, -50%) scale(var(--zoom, 0.06)) translateZ(0);
-  opacity: var(--opacity, 0);
-  border-radius: 20px;
-  will-change: transform, opacity;
+}
+
+.hero-stars {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
-  /* Smooth the per-frame updates so jumps don't show */
-  transition: opacity 0.08s linear, transform 0.08s linear;
-
-  filter:
-    brightness(0.97) contrast(1.05) saturate(1.06)
-    drop-shadow(0 8px 28px color-mix(in oklab, var(--accent) 8%, rgba(0,0,0,.5)))
-    drop-shadow(0 0 52px color-mix(in oklab, var(--accent) 12%, rgba(0,0,0,.35)));
-
-  --feather-x: 45%;
-  --feather-y: 50%;
-  --feather-hard: 84%;
-  --feather-soft: 97%;
-
-  -webkit-mask-image:
-    radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
-      #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)),
-    linear-gradient(to left, #000 0%, #000 60%, rgba(0,0,0,0) 100%),
-    linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,0) 100%);
-  mask-image:
-    radial-gradient(140vmin 140vmin at var(--feather-x) var(--feather-y),
-      #000 var(--feather-hard), rgba(0,0,0,0) var(--feather-soft)),
-    linear-gradient(to left, #000 0%, #000 60%, rgba(0,0,0,0) 100%),
-    linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,0) 100%);
-  -webkit-mask-composite: source-in, source-in;
-  mask-composite: intersect;
 }
 
-@media (min-width: 1400px) {
-  .creature-image { left: 27%; }
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: white;
+  animation: starTwinkle ease-in-out infinite alternate;
 }
 
-@media (max-width: 900px) {
-  .creature-image {
-    --feather-hard: 86%;
-    --feather-soft: 98%;
+@keyframes starTwinkle {
+  from {
+    opacity: 0.1;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0.7;
+    transform: scale(1.2);
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TEXT OVERLAY
-   ═══════════════════════════════════════════════════════════ */
-.text-overlay {
+.hero-runes {
   position: absolute;
-  right: 5.5vw;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 30;
-  max-width: 540px;
-  opacity: var(--text-opacity, 0);
-  /* Smooth the JS-driven opacity changes */
-  transition: opacity 0.06s linear;
-}
-
-/* ── EYEBROW ── */
-.text-overlay .eyebrow {
-  color: color-mix(in oklab, var(--accent) 90%, #fff);
-  font-weight: 800;
-  letter-spacing: .22em;
-  font-size: 10px;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-  opacity: .8;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.text-overlay .eyebrow::before {
-  content: "";
-  display: inline-block;
-  width: 18px;
-  height: 1px;
-  background: color-mix(in oklab, var(--accent) 80%, transparent);
-}
-
-/* ── DIVIDER under heading ── */
-.text-overlay .header {
-  margin: 0 0 0;
-}
-
-.text-overlay .header::after {
-  content: "";
-  display: block;
-  margin-top: 16px;
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(to right,
-    color-mix(in oklab, var(--accent) 30%, transparent),
-    rgba(255,255,255,.06) 60%,
-    transparent);
-}
-
-/* ── SCROLL WRAP – text starts lower, holds visible longer ── */
-.text-overlay .scrollWrap {
-  --top-fade: 8%;
-  --bottom-fade: 10%;
-
-  position: relative;
-  /* START offset – controls how low the text begins */
-  top: 28px;
-  /* Height: how much text is visible at once */
-  height: clamp(420px, 60vh, 780px);
+  inset: 0;
+  pointer-events: none;
   overflow: hidden;
-  padding: 0;
-  background: transparent;
-
-  mask-image: linear-gradient(to bottom,
-    rgba(0,0,0,0) 0%,
-    rgba(0,0,0,1) var(--top-fade),
-    rgba(0,0,0,1) calc(100% - var(--bottom-fade)),
-    rgba(0,0,0,0) 100%);
 }
 
-.text-overlay .body {
-  transform: translateY(var(--content-offset, 0px));
-  will-change: transform;
-  padding-top: 6px;
+.rune-float {
+  position: absolute;
+  color: var(--rune-gold);
+  opacity: 0;
+  text-shadow: 0 0 14px var(--rune-gold);
+  animation: runeFloat linear infinite;
 }
 
-/* ── BODY COPY ── */
-.text-overlay p {
-  color: rgba(255,255,255,.93);
-  line-height: 1.9;
-  margin: 0 0 18px;
-  font-size: 15.5px;
-  font-weight: 500;
+@keyframes runeFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg) scale(0.8);
+  }
+  15% {
+    opacity: 0.5;
+  }
+  85% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-140px) rotate(180deg) scale(1.2);
+  }
 }
 
-.text-overlay .details {
-  margin-top: 0;
-  padding-top: 120px;
-  font-family: "Coming Soon", cursive;
-  font-weight: 400;
-  font-style: normal;
-  font-size: 16.5px;
-  line-height: 1.95;
-  color: rgba(255,255,255,.95);
+.hero-emblem {
+  width: 150px;
+  height: 150px;
+  margin-bottom: 2rem;
+  animation: emblemBreath 4s ease-in-out infinite alternate;
 }
 
-/* ── HIGHLIGHTED WORDS ── */
-.scroll-reveal-text .word.hl {
-  color: color-mix(in oklab, var(--accent) 95%, #fff);
+@keyframes emblemBreath {
+  from {
+    filter: drop-shadow(0 0 20px rgba(200, 146, 42, 0.4));
+    transform: scale(0.97);
+  }
+  to {
+    filter: drop-shadow(0 0 55px rgba(217, 79, 0, 0.6));
+    transform: scale(1.03);
+  }
+}
+
+.outer-ring {
+  animation: spinSlow 25s linear infinite;
+  transform-origin: 100px 100px;
+}
+
+.inner-ring {
+  animation: spinSlow 18s linear infinite reverse;
+  transform-origin: 100px 100px;
+}
+
+@keyframes spinSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hero-header h1 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(2.2rem, 6vw, 5rem);
   font-weight: 900;
+  color: var(--rune-gold);
+  text-align: center;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-shadow: 0 0 80px rgba(200, 146, 42, 0.4), 3px 3px 0 rgba(122, 21, 21, 0.5);
+  animation: titleReveal 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ── TAGS ── */
-.text-overlay .tags {
-  margin-top: 18px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,.1);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: .08em;
-  color: color-mix(in oklab, var(--accent) 60%, rgba(255,255,255,.5));
+@keyframes titleReveal {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.1em;
+    filter: blur(0);
+  }
+}
+
+.hero-header p {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.75rem, 1.8vw, 1rem);
+  color: var(--frost);
+  letter-spacing: 0.35em;
+  margin-top: 1.2rem;
   text-transform: uppercase;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HALO
-   ═══════════════════════════════════════════════════════════ */
-.halo {
-  position: absolute;
-  width: 75vmin;
-  height: 75vmin;
-  border-radius: 50%;
-  z-index: 1;
-  pointer-events: none;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(var(--halo-scale, 0));
-  filter: blur(52px) saturate(1.1);
-  mix-blend-mode: screen;
-  opacity: var(--halo-opacity, 0);
-  background: radial-gradient(closest-side, var(--halo-color) 0%, transparent 72%);
-  will-change: transform, opacity;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SCROLL FLOAT  (heading character-by-character)
-   ═══════════════════════════════════════════════════════════ */
-.scroll-float { overflow: hidden; }
-
-.scroll-float-text {
-  display: inline-block;
-  font-size: clamp(30px, 3.4vw, 52px);
-  font-weight: 900;
-  text-align: left;
-  line-height: 1.08;
-  letter-spacing: -.01em;
-}
-
-.char {
-  display: inline-block;
   opacity: 0;
-  transform: translateY(8px) scale(.97);
+  animation: fadeUp 1.5s 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SCROLL REVEAL  (word-by-word body)
-   ═══════════════════════════════════════════════════════════ */
-.scroll-reveal {
-  margin: 0;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.scroll-reveal-text {
-  font-size: clamp(1rem, 1.8vw, 1.15rem);
-  line-height: 1.88;
-  font-weight: 500;
-}
-
-/* Each word starts invisible and blurred – JS/GSAP drives them in */
-.word {
-  display: inline-block;
-  opacity: 0;
-  filter: blur(1.5px);
-  transition: none; /* driven purely by GSAP */
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SUBTLE ACCENT LINE left side of text panel
-   ═══════════════════════════════════════════════════════════ */
-.text-overlay::before {
-  content: "";
+.scroll-cue {
   position: absolute;
-  left: -20px;
-  top: 10%;
-  width: 1px;
-  height: 80%;
-  background: linear-gradient(to bottom,
-    transparent,
-    color-mix(in oklab, var(--accent) 35%, transparent) 30%,
-    color-mix(in oklab, var(--accent) 35%, transparent) 70%,
-    transparent);
-  pointer-events: none;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   CREATURE INDEX INDICATOR  (small dot row – optional)
-   ═══════════════════════════════════════════════════════════ */
-.creature-index {
-  position: fixed;
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 50;
+  bottom: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  animation: fadeUp 1s 2s ease forwards;
 }
 
-.creature-index-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.25);
-  transition: background .3s ease, transform .3s ease;
+.scroll-cue span {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: rgba(200, 146, 42, 0.6);
+  text-transform: uppercase;
 }
 
-.creature-index-dot.active {
-  background: var(--accent);
-  transform: scale(1.8);
+.scroll-cue-line {
+  width: 1px;
+  height: 50px;
+  background: linear-gradient(to bottom, var(--rune-gold), transparent);
+  animation: linePulse 2s ease-in-out infinite;
+}
+
+@keyframes linePulse {
+  0%,
+  100% {
+    transform: scaleY(0.6);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
