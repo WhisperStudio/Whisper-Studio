@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from "react";
-import "../Styled_Component/CharacterScroll.css";
+import "./S_Header.css";
 
 export default function HeroHeader() {
   const runes = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
@@ -29,79 +29,122 @@ export default function HeroHeader() {
       delay: `${Math.random() * 9}s`,
     }));
   }, [runes]);
-  useEffect(() => {
+ 
+ useEffect(() => {
   const orb = orbRef.current;
   const emblem = emblemRef.current;
-  const hero = heroRef.current;
 
-  if (!orb || !emblem || !hero) return;
+  if (!orb || !emblem) return;
 
   const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  const lerp = (a, b, t) => a + (b - a) * t;
 
-  const updateOrb = () => {
-    const scrollY = window.scrollY;
+  let rafId = null;
+  let animProgress = 0;
+  let targetProgress = 0;
+  let latestScrollY = window.scrollY;
 
-    const heroRect = hero.getBoundingClientRect();
+  const getEmblemCenter = () => {
+    const rect = emblem.getBoundingClientRect();
+
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  };
+
+  const updateTargetFromScroll = () => {
+    latestScrollY = window.scrollY;
+
     const emblemRect = emblem.getBoundingClientRect();
 
-    const emblemCenterX = emblemRect.left + emblemRect.width / 2;
-    const emblemCenterY = emblemRect.top + emblemRect.height / 2;
-
-    // Når toppen av hero treffer 200px fra toppen av viewport
-    const heroTop = heroRect.top;
-
+    // start når toppen av symbolet når 200px fra toppen av viewport
     const triggerStart = 200;
-    const triggerEnd = -120;
+    const triggerEnd = -140;
 
-    // progress: 0 når heroTop = 200
-    // progress: 1 når heroTop = -120
-    const progress = clamp((triggerStart - heroTop) / (triggerStart - triggerEnd), 0, 1);
+    const sourceTop = emblemRect.top;
 
-    // skjul helt før trigger
-    if (heroTop > triggerStart) {
+    targetProgress = clamp(
+      (triggerStart - sourceTop) / (triggerStart - triggerEnd),
+      0,
+      1
+    );
+
+    if (!rafId) {
+      rafId = requestAnimationFrame(animate);
+    }
+  };
+
+  const animate = () => {
+    const center = getEmblemCenter();
+
+    // smooth bevegelse mot target
+    animProgress += (targetProgress - animProgress) * 0.09;
+
+    // skjul helt når orb nesten ikke er aktiv
+    if (animProgress < 0.002 && targetProgress < 0.002) {
       orb.style.opacity = "0";
+      orb.style.left = `${center.x}px`;
+      orb.style.top = `${center.y}px`;
       orb.style.transform = "translate(-50%, -50%) scale(0.2)";
-      orb.style.left = `${emblemCenterX}px`;
-      orb.style.top = `${emblemCenterY}px`;
+      rafId = null;
       return;
     }
 
     orb.style.opacity = "1";
 
-    // start = sentrum av symbolet
-    const startX = emblemCenterX;
-    const startY = emblemCenterY;
+    // START: nøyaktig sentrum av symbolet
+    const startX = center.x;
+    const startY = center.y;
 
-    // slutt = omtrent midten av skjermen
+    // END: midten av skjermen
     const endX = window.innerWidth / 2;
     const endY = window.innerHeight / 2;
 
-    // lerp fra symbol -> midten av skjermen
-    const baseX = startX + (endX - startX) * progress;
-    const baseY = startY + (endY - startY) * progress;
+    // smooth kurve
+    const eased =
+      animProgress < 0.5
+        ? 4 * animProgress * animProgress * animProgress
+        : 1 - Math.pow(-2 * animProgress + 2, 3) / 2;
 
-    // flyt når den først er aktiv
-    const floatStrength = 1 + progress;
-    const floatX = Math.sin(scrollY * 0.004) * 10 * floatStrength;
-    const floatY = Math.cos(scrollY * 0.0032) * 7 * floatStrength;
+    // base bane
+    const baseX = lerp(startX, endX, eased);
+    const baseY = lerp(startY, endY, eased);
 
-    const x = baseX + floatX;
-    const y = baseY + floatY;
+    // flyt skal ikke påvirke helt i starten/slutten
+    const floatFade = clamp((animProgress - 0.18) / 0.32, 0, 1);
 
-    const scale = 0.25 + progress * 0.85;
+    const floatX = Math.sin(latestScrollY * 0.004 + 0.8) * 10 * floatFade;
+    const floatY = Math.cos(latestScrollY * 0.0032) * 7 * floatFade;
 
-    orb.style.left = `${x}px`;
-    orb.style.top = `${y}px`;
+    const finalX = baseX + floatX;
+    const finalY = baseY + floatY;
+
+    const scale = lerp(0.22, 1, eased);
+
+    orb.style.left = `${finalX}px`;
+    orb.style.top = `${finalY}px`;
     orb.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+    if (
+      Math.abs(targetProgress - animProgress) > 0.001 ||
+      targetProgress > 0.001
+    ) {
+      rafId = requestAnimationFrame(animate);
+    } else {
+      rafId = null;
+    }
   };
 
-  updateOrb();
-  window.addEventListener("scroll", updateOrb, { passive: true });
-  window.addEventListener("resize", updateOrb);
+  updateTargetFromScroll();
+
+  window.addEventListener("scroll", updateTargetFromScroll, { passive: true });
+  window.addEventListener("resize", updateTargetFromScroll);
 
   return () => {
-    window.removeEventListener("scroll", updateOrb);
-    window.removeEventListener("resize", updateOrb);
+    window.removeEventListener("scroll", updateTargetFromScroll);
+    window.removeEventListener("resize", updateTargetFromScroll);
+    if (rafId) cancelAnimationFrame(rafId);
   };
 }, []);
 

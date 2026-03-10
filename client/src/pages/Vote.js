@@ -12,7 +12,7 @@ import backgroundMusic from '../bilder/VOTE THEME 1.mp3';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
 import placeholderImage3 from '../bilder/3.webp';
-import CharacterScrollytelling from '../components/VOTE/CharacterScroll';
+import CharacterScrollytelling from '../components/VOTE/CharachterScroll/ShowRoom';
 
 import Vote_V from '../images/Vote_V.png';
 import Vote_O from '../images/Vote_O.png';
