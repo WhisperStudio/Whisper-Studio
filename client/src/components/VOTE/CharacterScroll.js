@@ -1,213 +1,381 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import "../Styled_Component/CharacterScroll.css";
-
+import {
+  useEffect, useLayoutEffect, useMemo,
+  useRef, useState, useCallback,
+} from "react";
 import { gsap } from "gsap";
 
 /* ═══════════════════════════════════════════════════════════
-   SCROLL FLOAT – character-by-character heading
+   CSS
+   ─────────────────────────────────────────────────────────
+   Layout philosophy:
+     Left  45%  → creature image (fixed stage)
+     Center 10% → tube spine (fixed, 160px wide, centered)
+     Right  45% → text overlay (fixed)
+
+   The tube canvas is 160px wide, positioned FIXED at:
+     left: 50vw - 80px   (centres it on the screen midpoint)
+   The canvas height = full gallery scroll height.
+   It is shifted upward with translateY(-scrollY) so the
+   correct section of the sine wave is always visible at the
+   viewport midpoint. The ball is then placed at:
+     x = canvas.getBoundingClientRect().left + getPathX(docY)
+     y = 42vh  (fixed vertical position)
    ═══════════════════════════════════════════════════════════ */
-function ScrollFloat({
-  children,
-  progress = 0,
-  containerClassName = "",
-  textClassName = "",
-  ease = "back.inOut(2)",
-  stagger = 0.04,
-}) {
-  const containerRef = useRef(null);
-  const tlRef = useRef(null);
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap');
 
-  const splitText = useMemo(() => {
-    const text = typeof children === "string" ? children : "";
-    return text.split("").map((char, i) => (
-      <span className="char" key={i}>
-        {char === " " ? "\u00A0" : char}
-      </span>
-    ));
-  }, [children]);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const chars = el.querySelectorAll(".char");
-    tlRef.current?.kill();
-    const tl = gsap.timeline({ paused: true });
-    tl.fromTo(
-      chars,
-      {
-        willChange: "opacity, transform, filter",
-        opacity: 0,
-        yPercent: 130,
-        scaleY: 2.5,
-        scaleX: 0.65,
-        filter: "blur(4px)",
-        transformOrigin: "50% 0%",
-      },
-      {
-        opacity: 1,
-        yPercent: 0,
-        scaleY: 1,
-        scaleX: 1,
-        filter: "blur(0px)",
-        ease,
-        stagger,
-        duration: 2.0,
-      }
-    );
-    tlRef.current = tl;
-    return () => { tl.kill(); tlRef.current = null; };
-  }, [ease, stagger]);
-
-  useEffect(() => {
-    if (!tlRef.current) return;
-    tlRef.current.progress(progress);
-  }, [progress]);
-
-  return (
-    <h3 ref={containerRef} className={`scroll-float ${containerClassName}`}>
-      <span className={`scroll-float-text ${textClassName}`}>{splitText}</span>
-    </h3>
-  );
+.cs-root *, .cs-root *::before, .cs-root *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+}
+.cs-root {
+  --parchment: #f2e8c9;
+  --dark-wood: #0a0500;
+  --rune-gold: #c8922a;
+  --ember:     #d94f00;
+  --frost:     #8ab4c9;
+  --accent:    #c8922a;
+  position: relative;
+  font-family: 'IM Fell English', serif;
+  color: var(--parchment);
+  background: var(--dark-wood);
+  overflow-x: hidden;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SCROLL REVEAL – word-by-word body copy
-   Supports [HL]...[/HL] inline highlights
-   ═══════════════════════════════════════════════════════════ */
-function ScrollReveal({
-  children,
-  progress = 0,
-  enableBlur = true,
-  baseOpacity = 0.0,
-  baseRotation = 1.5,
-  blurStrength = 1.5,
-  containerClassName = "",
-  textClassName = "",
-}) {
-  const containerRef = useRef(null);
-  const tlRef = useRef(null);
+/* ── Scroll spacer ── */
+.cs-scroll-container { position: relative; }
 
-  const splitText = useMemo(() => {
-    const text = typeof children === "string" ? children : "";
-    const hasMarkers = /\[HL\]|\[\/HL\]/.test(text);
-
-    if (!hasMarkers) {
-      return text.split(/(\s+)/).map((word, index) => {
-        if (/^\s+$/.test(word)) return word;
-        return <span className="word" key={index}>{word}</span>;
-      });
-    }
-
-    const tokens = text.split(/(\[HL\]|\[\/HL\])/);
-    let inHL = false, key = 0;
-    const nodes = [];
-
-    tokens.forEach((t) => {
-      if (t === "[HL]") { inHL = true; return; }
-      if (t === "[/HL]") { inHL = false; return; }
-      if (!t) return;
-      t.split(/(\s+)/).forEach((piece) => {
-        if (/^\s+$/.test(piece)) { nodes.push(piece); return; }
-        if (piece.length) {
-          nodes.push(
-            <span className={`word${inHL ? " hl" : ""}`} key={`w-${key++}`}>
-              {piece}
-            </span>
-          );
-        }
-      });
-    });
-
-    return nodes;
-  }, [children]);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const words = el.querySelectorAll(".word");
-    tlRef.current?.kill();
-    const tl = gsap.timeline({ paused: true });
-
-    // Subtle container rotation
-    tl.fromTo(
-      el,
-      { rotate: baseRotation, transformOrigin: "0% 50%" },
-      { rotate: 0, ease: "power2.out", duration: 1 },
-      0
-    );
-
-    // Words: staggered reveal with blur + slight upward drift
-    tl.fromTo(
-      words,
-      {
-        opacity: baseOpacity,
-        filter: enableBlur ? `blur(${blurStrength}px)` : "none",
-        y: enableBlur ? 4 : 0,
-        willChange: "opacity, filter, transform",
-      },
-      {
-        opacity: 1,
-        filter: enableBlur ? "blur(0px)" : "none",
-        y: 0,
-        ease: "power2.out",
-        duration: 1.1,
-        stagger: {
-          each: 0.018,
-          ease: "power1.inOut",
-        },
-      },
-      0
-    );
-
-    tlRef.current = tl;
-    return () => { tl.kill(); tlRef.current = null; };
-  }, [enableBlur, baseOpacity, baseRotation, blurStrength]);
-
-  useEffect(() => {
-    if (!tlRef.current) return;
-    tlRef.current.progress(progress);
-  }, [progress]);
-
-  return (
-    <div ref={containerRef} className={`scroll-reveal ${containerClassName}`}>
-      <p className={`scroll-reveal-text ${textClassName}`}>{splitText}</p>
-    </div>
-  );
+/* ─────────────────── HERO ─────────────────── */
+.cs-hero {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 55%, #3a1400 0%, #0a0500 70%);
+  z-index: 20;
+  transition: opacity 0.4s ease;
+}
+.cs-hero-stars { position: absolute; inset: 0; pointer-events: none; }
+.cs-hero-runes { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cs-star {
+  position: absolute; border-radius: 50%; background: white;
+  animation: csStarTwinkle ease-in-out infinite alternate;
+}
+@keyframes csStarTwinkle {
+  from { opacity: 0.1; transform: scale(0.8); }
+  to   { opacity: 0.7; transform: scale(1.2); }
+}
+.cs-rune-float {
+  position: absolute; color: var(--rune-gold); opacity: 0;
+  animation: csRuneFloat linear infinite;
+  text-shadow: 0 0 14px var(--rune-gold), 0 0 30px rgba(200,146,42,0.4);
+}
+@keyframes csRuneFloat {
+  0%   { opacity: 0;   transform: translateY(0)      rotate(0deg)   scale(0.8); }
+  15%  { opacity: 0.5; }
+  85%  { opacity: 0.2; }
+  100% { opacity: 0;   transform: translateY(-140px) rotate(180deg) scale(1.2); }
+}
+.cs-emblem {
+  width: 150px; height: 150px; margin-bottom: 2rem;
+  animation: csEmblemBreath 4s ease-in-out infinite alternate;
+}
+@keyframes csEmblemBreath {
+  from { filter: drop-shadow(0 0 20px rgba(200,146,42,0.4)); transform: scale(0.97); }
+  to   { filter: drop-shadow(0 0 55px rgba(217,79,0,0.6));   transform: scale(1.03); }
+}
+.cs-outer-ring { animation: csSpinSlow 25s linear infinite; transform-origin: 100px 100px; }
+.cs-inner-ring { animation: csSpinSlow 18s linear infinite reverse; transform-origin: 100px 100px; }
+@keyframes csSpinSlow { to { transform: rotate(360deg); } }
+.cs-hero h1 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(2rem, 5.5vw, 4.5rem); font-weight: 900;
+  color: var(--rune-gold); text-align: center;
+  letter-spacing: 0.1em; line-height: 1.15;
+  text-shadow: 0 0 80px rgba(200,146,42,0.4), 3px 3px 0 rgba(122,21,21,0.5);
+  animation: csTitleReveal 2.4s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes csTitleReveal {
+  from { opacity: 0; letter-spacing: 0.5em; filter: blur(8px); }
+  to   { opacity: 1; letter-spacing: 0.1em; filter: blur(0); }
+}
+.cs-kicker {
+  font-family: 'Cinzel', serif; font-size: 0.6rem;
+  letter-spacing: 0.45em; color: var(--ember);
+  text-transform: uppercase; margin-bottom: 1rem; opacity: 0.8;
+}
+.cs-hero-sub {
+  font-family: 'Cinzel', serif; font-size: clamp(0.7rem, 1.6vw, 0.95rem);
+  color: var(--frost); letter-spacing: 0.35em; margin-top: 1.2rem;
+  text-transform: uppercase; opacity: 0;
+  animation: csFadeUp 1.5s 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes csFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cs-scroll-cue {
+  position: absolute; bottom: 2.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  opacity: 0; animation: csFadeUp 1s 2s ease forwards;
+}
+.cs-scroll-cue span {
+  font-family: 'Cinzel', serif; font-size: 0.62rem;
+  letter-spacing: 0.3em; color: rgba(200,146,42,0.6); text-transform: uppercase;
+}
+.cs-scroll-cue-line {
+  width: 1px; height: 48px;
+  background: linear-gradient(to bottom, var(--rune-gold), transparent);
+  animation: csLinePulse 2s ease-in-out infinite;
+}
+@keyframes csLinePulse {
+  0%,100% { transform: scaleY(0.6); opacity: 0.3; }
+  50%     { transform: scaleY(1);   opacity: 1;   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   HIGHLIGHT HELPER
-   ═══════════════════════════════════════════════════════════ */
-const markHighlights = (text) => {
-  if (!text) return "";
-  const sentences = text.replace(/\n+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
-  const starters = [/^If\b/i, /^Do not\b/i, /^Never\b/i, /^Treat\b/i, /^Keep\b/i, /^Remember\b/i, /^Trade\b/i, /^Be\b/i];
-  const picks = [];
-  const usedIdx = new Set();
+/* ─────────────── FIXED STAGE ─────────────── */
+/* Dark background for the entire scene */
+.cs-stage {
+  position: fixed; inset: 0; z-index: 1;
+  opacity: var(--stage-opacity, 0);
+  pointer-events: none;
+  background: var(--dark-wood);
+  transition: opacity 0.4s ease;
+}
+/* Vignette */
+.cs-stage::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 25% 50%, transparent 15%, rgba(0,0,0,0.45) 70%),
+    linear-gradient(to bottom,
+      rgba(0,0,0,0.4) 0%, transparent 22%,
+      transparent 60%, rgba(0,0,0,0.7) 100%);
+}
+/* Halo — positioned in left half behind the image */
+.cs-halo {
+  position: absolute; top: 50%; left: 25%;
+  width: 70vmin; height: 70vmin; border-radius: 50%;
+  transform: translate(-50%,-50%) scale(var(--halo-scale,1.4));
+  opacity: var(--halo-opacity, 0);
+  background: radial-gradient(circle, var(--halo-color, var(--rune-gold)) 0%, transparent 70%);
+  filter: blur(80px);
+  will-change: transform, opacity;
+  z-index: 1; mix-blend-mode: screen;
+}
+/* ── IMAGE — left 48% of screen ── */
+.cs-creature-image {
+  position: absolute;
+  top: 0; left: 0;
+  width: 48%; height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+  transform-origin: center center;
+  transform: scale(var(--zoom, 0.06));
+  opacity: var(--opacity, 0);
+  will-change: transform, opacity;
+  z-index: 2;
+}
+/* Decorative frame lines on the image side */
+.cs-image-frame {
+  position: absolute; top: 0; left: 0; width: 48%; height: 100%;
+  pointer-events: none; z-index: 4;
+}
+.cs-image-frame::before {
+  content: ''; position: absolute;
+  inset: 2.5rem 0.5rem 2.5rem 2rem;
+  border: 1px solid rgba(200,146,42,0.18);
+}
+.cs-image-frame::after {
+  content: ''; position: absolute;
+  inset: 3rem 0 2rem 2.5rem;
+  border: 1px solid rgba(200,146,42,0.07);
+}
 
-  sentences.forEach((s, i) => {
-    if (picks.length >= 3) return;
-    if (starters.some((r) => r.test(s))) { picks.push(i); usedIdx.add(i); }
-  });
+/* ─────────── CENTER DIVIDER ─────────────── */
+.cs-center-divider {
+  position: fixed; top: 0; bottom: 0;
+  left: calc(50% - 1px); width: 1px;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(200,146,42,0.12) 15%,
+    rgba(200,146,42,0.12) 85%,
+    transparent 100%);
+  z-index: 8; pointer-events: none;
+}
 
-  if (picks.length < 2 && sentences.length) { picks.push(0); usedIdx.add(0); }
-  if (picks.length < 3 && sentences.length > 1) {
-    const cand = sentences.map((s, i) => ({ s, i, len: s.length }))
-      .filter(({ i }) => !usedIdx.has(i)).sort((a, b) => b.len - a.len)[0];
-    if (cand) picks.push(cand.i);
+/* ───────── TUBE SPINE + BALL ─────────────
+   TUBE_W = 160px. Canvas is fixed at
+   left = 50vw - 80px, clipped by overflow:hidden.
+   The canvas translateY = -scrollY keeps the wave
+   in the same world-space so ball coords are correct.
+────────────────────────────────────────── */
+.cs-tube-host {
+  position: fixed;
+  /* exactly 160px wide, centred */
+  left: calc(50% - 80px);
+  width: 160px;
+  top: 0; bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9;
+}
+.cs-tube-canvas {
+  /* canvas is sized in JS; top is set by JS translateY */
+  position: absolute;
+  left: 0; top: 0;
+  width: 160px;
+  will-change: transform;
+}
+/* The glow ball — position set entirely by JS */
+.cs-glow-ball {
+  position: fixed;
+  width: 22px; height: 22px; border-radius: 50%;
+  pointer-events: none; z-index: 20;
+  background: transparent;
+  box-shadow:
+    0 0 8px  5px  rgba(200,146,42,0.55),
+    0 0 22px 10px rgba(200,146,42,0.25),
+    0 0 52px 22px rgba(200,100,20,0.12);
+  transform: translate(-50%, -50%);
+  will-change: left, top, opacity;
+}
+
+/* ─────────── TEXT OVERLAY ──────────────────
+   Right side: starts just after the tube spine.
+   left: 52%  (a bit past centre)
+   right: 0
+────────────────────────────────────────── */
+.cs-text-overlay {
+  position: fixed;
+  top: 0; bottom: 0;
+  left: 54%; right: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex; flex-direction: column;
+  justify-content: flex-start;
+  opacity: var(--text-opacity, 0);
+  will-change: opacity;
+}
+.cs-text-header {
+  padding: 3.5rem 3rem 1rem 2.5rem;
+  display: flex; flex-direction: column; gap: 0.45rem;
+  flex-shrink: 0;
+}
+.cs-chapter-rule {
+  display: block; width: 36px; height: 1px;
+  background: var(--accent); opacity: 0.5; margin-bottom: 0.2rem;
+}
+.cs-eyebrow {
+  font-family: 'Cinzel', serif; font-size: 0.58rem;
+  letter-spacing: 0.45em; color: var(--accent);
+  text-transform: uppercase; opacity: 0.85;
+}
+.cs-scroll-float {
+  overflow: hidden;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(1.1rem, 2.4vw, 2.1rem); font-weight: 700;
+  color: var(--parchment); line-height: 1.22;
+  text-shadow: 0 2px 30px rgba(0,0,0,0.95);
+}
+.cs-scroll-float-text { display: inline; }
+.cs-char {
+  display: inline-block;
+  will-change: opacity, transform, filter;
+  transform-origin: 50% 0%;
+}
+
+/* ── Masked text scroll window ── */
+.cs-scroll-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black var(--top-fade, 5%),
+    black calc(100% - var(--bottom-fade, 8%)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black var(--top-fade, 5%),
+    black calc(100% - var(--bottom-fade, 8%)),
+    transparent 100%
+  );
+}
+/* Body content slides upward as tProg increases */
+.cs-body {
+  position: absolute; left: 0; right: 0;
+  top: var(--content-offset, 100%);
+  will-change: top;
+  padding: 0 3rem 5rem 2.5rem;
+}
+.cs-scroll-reveal { transform-origin: 0% 50%; }
+.cs-scroll-reveal-text {
+  font-size: clamp(0.82rem, 1.25vw, 1rem);
+  line-height: 2.1; color: rgba(242,232,201,0.78);
+  font-style: italic; margin-bottom: 1.6rem;
+}
+.cs-word { display: inline; }
+.cs-word.hl {
+  color: var(--parchment); font-style: normal;
+  text-shadow: 0 0 18px rgba(200,146,42,0.28);
+}
+.cs-tags-text {
+  font-family: 'Cinzel', serif; font-size: 0.65rem;
+  letter-spacing: 0.3em; color: var(--accent);
+  opacity: 0.65; font-style: normal;
+}
+
+/* ─────────── FOOTER ─────────────────────── */
+.cs-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  text-align: center; padding: 4rem 2rem 3rem; z-index: 2;
+  background: linear-gradient(0deg, #000 0%, transparent 100%);
+}
+.cs-footer-symbol {
+  font-size: 2.5rem; color: var(--rune-gold); display: inline-block;
+  animation: csSpinSlow 30s linear infinite;
+  filter: drop-shadow(0 0 16px rgba(200,146,42,0.35)); margin-bottom: 0.6rem;
+}
+.cs-footer-text {
+  font-family: 'Cinzel', serif; font-size: 0.62rem;
+  letter-spacing: 0.35em; color: rgba(200,146,42,0.28); text-transform: uppercase;
+}
+
+/* ─────────── OVERLAYS ───────────────────── */
+.cs-ember-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+.cs-grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+}
+
+/* ─────────── RESPONSIVE ─────────────────── */
+@media (max-width: 700px) {
+  .cs-creature-image  { width: 100%; object-position: center 10%; }
+  .cs-image-frame     { width: 100%; }
+  .cs-text-overlay    {
+    left: 0; right: 0;
+    background: linear-gradient(to top, rgba(10,5,0,0.94) 0%, transparent 55%);
+    justify-content: flex-end;
   }
-
-  return sentences.map((s, i) => picks.includes(i) ? `[HL]${s}[/HL]` : s).join(" ");
-};
+  .cs-text-header { padding: 1rem 1.5rem 0.5rem; }
+  .cs-body        { padding: 0 1.5rem 4rem; }
+  .cs-center-divider { display: none; }
+  .cs-tube-host   { display: none; }
+  .cs-glow-ball   { display: none; }
+}
+`;
 
 /* ═══════════════════════════════════════════════════════════
    UTILS
    ═══════════════════════════════════════════════════════════ */
-const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
-const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-const easeInOut = (t) => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+const clamp      = (v, a, b) => Math.min(Math.max(v, a), b);
+const easeOut    = (t) => 1 - Math.pow(1 - t, 3);
+const easeInOut  = (t) => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
 const smoothstep = (t) => t * t * (3 - 2 * t);
-const segment = (p, a, b) => Math.min(Math.max((p - a) / (b - a), 0), 1);
+const segment    = (p, a, b) => Math.min(Math.max((p - a) / (b - a), 0), 1);
 const resolveSrc = (img) => {
   if (!img) return "";
   if (typeof img === "string") return img;
@@ -216,8 +384,14 @@ const resolveSrc = (img) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   DATA
+   DATA  (original, unchanged)
    ═══════════════════════════════════════════════════════════ */
+const COLOR_BY_ID = {
+  1: "#ff6b6b", 2: "#ff3b3b", 3: "#4aa3ff",
+  4: "#ff5ab1", 12: "#29e1ff", 13: "#d1a04b", 14: "#9aa5ff",
+};
+const colorFor = (id) => COLOR_BY_ID[id] || "#9aa5ff";
+
 const RAW_CREATURES = [
   {
     id: 1,
@@ -225,7 +399,6 @@ const RAW_CREATURES = [
     title: "Nisse — The Farmstead Gnome",
     sub: "Friendly",
     tags: ["gnome", "friendly", "folk"],
-    summary: "",
     details: `Nisser are the Nordic kin of gnomes: small, clever beings who make their homes around farms—lofts, barns, and quiet corners where the hay still smells of summer. They're often seen in red caps and simple coats that echo the look of Santa Claus, which is why many call them "the Nordic Santa." In winter, people leave out a bowl of warm Christmas porridge by the barn door. It's an old promise: treat the nisse well, and he'll keep the animals calm and the tools working; insult him, and you'll spend the night chasing spilled grain and untied knots.
 
 Nisser come in many shapes and sizes, but they share the same heart: intelligent, watchful, and fair. Be polite, show respect, and they'll be kind in return. Cross them—and they will remind you who really runs the farm after dark.
@@ -306,101 +479,427 @@ Some say she carries a broom for villages and a rake for lone houses; others say
   },
 ];
 
-const COLOR_BY_ID = {
-  2: "#ff3b3b",
-  3: "#4aa3ff",
-  1: "#ff6b6b",
-  4: "#ff5ab1",
-  12: "#29e1ff",
-  13: "#d1a04b",
-  14: "#9aa5ff",
+/* ═══════════════════════════════════════════════════════════
+   HIGHLIGHT HELPER  (original, unchanged)
+   ═══════════════════════════════════════════════════════════ */
+const markHighlights = (text) => {
+  if (!text) return "";
+  const sentences = text.replace(/\n+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
+  const starters  = [/^If\b/i,/^Do not\b/i,/^Never\b/i,/^Treat\b/i,
+                     /^Keep\b/i,/^Remember\b/i,/^Trade\b/i,/^Be\b/i];
+  const picks = []; const usedIdx = new Set();
+  sentences.forEach((s, i) => {
+    if (picks.length >= 3) return;
+    if (starters.some(r => r.test(s))) { picks.push(i); usedIdx.add(i); }
+  });
+  if (picks.length < 2 && sentences.length) { picks.push(0); usedIdx.add(0); }
+  if (picks.length < 3 && sentences.length > 1) {
+    const cand = sentences.map((s, i) => ({ s, i, len: s.length }))
+      .filter(({ i }) => !usedIdx.has(i)).sort((a, b) => b.len - a.len)[0];
+    if (cand) picks.push(cand.i);
+  }
+  return sentences.map((s, i) => picks.includes(i) ? `[HL]${s}[/HL]` : s).join(" ");
 };
-const colorFor = (id) => COLOR_BY_ID[id] || "#9aa5ff";
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL FLOAT  (char-by-char, GSAP)
+   ═══════════════════════════════════════════════════════════ */
+function ScrollFloat({ children, progress = 0, ease = "back.inOut(2)", stagger = 0.04 }) {
+  const containerRef = useRef(null);
+  const tlRef        = useRef(null);
+  const splitText = useMemo(() => {
+    const text = typeof children === "string" ? children : "";
+    return text.split("").map((char, i) => (
+      <span className="cs-char" key={i}>{char === " " ? "\u00A0" : char}</span>
+    ));
+  }, [children]);
+  useLayoutEffect(() => {
+    const el = containerRef.current; if (!el) return;
+    const chars = el.querySelectorAll(".cs-char");
+    tlRef.current?.kill();
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(chars,
+      { willChange:"opacity,transform,filter", opacity:0, yPercent:130,
+        scaleY:2.5, scaleX:0.65, filter:"blur(4px)", transformOrigin:"50% 0%" },
+      { opacity:1, yPercent:0, scaleY:1, scaleX:1,
+        filter:"blur(0px)", ease, stagger, duration:2.0 }
+    );
+    tlRef.current = tl;
+    return () => { tl.kill(); tlRef.current = null; };
+  }, [ease, stagger]);
+  useEffect(() => { tlRef.current?.progress(progress); }, [progress]);
+  return (
+    <h3 ref={containerRef} className="cs-scroll-float">
+      <span className="cs-scroll-float-text">{splitText}</span>
+    </h3>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL REVEAL  (word-by-word, GSAP, supports [HL] tags)
+   ═══════════════════════════════════════════════════════════ */
+function ScrollReveal({
+  children, progress = 0, enableBlur = true,
+  baseOpacity = 0.0, baseRotation = 1.5, blurStrength = 1.5,
+  textClassName = "",
+}) {
+  const containerRef = useRef(null);
+  const tlRef        = useRef(null);
+  const splitText = useMemo(() => {
+    const text = typeof children === "string" ? children : "";
+    const hasMarkers = /\[HL\]|\[\/HL\]/.test(text);
+    if (!hasMarkers) {
+      return text.split(/(\s+)/).map((word, i) =>
+        /^\s+$/.test(word) ? word :
+        <span className="cs-word" key={i}>{word}</span>
+      );
+    }
+    const tokens = text.split(/(\[HL\]|\[\/HL\])/);
+    let inHL = false, key = 0; const nodes = [];
+    tokens.forEach(t => {
+      if (t === "[HL]")  { inHL = true;  return; }
+      if (t === "[/HL]") { inHL = false; return; }
+      if (!t) return;
+      t.split(/(\s+)/).forEach(piece => {
+        if (/^\s+$/.test(piece)) { nodes.push(piece); return; }
+        if (piece.length)
+          nodes.push(
+            <span className={`cs-word${inHL ? " hl" : ""}`} key={`w-${key++}`}>{piece}</span>
+          );
+      });
+    });
+    return nodes;
+  }, [children]);
+  useLayoutEffect(() => {
+    const el = containerRef.current; if (!el) return;
+    const words = el.querySelectorAll(".cs-word");
+    tlRef.current?.kill();
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(el,
+      { rotate: baseRotation, transformOrigin:"0% 50%" },
+      { rotate:0, ease:"power2.out", duration:1 }, 0
+    );
+    tl.fromTo(words,
+      { opacity:baseOpacity, filter:enableBlur?`blur(${blurStrength}px)`:"none",
+        y:enableBlur?4:0, willChange:"opacity,filter,transform" },
+      { opacity:1, filter:enableBlur?"blur(0px)":"none", y:0,
+        ease:"power2.out", duration:1.1,
+        stagger:{ each:0.018, ease:"power1.inOut" } }, 0
+    );
+    tlRef.current = tl;
+    return () => { tl.kill(); tlRef.current = null; };
+  }, [enableBlur, baseOpacity, baseRotation, blurStrength]);
+  useEffect(() => { tlRef.current?.progress(progress); }, [progress]);
+  return (
+    <div ref={containerRef} className="cs-scroll-reveal">
+      <p className={`cs-scroll-reveal-text ${textClassName}`}>{splitText}</p>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VEGVISIR EMBLEM
+   ═══════════════════════════════════════════════════════════ */
+function VegvisirEmblem() {
+  return (
+    <svg className="cs-emblem" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <g className="cs-outer-ring">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(200,146,42,0.28)" strokeWidth="1.5"/>
+        <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(200,146,42,0.1)" strokeWidth="6"/>
+        <text fontSize="9" fill="rgba(200,146,42,0.52)" fontFamily="serif" textAnchor="middle">
+          <textPath href="#cs-rp">ᚠ · ᚢ · ᚦ · ᚨ · ᚱ · ᚲ · ᚷ · ᚹ · ᚺ · ᚾ · ᛁ · ᛏ · ᛒ · ᛖ · ᛗ · ᛚ · ᛜ · ᛞ · ᛟ ·</textPath>
+        </text>
+        <defs><path id="cs-rp" d="M100,18 a82,82 0 1,1 -0.01,0 z"/></defs>
+      </g>
+      <g className="cs-inner-ring">
+        <circle cx="100" cy="100" r="62" fill="none" stroke="rgba(200,146,42,0.18)" strokeWidth="1"/>
+      </g>
+      <g stroke="rgba(200,146,42,0.82)" strokeWidth="2.5" strokeLinecap="round" fill="none">
+        <line x1="100" y1="38"  x2="100" y2="162"/>
+        <line x1="38"  y1="100" x2="162" y2="100"/>
+        <line x1="55"  y1="55"  x2="145" y2="145"/>
+        <line x1="145" y1="55"  x2="55"  y2="145"/>
+        <path d="M100,38 l-7,14 M100,38 l7,14"      opacity="0.9"/>
+        <path d="M100,162 l-7,-14 M100,162 l7,-14"   opacity="0.9"/>
+        <path d="M38,100 l14,-7 M38,100 l14,7"      opacity="0.9"/>
+        <path d="M162,100 l-14,-7 M162,100 l-14,7"   opacity="0.9"/>
+        <path d="M55,55   l5,15 M55,55   l15,5"     opacity="0.65"/>
+        <path d="M145,55  l-5,15 M145,55  l-15,5"   opacity="0.65"/>
+        <path d="M55,145  l5,-15 M55,145  l15,-5"   opacity="0.65"/>
+        <path d="M145,145 l-5,-15 M145,145 l-15,-5" opacity="0.65"/>
+      </g>
+      <circle cx="100" cy="100" r="11" fill="rgba(200,146,42,0.68)"/>
+      <circle cx="100" cy="100" r="5"  fill="#0a0500"/>
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO DECORATIONS
+   ═══════════════════════════════════════════════════════════ */
+function HeroDecorations() {
+  const starsRef = useRef(null);
+  const runesRef = useRef(null);
+  const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ";
+  useEffect(() => {
+    if (starsRef.current && !starsRef.current.children.length) {
+      for (let i = 0; i < 80; i++) {
+        const s = document.createElement("div"); s.className = "cs-star";
+        const sz = 0.8 + Math.random() * 2;
+        s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-duration:${2+Math.random()*4}s;animation-delay:${Math.random()*5}s;`;
+        starsRef.current.appendChild(s);
+      }
+    }
+    if (runesRef.current && !runesRef.current.children.length) {
+      for (let i = 0; i < 22; i++) {
+        const r = document.createElement("div"); r.className = "cs-rune-float";
+        r.textContent = RUNES[Math.floor(Math.random() * RUNES.length)];
+        r.style.left = (5 + Math.random() * 90) + "%";
+        r.style.top  = (15 + Math.random() * 75) + "%";
+        r.style.fontSize = (0.85 + Math.random() * 1.4) + "rem";
+        r.style.animationDuration = (7 + Math.random() * 9) + "s";
+        r.style.animationDelay   = (Math.random() * 9) + "s";
+        runesRef.current.appendChild(r);
+      }
+    }
+  }, []);
+  return (
+    <>
+      <div className="cs-hero-stars" ref={starsRef}/>
+      <div className="cs-hero-runes" ref={runesRef}/>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TUBE SPINE
+   ─────────────────────────────────────────────────────────
+   Canvas width = TUBE_W = 160px, centred at 50vw.
+   Canvas height = full gallery height in px.
+
+   The canvas sits inside .cs-tube-host (fixed, overflow:hidden).
+   On every scroll tick we do:
+     canvas.style.transform = `translateY(${-galleryScrollY}px)`
+   where galleryScrollY = scrollY - heroHeightPx.
+   This keeps the same sine-wave section at the viewport midpoint.
+
+   Ball position (screen coords):
+     X = hostLeft + getPathX(docY)        (hostLeft = 50vw - 80px)
+     Y = 42vh
+   where docY = galleryScrollY + viewH * 0.42
+   ═══════════════════════════════════════════════════════════ */
+const TUBE_W    = 160;
+const TUBE_CX   = TUBE_W / 2;   // = 80  (centre of canvas)
+const AMPLITUDE = 36;
+const WAVEFORM  = 310;           // pixels per full sine cycle
+const getPathX  = (y) => TUBE_CX + Math.sin((y / WAVEFORM) * Math.PI * 2) * AMPLITUDE;
+
+function drawTube(canvas) {
+  const ctx = canvas.getContext("2d");
+  const H   = canvas.height;
+  ctx.clearRect(0, 0, TUBE_W, H);
+  const steps = Math.ceil(H / 3);
+  const tracePath = () => {
+    ctx.beginPath();
+    ctx.moveTo(getPathX(0), 0);
+    for (let i = 1; i <= steps; i++) {
+      const y = (i / steps) * H;
+      ctx.lineTo(getPathX(y), y);
+    }
+  };
+  // three layered soft glows — no hard line
+  [
+    [56, "rgba(170,80,5,0.028)"],
+    [34, "rgba(195,110,15,0.045)"],
+    [18, "rgba(218,138,28,0.058)"],
+  ].forEach(([w, c]) => {
+    ctx.save();
+    ctx.lineWidth = w; ctx.strokeStyle = c;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    tracePath(); ctx.stroke();
+    ctx.restore();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EMBERS
+   ═══════════════════════════════════════════════════════════ */
+function useEmbers(canvasRef) {
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let embers = [], rafId = null;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize(); window.addEventListener("resize", resize);
+    const spawn = () => embers.push({
+      x: Math.random() * canvas.width, y: canvas.height + 8,
+      vx: (Math.random() - .5) * .7, vy: -(0.5 + Math.random() * 1.2),
+      life: 1, decay: 0.0035 + Math.random() * 0.005, size: 1 + Math.random() * 2.2,
+      color: Math.random() > .5 ? "#d94f00" : "#c8922a",
+    });
+    const tid = setInterval(spawn, 130);
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      embers = embers.filter(e => e.life > 0);
+      for (const e of embers) {
+        e.x += e.vx + Math.sin(e.life * 9) * .25; e.y += e.vy; e.life -= e.decay;
+        ctx.save(); ctx.globalAlpha = e.life * .65; ctx.fillStyle = e.color;
+        ctx.shadowColor = e.color; ctx.shadowBlur = 7;
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      clearInterval(tid); cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+    };
+  }, [canvasRef]);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PHASE CONSTANTS  (identical to original)
+   ═══════════════════════════════════════════════════════════ */
+const HERO_PHASE   = 20;
+const ZOOM_PHASE   = 70;
+const TEXT_PHASE   = 380;
+const EXIT_PHASE   = 90;
+const PHASE_LENGTH = ZOOM_PHASE + TEXT_PHASE + EXIT_PHASE; // 540
 
 /* ═══════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════ */
 export default function CharacterScroll() {
-  const CREATURES = useMemo(
-    () => RAW_CREATURES.map((c) => ({ ...c, src: resolveSrc(c.img) })),
-    []
-  );
+  const CREATURES    = useMemo(() => RAW_CREATURES.map(c => ({ ...c, src: resolveSrc(c.img) })), []);
+  const TOTAL_HEIGHT = HERO_PHASE + CREATURES.length * PHASE_LENGTH + 60; // vh
 
-  const [renderIndex, setRenderIndex] = useState(-1);
-
-  const lockedIndexRef    = useRef(-1);
-  const textProgRef       = useRef(0);
-  // Track whether we're in the "exit" animation between creatures
-  const exitingRef        = useRef(false);
-  const exitProgressRef   = useRef(0);
-
+  /* refs */
   const wrapperRef         = useRef(null);
   const scrollContainerRef = useRef(null);
   const heroRef            = useRef(null);
-  const imageRefs          = useRef([]);
-  const textRef            = useRef(null);
-  const bodyRef            = useRef(null);
-  const haloRef            = useRef(null);
   const stageRef           = useRef(null);
+  const haloRef            = useRef(null);
+  const imageRefs          = useRef([]);
+  const textOverlayRef     = useRef(null);
+  const scrollWrapRef      = useRef(null);
+  const bodyRef            = useRef(null);
+  const tubeHostRef        = useRef(null);  // the fixed 160px wrapper
+  const tubeCanvasRef      = useRef(null);
+  const ballRef            = useRef(null);
+  const emberCanvasRef     = useRef(null);
 
-  // ── Phase lengths ──────────────────────────────────────────
-  // Each creature gets:
-  //   ZOOM_PHASE   vh: image zooms in
-  //   TEXT_PHASE   vh: text scrolls (slow)
-  //   EXIT_PHASE   vh: exit animation (zoom+fade out, text→black)
-  const HERO_PHASE   = 20;
-  const ZOOM_PHASE   = 70;
-  const TEXT_PHASE   = 380;  // much more scroll room = slower text
-  const EXIT_PHASE   = 90;   // long exit so the transition feels cinematic
-  const PHASE_LENGTH = ZOOM_PHASE + TEXT_PHASE + EXIT_PHASE;
-  const TOTAL_HEIGHT = HERO_PHASE + CREATURES.length * PHASE_LENGTH + 60;
+  /* scroll logic state */
+  const [renderIndex, setRenderIndex] = useState(-1);
+  const lockedIndexRef = useRef(-1);
+  const textProgRef    = useRef(0);
+  const exitingRef     = useRef(false);
+  const exitProgRef    = useRef(0);
 
-  // Image stays at scale 1.0 until exit phase begins
- // const HOLD_BEFORE_FADE = (ZOOM_PHASE + TEXT_PHASE) / PHASE_LENGTH; // ~0.82
+  /* embers */
+  useEmbers(emberCanvasRef);
 
+  /* inject CSS once */
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.style.setProperty("--total-height", `${TOTAL_HEIGHT}vh`);
+    const id = "cs-global-style";
+    if (!document.getElementById(id)) {
+      const tag = document.createElement("style"); tag.id = id; tag.textContent = GLOBAL_CSS;
+      document.head.appendChild(tag);
     }
-  }, [TOTAL_HEIGHT]);
-
-  useEffect(() => {
-    const onLoad = () => {
-      document.fonts?.ready?.then(() => {
-        window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-      });
-    };
-    window.addEventListener("load", onLoad);
-    return () => window.removeEventListener("load", onLoad);
   }, []);
 
+  /* scroll container height */
+  useEffect(() => {
+    if (scrollContainerRef.current)
+      scrollContainerRef.current.style.height = `${TOTAL_HEIGHT}vh`;
+  }, [TOTAL_HEIGHT]);
+
+  /* ── Build tube canvas ──
+     Height = full gallery scroll in pixels.
+     Called on mount + resize.
+  */
+  const buildTube = useCallback(() => {
+    const canvas = tubeCanvasRef.current; if (!canvas) return;
+    const viewH = window.innerHeight;
+    const galH  = CREATURES.length * PHASE_LENGTH * viewH / 100;
+    // add one extra viewport so the wave doesn't clip at the very bottom
+    const totalH = galH + viewH;
+    canvas.width  = TUBE_W;
+    canvas.height = Math.ceil(totalH);
+    canvas.style.width  = TUBE_W + "px";
+    canvas.style.height = canvas.height + "px";
+    drawTube(canvas);
+  }, [CREATURES.length]);
+
+  useEffect(() => {
+    buildTube();
+    window.addEventListener("resize", buildTube);
+    return () => window.removeEventListener("resize", buildTube);
+  }, [buildTube]);
+
+  /* ── Update tube scroll + ball position ──
+     Called on every scroll tick with the smoothed Y.
+  */
+  const updateTubeAndBall = useCallback((scrollY) => {
+    const canvas = tubeCanvasRef.current;
+    const ball   = ballRef.current;
+    const host   = tubeHostRef.current;
+    if (!canvas || !ball || !host) return;
+
+    const viewH   = window.innerHeight;
+    const heroH   = HERO_PHASE * viewH / 100;  // hero height in px
+    // how many px we've scrolled into the gallery section
+    const galScrollY = Math.max(0, scrollY - heroH);
+
+    // ── Scroll the canvas: shift it up by galScrollY
+    // so the correct wave section is always at viewport 42%
+    canvas.style.transform = `translateY(${-galScrollY}px)`;
+
+    // ── Ball position
+    // docY = where we are on the canvas = galScrollY + fixed screen position
+    const BALL_SCREEN_Y = viewH * 0.42;
+    const docY          = galScrollY + BALL_SCREEN_Y;
+    // hostLeft = left edge of the fixed tube host in screen coords
+    // Since host is `left: calc(50% - 80px)`, this equals innerWidth/2 - 80
+    const hostLeft = window.innerWidth / 2 - 80;
+    const ballX    = hostLeft + getPathX(docY);
+    ball.style.left    = ballX + "px";
+    ball.style.top     = BALL_SCREEN_Y + "px";
+
+    // fade in as we enter gallery
+    const into = scrollY - heroH;
+    ball.style.opacity = String(clamp((into + viewH * 0.3) / 350, 0, 1));
+  }, []);
+
+  /* ── GSAP progress polling (50ms) ── */
+  const [textProgState, setTextProgState] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTextProgState(textProgRef.current), 50);
+    return () => clearInterval(id);
+  }, []);
+
+  const headingProg = easeOut(segment(textProgState, 0.06, 0.40));
+  const copyProg    = segment(textProgState, 0.18, 0.99);
+  const tagsProg    = segment(textProgState, 0.70, 0.97);
+
+  /* ══════════════════════════════════════════════
+     MAIN SCROLL ENGINE  (original logic, unchanged)
+  ══════════════════════════════════════════════ */
   useEffect(() => {
     if (!wrapperRef.current || !scrollContainerRef.current) return;
 
     const getBounds = () => {
-      const rect   = wrapperRef.current.getBoundingClientRect();
-      const top    = window.scrollY + rect.top;
-      const height = rect.height;
-      const viewH  = window.innerHeight;
-      const start  = Math.max(0, top - viewH * 0.0);
-      const end    = top + height - viewH;
-      const length = Math.max(1, end - start);
-      return { start, end, length };
+      const rect  = wrapperRef.current.getBoundingClientRect();
+      const top   = window.scrollY + rect.top;
+      const viewH = window.innerHeight;
+      const end   = top + rect.height - viewH;
+      return { start: Math.max(0, top), end, length: Math.max(1, end - Math.max(0, top)) };
     };
-
-    let bounds  = getBounds();
-    let targetY = window.scrollY;
-    let smoothY = window.scrollY;
-    let rafSmooth = null;
-
-    const SMOOTHING = 0.10; // silkier lerp
-
-    // ── Momentum / ice-skate ────────────────────────────────
-    let scrollVelocity  = 0;
-    let lastScrollY     = window.scrollY;
-    let momentumRaf     = null;
-    let isMomentum      = false;
-    let scrollEndTimer  = null;
+    let bounds = getBounds();
+    let targetY = window.scrollY, smoothY = window.scrollY, rafSmooth = null;
+    const SMOOTHING = 0.10;
+    let scrollVelocity = 0, lastScrollY = window.scrollY;
+    let momentumRaf = null, isMomentum = false, scrollEndTimer = null;
 
     const handleMomentum = () => {
       if (!isMomentum) return;
@@ -413,7 +912,6 @@ export default function CharacterScroll() {
       }
       momentumRaf = requestAnimationFrame(handleMomentum);
     };
-
     const startMomentum = (v) => {
       if (isMomentum) return;
       scrollVelocity = v; isMomentum = true;
@@ -421,323 +919,277 @@ export default function CharacterScroll() {
       momentumRaf = requestAnimationFrame(handleMomentum);
     };
 
-    // ── Main update function ────────────────────────────────
     const update = (y) => {
       const raw      = (y - bounds.start) / bounds.length;
       const progress = clamp(raw, 0, 1);
 
-      if (stageRef.current) {
+      if (stageRef.current)
         stageRef.current.style.setProperty("--stage-opacity", progress > 0 ? "1" : "0");
-      }
 
       const HERO_RATIO = 0.05;
 
-      // HERO phase
+      /* hero phase */
       if (progress < HERO_RATIO) {
-        const heroP = progress / HERO_RATIO;
         if (heroRef.current) {
-          heroRef.current.style.setProperty("--hero-opacity", "1");
-          heroRef.current.style.setProperty("--hero-scale", String(1 + heroP * 0.06));
-          heroRef.current.style.visibility = "visible";
+          heroRef.current.style.opacity       = "1";
+          heroRef.current.style.visibility    = "visible";
           heroRef.current.style.pointerEvents = "auto";
         }
-        lockedIndexRef.current = -1;
-        setRenderIndex(-1);
-        return;
+        if (textOverlayRef.current)
+          textOverlayRef.current.style.setProperty("--text-opacity", "0");
+        lockedIndexRef.current = -1; setRenderIndex(-1);
+        updateTubeAndBall(y); return;
       }
 
+      /* hide hero */
       if (heroRef.current) {
-        heroRef.current.style.visibility = "hidden";
+        heroRef.current.style.opacity       = "0";
+        heroRef.current.style.visibility    = "hidden";
         heroRef.current.style.pointerEvents = "none";
       }
 
       const afterHero          = (progress - HERO_RATIO) / (1 - HERO_RATIO);
       const totalCreaturePhase = afterHero * CREATURES.length;
 
-      // Init lock
       if (lockedIndexRef.current < 0) {
-        lockedIndexRef.current = 0;
-        setRenderIndex(0);
-        textProgRef.current = 0;
+        lockedIndexRef.current = 0; setRenderIndex(0); textProgRef.current = 0;
       }
 
-      // Allow scrolling backwards freely
-      const intendedIndex = Math.min(Math.floor(totalCreaturePhase), CREATURES.length - 1);
-      if (intendedIndex < lockedIndexRef.current) {
-        lockedIndexRef.current = intendedIndex;
-        setRenderIndex(intendedIndex);
-        textProgRef.current = 0;
-        exitingRef.current  = false;
-        exitProgressRef.current = 0;
+      const intendedIdx = Math.min(Math.floor(totalCreaturePhase), CREATURES.length - 1);
+      if (intendedIdx < lockedIndexRef.current) {
+        lockedIndexRef.current = intendedIdx; setRenderIndex(intendedIdx);
+        textProgRef.current = 0; exitingRef.current = false; exitProgRef.current = 0;
       }
 
       const activeIdx = lockedIndexRef.current;
-      // phaseRaw goes 0 → 1 across this creature's entire PHASE_LENGTH
       const phaseRaw  = totalCreaturePhase - activeIdx;
 
-      // ── Zone boundaries (all as fractions of 0..1) ────────
-      const zoomEnd  = ZOOM_PHASE  / PHASE_LENGTH;  // end of zoom-in zone
-      const textEnd  = (ZOOM_PHASE + TEXT_PHASE) / PHASE_LENGTH; // = HOLD_BEFORE_FADE
-      // EXIT_PHASE fills the rest up to 1.0
+      const zoomEnd = ZOOM_PHASE  / PHASE_LENGTH;
+      const textEnd = (ZOOM_PHASE + TEXT_PHASE) / PHASE_LENGTH;
 
-      // ── TEXT progress ─────────────────────────────────────
-      // Only maps over the TEXT zone (zoomEnd → textEnd)
-      const textStart   = zoomEnd;
-      const tProg       = clamp((phaseRaw - textStart) / (textEnd - textStart), 0, 1);
-      //const textDone    = tProg >= 0.998;
-
-      // ── EXIT progress ─────────────────────────────────────
-      // Goes 0→1 during EXIT_PHASE zone (textEnd → 1.0)
-      const exitP       = clamp((phaseRaw - textEnd) / (1 - textEnd), 0, 1);
-      const inExit      = phaseRaw >= textEnd;
+      const tProg  = clamp((phaseRaw - zoomEnd) / (textEnd - zoomEnd), 0, 1);
+      const inExit = phaseRaw >= textEnd;
+      const exitP  = clamp((phaseRaw - textEnd) / (1 - textEnd), 0, 1);
 
       if (renderIndex !== activeIdx) setRenderIndex(activeIdx);
 
-      // Accent colour transition
+      /* accent */
       const accent = colorFor(CREATURES[activeIdx].id);
       if (wrapperRef.current) wrapperRef.current.style.setProperty("--accent", accent);
+      if (haloRef.current)    haloRef.current.style.setProperty("--halo-color", accent);
 
-      // ── Text scroll mechanics ─────────────────────────────
+      /* text scroll */
       let textOpacity = 1;
-      if (textRef.current && bodyRef.current) {
-        const wrap     = textRef.current.querySelector(".scrollWrap");
-        const content  = bodyRef.current;
-        const wrapH    = wrap?.getBoundingClientRect().height || 0;
-        const contentH = content?.getBoundingClientRect().height || 0;
+      if (textOverlayRef.current && bodyRef.current && scrollWrapRef.current) {
+        const wrapH    = scrollWrapRef.current.getBoundingClientRect().height || 0;
+        const contentH = bodyRef.current.getBoundingClientRect().height       || 0;
+        const startOff = wrapH + 80;
+        const endOff   = Math.min(wrapH * 0.6 - contentH, startOff - 80);
+        const scrollT  = inExit ? 1.0 : easeInOut(tProg);
+        bodyRef.current.style.setProperty("--content-offset",
+          `${startOff + (endOff - startOff) * scrollT}px`);
 
-        // Text starts well below the visible scrollWrap area (pushed down)
-        // and travels upward as tProg → 1.
-        // startOffset: positive = content is below the top of scrollWrap
-        const startOffset = wrapH + 80;          // fully below fold at start
-        // endOffset: last line sits ~60% from top of scrollWrap
-        const endTarget   = wrapH * 0.6 - contentH;
-        const endOffset   = Math.min(endTarget, startOffset - 80);
+        const topFade = tProg < 0.05 ? 5 : 5 + ((tProg - 0.05) / 0.95) * 16;
+        const botFade = 5 + (inExit ? 0 : tProg * 4);
+        scrollWrapRef.current.style.setProperty("--top-fade",    `${Math.round(topFade)}%`);
+        scrollWrapRef.current.style.setProperty("--bottom-fade", `${Math.round(botFade)}%`);
 
-        // During exit phase we freeze the text position
-        const scrollT = inExit ? 1.0 : easeInOut(tProg);
-        const offset  = startOffset + (endOffset - startOffset) * scrollT;
-        content.style.setProperty("--content-offset", `${offset}px`);
-
-        // Dynamic mask fade bands
-        const topFade  = tProg < 0.05 ? 6 : 6 + ((tProg - 0.05) / 0.95) * 16;
-        const botFade  = 6 + (inExit ? 0 : tProg * 4);
-        wrap?.style.setProperty("--top-fade",    `${Math.round(topFade)}%`);
-        wrap?.style.setProperty("--bottom-fade", `${Math.round(botFade)}%`);
-
-        // ── Text opacity ──────────────────────────────────
-        // Fade IN: first 8% of zoom zone → fully visible
-        if (phaseRaw < zoomEnd * 0.6) {
-          textOpacity = 0;
-        } else if (phaseRaw < zoomEnd) {
-          textOpacity = smoothstep((phaseRaw - zoomEnd * 0.6) / (zoomEnd * 0.4));
-        } else if (!inExit) {
-          // During text scroll – fully visible
-          textOpacity = 1;
-        } else {
-          // EXIT: text fades out to black as exitP → 1
-          // Use a smooth, slow fade (not instant)
-          textOpacity = Math.max(0, 1 - smoothstep(exitP) * 1.0);
-        }
+        if      (phaseRaw < zoomEnd * 0.6) textOpacity = 0;
+        else if (phaseRaw < zoomEnd)       textOpacity = smoothstep((phaseRaw - zoomEnd*0.6) / (zoomEnd*0.4));
+        else if (!inExit)                  textOpacity = 1;
+        else                               textOpacity = Math.max(0, 1 - smoothstep(exitP));
 
         textProgRef.current = tProg;
 
-        // ── Gate: advance to next creature ───────────────
-        // Only unlock when we're at the very end of EXIT_PHASE
+        /* advance lock */
         if (inExit && exitP >= 0.98) {
           const next = Math.min(lockedIndexRef.current + 1, CREATURES.length - 1);
           if (next !== lockedIndexRef.current) {
-            lockedIndexRef.current = next;
-            setRenderIndex(next);
-            textProgRef.current = 0;
-            exitingRef.current  = false;
-            exitProgressRef.current = 0;
+            lockedIndexRef.current = next; setRenderIndex(next);
+            textProgRef.current = 0; exitingRef.current = false; exitProgRef.current = 0;
           }
-          return;
+          updateTubeAndBall(y); return;
         }
       }
 
-      // ── Image / halo animation ─────────────────────────────
+      if (textOverlayRef.current)
+        textOverlayRef.current.style.setProperty("--text-opacity", String(textOpacity));
+
+      /* image / halo */
       let zoom = 1, imgOpacity = 1, haloScale = 1.4, haloOpacity = 0.5;
-
       if (phaseRaw < zoomEnd) {
-        // ZOOM IN phase: image grows from tiny to full
-        const zp     = phaseRaw / zoomEnd;
-        zoom         = 0.06 + easeOut(zp) * 0.94;
-        imgOpacity   = smoothstep(zp);
-        haloScale    = easeOut(zp) * 1.4;
-        haloOpacity  = smoothstep(zp) * 0.5;
+        const zp = phaseRaw / zoomEnd;
+        zoom = 0.06 + easeOut(zp) * 0.94; imgOpacity = smoothstep(zp);
+        haloScale = easeOut(zp) * 1.4;    haloOpacity = smoothstep(zp) * 0.5;
       } else if (!inExit) {
-        // TEXT READ phase: image sits still with very gentle breathing zoom
-        const holdP  = (phaseRaw - zoomEnd) / (textEnd - zoomEnd);
-        zoom         = 1.0 + holdP * 0.035; // barely perceptible slow zoom
-        imgOpacity   = 1;
-        haloScale    = 1.4;
-        haloOpacity  = 0.5;
+        const holdP = (phaseRaw - zoomEnd) / (textEnd - zoomEnd);
+        zoom = 1.0 + holdP * 0.035; imgOpacity = 1; haloScale = 1.4; haloOpacity = 0.5;
       } else {
-        // EXIT phase: zoom accelerates + opacity drops to 0
-        // exitP 0→1 over EXIT_PHASE scrolling
-        const ep     = smoothstep(exitP);          // ease the exit
-        zoom         = 1.035 + ep * 0.30;          // zooms in significantly
-        imgOpacity   = Math.max(0, 1 - ep * 1.1);  // fades to transparent
-        haloScale    = 1.4 + ep * 0.6;
-        haloOpacity  = Math.max(0, 0.5 - ep * 0.5);
+        const ep = smoothstep(exitP);
+        zoom = 1.035 + ep * 0.30; imgOpacity = Math.max(0, 1 - ep * 1.1);
+        haloScale = 1.4 + ep * 0.6; haloOpacity = Math.max(0, 0.5 - ep * 0.5);
       }
 
-      const img = imageRefs.current[activeIdx];
-      if (img) {
-        img.style.setProperty("--zoom",    String(zoom));
-        img.style.setProperty("--opacity", String(imgOpacity));
-      }
-      if (textRef.current) textRef.current.style.setProperty("--text-opacity", String(textOpacity));
+      imageRefs.current.forEach((img, idx) => {
+        if (!img) return;
+        if (idx === activeIdx) {
+          img.style.setProperty("--zoom",    String(zoom));
+          img.style.setProperty("--opacity", String(imgOpacity));
+        } else {
+          img.style.setProperty("--zoom",    "0.06");
+          img.style.setProperty("--opacity", "0");
+        }
+      });
       if (haloRef.current) {
         haloRef.current.style.setProperty("--halo-scale",   String(haloScale));
         haloRef.current.style.setProperty("--halo-opacity", String(haloOpacity));
       }
 
-      // Always hide non-active images immediately
-      imageRefs.current.forEach((other, idx) => {
-        if (other && idx !== activeIdx) {
-          other.style.setProperty("--opacity", "0");
-          other.style.setProperty("--zoom",    "0.06");
-        }
-      });
-    };
+      updateTubeAndBall(y);
+    }; // end update()
 
-    // ── RAF loop ─────────────────────────────────────────────
     const tick = () => {
       smoothY += (targetY - smoothY) * SMOOTHING;
       update(smoothY);
-      if (Math.abs(targetY - smoothY) > 0.4) {
-        rafSmooth = requestAnimationFrame(tick);
-      } else {
-        rafSmooth = null;
-      }
+      rafSmooth = Math.abs(targetY - smoothY) > 0.4 ? requestAnimationFrame(tick) : null;
     };
 
     const handleScroll = () => {
-      const y = window.scrollY;
-      const vel = y - lastScrollY;
-      lastScrollY = y;
-      targetY = y;
-
+      const y = window.scrollY, vel = y - lastScrollY;
+      lastScrollY = y; targetY = y;
       if (!rafSmooth) rafSmooth = requestAnimationFrame(tick);
-
       if (scrollEndTimer) clearTimeout(scrollEndTimer);
       scrollEndTimer = setTimeout(() => {
-        if (!isMomentum && Math.abs(vel) > 1.0) {
-          startMomentum(vel * 0.5);
-        }
+        if (!isMomentum && Math.abs(vel) > 1.0) startMomentum(vel * 0.5);
       }, 55);
     };
+    const handleResize = () => { bounds = getBounds(); buildTube(); update(smoothY); };
 
-    const handleResize = () => { bounds = getBounds(); update(smoothY); };
+    targetY = window.scrollY; smoothY = window.scrollY;
+    update(smoothY); handleScroll();
 
-    targetY = window.scrollY;
-    smoothY = window.scrollY;
-    update(smoothY);
-    handleScroll();
-
-    window.addEventListener("scroll",  handleScroll, { passive: true });
-    window.addEventListener("resize",  handleResize);
-
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("scroll",  handleScroll);
-      window.removeEventListener("resize",  handleResize);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
       if (scrollEndTimer) clearTimeout(scrollEndTimer);
       if (momentumRaf)    cancelAnimationFrame(momentumRaf);
       if (rafSmooth)      cancelAnimationFrame(rafSmooth);
     };
-  }, [CREATURES, TOTAL_HEIGHT, renderIndex, PHASE_LENGTH]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CREATURES, TOTAL_HEIGHT, renderIndex, PHASE_LENGTH, buildTube, updateTubeAndBall]);
 
   const currentCreature = renderIndex >= 0 ? CREATURES[renderIndex] : null;
 
-  // ── Poll textProgRef at 50ms for GSAP drivers ────────────
-  const [textProgState, setTextProgState] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTextProgState(textProgRef.current), 50);
-    return () => clearInterval(id);
-  }, []);
-
-  const headingProg = easeOut(segment(textProgState, 0.06, 0.40));
-  const copyProg    = segment(textProgState, 0.18, 0.99);
-  const tagsProg    = segment(textProgState, 0.70, 0.97);
-
+  /* ═══════════════════════════════════════════
+     RENDER
+  ═══════════════════════════════════════════ */
   return (
-    <div className="component-wrapper" ref={wrapperRef}>
-      <div className="scroll-container" ref={scrollContainerRef}>
+    <div className="cs-root" ref={wrapperRef}>
+      <div className="cs-grain" aria-hidden="true"/>
 
-        {/* ── Hero ── */}
-        <section className="hero" ref={heroRef}>
-          <div className="kicker">FOLKLORE UNIVERSE</div>
+      {/* ── Scroll height spacer ── */}
+      <div className="cs-scroll-container" ref={scrollContainerRef}>
+
+        {/* Hero */}
+        <section className="cs-hero" ref={heroRef}>
+          <HeroDecorations/>
+          <VegvisirEmblem/>
+          <div className="cs-kicker">FOLKLORE UNIVERSE</div>
           <h1>MEET SOME OF THE CREATURES</h1>
-          <p>The adventure is out there and waiting for you.</p>
+          <p className="cs-hero-sub">The adventure is out there and waiting for you.</p>
+          <div className="cs-scroll-cue">
+            <span>Scroll to begin</span>
+            <div className="cs-scroll-cue-line"/>
+          </div>
         </section>
 
-        {/* ── Stage ── */}
-        <div className="zoom-stage" ref={stageRef}>
-          {currentCreature && (
-            <div
-              className="halo"
-              ref={haloRef}
-              style={{ "--halo-color": colorFor(currentCreature.id) }}
-            />
-          )}
+        {/* Footer */}
+        <div className="cs-footer">
+          <div className="cs-footer-symbol">⚚</div>
+          <p className="cs-footer-text">The saga is told — may Odin remember your name</p>
+        </div>
 
-          {CREATURES.map((creature, index) => (
-            <img
-              key={creature.id}
-              ref={(el) => (imageRefs.current[index] = el)}
-              className="creature-image"
-              src={creature.src}
-              alt={creature.title}
-              loading={index === 0 ? "eager" : "lazy"}
-            />
-          ))}
+      </div>
 
-          {currentCreature && (
-            <div className="text-overlay" ref={textRef}>
-              <div className="header">
-                <div className="eyebrow">
-                  {currentCreature.sub.toUpperCase()}
-                </div>
-                <ScrollFloat key={currentCreature.id} progress={headingProg}>
-                  {currentCreature.title}
-                </ScrollFloat>
-              </div>
+      {/* ── Fixed stage — image left 48% ── */}
+      <div className="cs-stage" ref={stageRef} style={{ "--stage-opacity": 0 }}>
+        <div className="cs-halo" ref={haloRef}/>
+        <div className="cs-image-frame" aria-hidden="true"/>
+        {CREATURES.map((creature, index) => (
+          <img
+            key={creature.id}
+            ref={el => (imageRefs.current[index] = el)}
+            className="cs-creature-image"
+            src={creature.src}
+            alt={creature.title}
+            loading={index === 0 ? "eager" : "lazy"}
+            style={{ "--zoom": "0.06", "--opacity": "0" }}
+          />
+        ))}
+      </div>
 
-              <div className="scrollWrap">
-                <div className="body" ref={bodyRef}>
-                  <ScrollReveal
-                    key={`copy-${currentCreature.id}`}
-                    progress={copyProg}
-                    textClassName="details"
-                    baseOpacity={0.0}
-                    baseRotation={0}
-                    blurStrength={1.5}
-                  >
-                    {markHighlights(
-                      currentCreature.details ??
-                      currentCreature.summary ??
-                      `In the depths of Nordic mythology, creatures like ${currentCreature.title} represent the untamed forces of nature and the unknown.`
-                    )}
-                  </ScrollReveal>
+      {/* ── Center divider ── */}
+      <div className="cs-center-divider" aria-hidden="true"/>
 
-                  <ScrollReveal
-                    key={`tags-${currentCreature.id}`}
-                    progress={tagsProg}
-                    enableBlur={false}
-                    baseOpacity={0.0}
-                    baseRotation={0}
-                    textClassName="tags"
-                  >
-                    {(currentCreature.tags ?? []).map((t) => `#${t}`).join("  ")}
-                  </ScrollReveal>
-                </div>
+      {/* ── Tube spine — fixed 160px at 50vw ──
+           The canvas is TALL (full gallery height).
+           It gets translateY(-galScrollY) every frame
+           so the right wave section is always visible.
+      ── */}
+      <div className="cs-tube-host" ref={tubeHostRef}>
+        <canvas ref={tubeCanvasRef} className="cs-tube-canvas"/>
+      </div>
+
+      {/* ── Glow ball — position set by updateTubeAndBall() ── */}
+      <div className="cs-glow-ball" ref={ballRef} style={{ opacity: 0 }}/>
+
+      {/* ── Text overlay — right side ── */}
+      <div
+        className="cs-text-overlay"
+        ref={textOverlayRef}
+        style={{ "--text-opacity": 0 }}
+      >
+        {currentCreature && (
+          <>
+            <div className="cs-text-header">
+              <span className="cs-chapter-rule"/>
+              <div className="cs-eyebrow">{currentCreature.sub.toUpperCase()}</div>
+              <ScrollFloat key={currentCreature.id} progress={headingProg}>
+                {currentCreature.title}
+              </ScrollFloat>
+            </div>
+
+            <div className="cs-scroll-wrap" ref={scrollWrapRef}>
+              <div className="cs-body" ref={bodyRef}>
+                <ScrollReveal
+                  key={`copy-${currentCreature.id}`}
+                  progress={copyProg}
+                  baseOpacity={0.0} baseRotation={0} blurStrength={1.5}
+                >
+                  {markHighlights(
+                    currentCreature.details ??
+                    `In the depths of Nordic mythology, creatures like ${currentCreature.title} represent the untamed forces of nature and the unknown.`
+                  )}
+                </ScrollReveal>
+
+                <ScrollReveal
+                  key={`tags-${currentCreature.id}`}
+                  progress={tagsProg}
+                  enableBlur={false}
+                  baseOpacity={0.0} baseRotation={0}
+                  textClassName="cs-tags-text"
+                >
+                  {(currentCreature.tags ?? []).map(t => `#${t}`).join("  ")}
+                </ScrollReveal>
               </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
+
+      <canvas className="cs-ember-canvas" ref={emberCanvasRef}/>
     </div>
   );
 }

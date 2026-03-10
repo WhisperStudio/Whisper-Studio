@@ -7,10 +7,18 @@ const GlassOrbAvatar = ({
   style,
   className,
   size = 40,
-  skin = 'default', // 'default' | 'juleskin'
+  skin = 'default',
   glyph = 'A',
+  glyphFont = 'Times New Roman',
+  onClick,
+  isOpen = false,
+  variant = 'default',
+  interactive = true,
+  forceState = null,
+  forceGlyphReveal = false,
+  hideRingParticles = false,
 }) => {
-  const [, setIsHovered] = useState(false); // only for React if you need it elsewhere
+  const [, setIsHovered] = useState(false);
   const mouseRef = useRef({ x: null, y: null });
   const hoveredRef = useRef(false);
   const colorStateRef = useRef('idle');
@@ -19,18 +27,18 @@ const GlassOrbAvatar = ({
   const containerRef = useRef(null);
   const animationRef = useRef(null);
 
-  const [colorState, setColorState] = useState('idle'); // 'idle' | 'typing' | 'listening' | 'maintenance'
+  const [colorState, setColorState] = useState('idle');
 
   const colorPalettes = useMemo(
     () => ({
       idle: [
-  { r: 0, g: 255, b: 255 },
-  { r: 0, g: 240, b: 190 },
-  { r: 50, g: 255, b: 255 },
-  { r: 0, g: 200, b: 255 },
-  { r: 0, g: 255, b: 180 },
-  { r: 100, g: 255, b: 255 },
-],
+        { r: 0, g: 255, b: 255 },
+        { r: 0, g: 240, b: 190 },
+        { r: 50, g: 255, b: 255 },
+        { r: 0, g: 200, b: 255 },
+        { r: 0, g: 255, b: 180 },
+        { r: 100, g: 255, b: 255 },
+      ],
       maintenance: [
         { r: 255, g: 193, b: 7 },
         { r: 245, g: 158, b: 11 },
@@ -54,13 +62,19 @@ const GlassOrbAvatar = ({
   );
 
   useEffect(() => {
+    if (forceState) {
+      setColorState(forceState);
+      return;
+    }
+
     if (maintenance) {
       setColorState('maintenance');
       return;
     }
+
     if (isTyping) setColorState(sender === 'user' ? 'typing' : 'listening');
     else setColorState('idle');
-  }, [isTyping, sender, maintenance]);
+  }, [isTyping, sender, maintenance, forceState]);
 
   useEffect(() => {
     colorStateRef.current = colorState;
@@ -85,15 +99,12 @@ const GlassOrbAvatar = ({
 
     let orbRadius = 0;
 
-    // outer casing
     let casingOuter = 0;
     let casingInner = 0;
 
-    // particle ring (donut)
     let ringOuter = 0;
     let ringInner = 0;
 
-    // center disk
     let centerRadius = 0;
 
     const portal = {
@@ -125,19 +136,16 @@ const GlassOrbAvatar = ({
       orbRadius = sizePx / 2;
 
       casingOuter = orbRadius * 0.995;
-      casingInner = orbRadius * 0.90;
+      casingInner = orbRadius * 0.9;
 
       ringOuter = orbRadius * 0.95;
-      ringInner = orbRadius * 0.50;
+      ringInner = orbRadius * 0.5;
 
       centerRadius = ringInner * 0.985;
     };
 
     updateDimensions();
 
-    // -----------------------------
-    // Color blending (green ring)
-    // -----------------------------
     let colorIndex = 0;
     let colorProgress = 0;
 
@@ -174,71 +182,53 @@ const GlassOrbAvatar = ({
       b: Math.round(mix(a.b, b.b, t)),
     });
 
-// -----------------------------
-// Glyph -> points (from font, precise & customizable)
-// -----------------------------
-const buildGlyphPoints = (char) => {
-  const off = document.createElement('canvas');
-  const offSize = 220; // higher = more detail
-  off.width = offSize;
-  off.height = offSize;
+    const buildGlyphPoints = (char) => {
+      const off = document.createElement('canvas');
+      const offSize = 220;
+      off.width = offSize;
+      off.height = offSize;
 
-  const octx = off.getContext('2d');
-  if (!octx) return [{ x: 0, y: 0 }];
+      const octx = off.getContext('2d');
+      if (!octx) return [{ x: 0, y: 0 }];
 
-  // clear
-  octx.clearRect(0, 0, offSize, offSize);
+      octx.clearRect(0, 0, offSize, offSize);
+      octx.fillStyle = 'black';
+      octx.fillRect(0, 0, offSize, offSize);
 
-  // style: white glyph on black
-  octx.fillStyle = 'black';
-  octx.fillRect(0, 0, offSize, offSize);
+      const fontSize = 170;
+      octx.font = `900 ${fontSize}px ${glyphFont}`;
+      octx.textAlign = 'center';
+      octx.textBaseline = 'middle';
+      octx.fillStyle = 'white';
+      octx.fillText(char?.slice(0, 1) || 'A', offSize / 2, offSize / 2 + 6);
 
-  // choose a font that looks good (change freely)
-  // try: 'Cinzel', 'Trajan Pro', 'Georgia', 'Times New Roman', etc.
-  const fontSize = 170;
-  octx.font = `900 ${fontSize}px Times New Roman`;
-  octx.textAlign = 'center';
-  octx.textBaseline = 'middle';
-  octx.fillStyle = 'white';
+      const img = octx.getImageData(0, 0, offSize, offSize).data;
 
-  // draw glyph centered
-  octx.fillText(char?.slice(0, 1) || 'A', offSize / 2, offSize / 2 + 6);
+      const step = 2;
+      const threshold = 45;
+      const pts = [];
 
-  // read pixels
-  const img = octx.getImageData(0, 0, offSize, offSize).data;
+      for (let y = 0; y < offSize; y += step) {
+        for (let x = 0; x < offSize; x += step) {
+          const i = (y * offSize + x) * 4;
+          const r = img[i];
+          const g = img[i + 1];
+          const b = img[i + 2];
+          const brightness = (r + g + b) / 3;
 
-  // sampling settings (tweak for density)
-  const step = 2;        // lower = more points
-  const threshold = 45;  // alpha/brightness threshold
-  const pts = [];
-
-  for (let y = 0; y < offSize; y += step) {
-    for (let x = 0; x < offSize; x += step) {
-      const i = (y * offSize + x) * 4;
-      const r = img[i];
-      const g = img[i + 1];
-      const b = img[i + 2];
-
-      // since background is black and text is white:
-      const brightness = (r + g + b) / 3;
-      if (brightness > 255 - threshold) {
-        // normalize to -1..1 space
-        const nx = (x / offSize) * 2 - 1;
-        const ny = (y / offSize) * 2 - 1;
-
-        // flip Y to match your coordinate expectations
-        const glyphScale = 1.5;
-        pts.push({ x: nx * glyphScale, y: ny * glyphScale });
+          if (brightness > 255 - threshold) {
+            const nx = (x / offSize) * 2 - 1;
+            const ny = (y / offSize) * 2 - 1;
+            const glyphScale = 1.5;
+            pts.push({ x: nx * glyphScale, y: ny * glyphScale });
+          }
+        }
       }
-    }
-  }
 
-  // fallback
-  return pts.length ? pts : [{ x: 0, y: 0 }];
-};
+      return pts.length ? pts : [{ x: 0, y: 0 }];
+    };
 
-// swap rune points source:
-const runeNorm = buildGlyphPoints(glyph);
+    const runeNorm = buildGlyphPoints(glyph);
 
     const runeTargets = () => {
       const radius = centerRadius * 0.78;
@@ -248,9 +238,6 @@ const runeNorm = buildGlyphPoints(glyph);
       }));
     };
 
-    // -----------------------------
-    // Ring particles (green)
-    // -----------------------------
     let ringParticles = [];
 
     const initRingParticles = () => {
@@ -263,13 +250,15 @@ const runeNorm = buildGlyphPoints(glyph);
       constructor() {
         this.radius = ringInner + Math.random() * (ringOuter - ringInner);
         this.angle = Math.random() * Math.PI * 2;
-        this.speed = (Math.random() * 0.010 + 0.004) * (Math.random() < 0.5 ? 1 : -1);
+        this.speed = (Math.random() * 0.01 + 0.004) * (Math.random() < 0.5 ? 1 : -1);
         this.size = (Math.random() * 2.6 + 2.0) * (sizePx / 500);
         this.colorOffset = (Math.random() * 9999) | 0;
       }
+
       update(speedMul) {
         this.angle += this.speed * speedMul;
       }
+
       draw(speedMul, hovered) {
         const x = centerX + Math.cos(this.angle) * this.radius;
         const y = centerY + Math.sin(this.angle) * this.radius;
@@ -304,68 +293,59 @@ const runeNorm = buildGlyphPoints(glyph);
       }
     }
 
-    // -----------------------------
-    // Gold dots (no respawn)
-    // -----------------------------
     let goldDots = [];
     let goldBlend = 0;
     let goldTargets = runeTargets();
+
     const shuffleInPlace = (arr) => {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-};
-    const initGoldDots = () => {
-  goldTargets = runeTargets();
-
-  // hvor "kompleks" glyphen er (antall tilgjengelige target-punkter)
-  const complexity = goldTargets.length;
-
-  // styring:
-  const minDots = 160;     // aldri under dette (så ikke tomt)
-  const maxDots = 1250;     // aldri over dette (performance)
-  const density = 0.45;    // dots per target-point (0.2–0.7 er typisk bra)
-
-  // skaler også litt med størrelse, så større orb får litt flere dots:
-  const sizeFactor = Math.max(0.85, Math.min(1.35, sizePx / 420));
-
-  const count = Math.max(
-    minDots,
-    Math.min(maxDots, Math.floor(complexity * density * sizeFactor))
-  );
-
-  // spread indices across the WHOLE rune, then shuffle
-  const idx = Array.from({ length: count }, (_, i) =>
-    Math.floor((i / Math.max(1, count - 1)) * Math.max(1, goldTargets.length - 1))
-  );
-  shuffleInPlace(idx);
-
-  goldDots = new Array(count).fill(0).map((_, i) => {
-    const a = Math.random() * Math.PI * 2;
-    const rr = ringInner + Math.random() * (ringOuter - ringInner);
-
-    return {
-      x: centerX + Math.cos(a) * rr,
-      y: centerY + Math.sin(a) * rr,
-      vx: 0,
-      vy: 0,
-
-      ringAngle: a,
-      ringRadius: rr,
-      ringSpeed: (Math.random() * 0.010 + 0.004) * (Math.random() < 0.5 ? 1 : -1),
-
-      runeIndex: idx[i],
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     };
-  });
-};
+
+    const initGoldDots = () => {
+      goldTargets = runeTargets();
+
+      const complexity = goldTargets.length;
+      const minDots = 160;
+      const maxDots = 1250;
+      const density = 0.45;
+      const sizeFactor = Math.max(0.85, Math.min(1.35, sizePx / 420));
+
+      const count = Math.max(
+        minDots,
+        Math.min(maxDots, Math.floor(complexity * density * sizeFactor))
+      );
+
+      const idx = Array.from({ length: count }, (_, i) =>
+        Math.floor((i / Math.max(1, count - 1)) * Math.max(1, goldTargets.length - 1))
+      );
+      shuffleInPlace(idx);
+
+      goldDots = new Array(count).fill(0).map((_, i) => {
+        const a = Math.random() * Math.PI * 2;
+        const rr = ringInner + Math.random() * (ringOuter - ringInner);
+
+        return {
+          x: centerX + Math.cos(a) * rr,
+          y: centerY + Math.sin(a) * rr,
+          vx: 0,
+          vy: 0,
+          ringAngle: a,
+          ringRadius: rr,
+          ringSpeed: (Math.random() * 0.01 + 0.004) * (Math.random() < 0.5 ? 1 : -1),
+          runeIndex: idx[i],
+        };
+      });
+    };
 
     const updateGoldTargetsOnResize = () => {
       goldTargets = runeTargets();
       for (const d of goldDots) {
-    d.runeIndex = Math.min(d.runeIndex, goldTargets.length - 1);
-  }
+        d.runeIndex = Math.min(d.runeIndex, goldTargets.length - 1);
+      }
     };
 
     const updateGoldDots = (speedMul, hovered) => {
@@ -374,7 +354,7 @@ const runeNorm = buildGlyphPoints(glyph);
       const mx = mouseRef.current.x;
       const my = mouseRef.current.y;
 
-      const targetBlend = hovered ? 1 : 0;
+      const targetBlend = (hovered || forceGlyphReveal) ? 1 : 0;
       goldBlend += (targetBlend - goldBlend) * 0.12;
 
       const spring = mix(0.12, 0.18, goldBlend);
@@ -440,9 +420,54 @@ const runeNorm = buildGlyphPoints(glyph);
       }
     };
 
-    // -----------------------------
-    // Portal background
-    // -----------------------------
+    // Enklere sirkler for header-variant
+    let miniOrbs = [];
+
+    const initMiniOrbs = () => {
+  const count = variant === 'chatHeader' ? 16 : 9;
+
+  miniOrbs = new Array(count).fill(0).map((_, i) => ({
+    angle: (Math.PI * 2 * i) / count,
+    radius: centerRadius * (0.14 + Math.random() * 0.34),
+    speed: 0.004 + Math.random() * 0.010,
+    size:
+      variant === 'chatHeader'
+        ? (sizePx / 100) * (1.2 + Math.random() * 2.2)
+        : (sizePx / 100) * (2 + Math.random() * 3),
+    offset: i * 17,
+  }));
+};
+    const drawMiniOrbs = () => {
+  const miniSpeedFactor =
+    variant === 'chatHeader'
+      ? colorStateRef.current === 'typing'
+        ? 0.45
+        : 0.8
+      : 1;
+
+  for (const orb of miniOrbs) {
+    orb.angle += orb.speed * miniSpeedFactor;
+
+    const x = centerX + Math.cos(orb.angle) * orb.radius;
+    const y = centerY + Math.sin(orb.angle) * orb.radius;
+
+    const rgb = getRingColorRGB(orb.offset);
+    ctx.shadowBlur = 10 * (sizePx / 100);
+    ctx.shadowColor = rgba(rgb, 0.28);
+    ctx.fillStyle = rgba(rgb, 0.88);
+
+    ctx.beginPath();
+    ctx.arc(x, y, orb.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.shadowBlur = 14 * (sizePx / 100);
+  ctx.shadowColor = 'rgba(255,255,255,0.06)';
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, centerRadius * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+};
     const drawPortalBase = () => {
       const g = ctx.createRadialGradient(centerX, centerY, orbRadius * 0.08, centerX, centerY, orbRadius);
       g.addColorStop(0, portal.deep2);
@@ -489,7 +514,6 @@ const runeNorm = buildGlyphPoints(glyph);
       ctx.restore();
     };
 
-    // clip helpers
     const clipRing = () => {
       ctx.save();
       ctx.beginPath();
@@ -497,18 +521,18 @@ const runeNorm = buildGlyphPoints(glyph);
       ctx.arc(centerX, centerY, ringInner, 0, Math.PI * 2, true);
       ctx.clip('evenodd');
     };
+
     const clipOrb = () => {
       ctx.save();
       ctx.beginPath();
       ctx.arc(centerX, centerY, casingOuter, 0, Math.PI * 2);
       ctx.clip();
     };
+
     const unclip = () => ctx.restore();
 
-    // -----------------------------
-    // Optional snow (juleskin)
-    // -----------------------------
     let snowflakes = [];
+
     const initSnowflakes = () => {
       const count = Math.max(34, Math.min(110, Math.floor(64 * (sizePx / 260))));
       snowflakes = new Array(count).fill(0).map(() => ({
@@ -518,6 +542,7 @@ const runeNorm = buildGlyphPoints(glyph);
         s: (Math.random() * 0.33 + 0.16) * (sizePx / 240),
       }));
     };
+
     const drawSnow = () => {
       ctx.save();
       ctx.fillStyle = 'rgba(255,255,255,0.72)';
@@ -534,32 +559,25 @@ const runeNorm = buildGlyphPoints(glyph);
       ctx.restore();
     };
 
-    
-    // -----------------------------
-    // Init once
-    // -----------------------------
     initRingParticles();
     initGoldDots();
+    initMiniOrbs();
     if (skinRef.current === 'juleskin') initSnowflakes();
 
     const ro = new ResizeObserver(() => {
       updateDimensions();
       updateGoldTargetsOnResize();
+      initMiniOrbs();
     });
     ro.observe(container);
 
-    // -----------------------------
-    // Animation loop (NO React state inside)
-    // -----------------------------
     const animate = () => {
-      // palette timing
       colorProgress += 0.0032;
       if (colorProgress >= 1) {
         colorProgress = 0;
         colorIndex = (colorIndex + 1) % Math.max(1, targetPalette.length);
       }
 
-      // palette transition (using ref)
       const nextPalette = colorPalettes[colorStateRef.current];
       if (currentPalette[0]?.r !== nextPalette[0]?.r) {
         targetPalette = nextPalette.map((c) => ({ ...c }));
@@ -570,31 +588,41 @@ const runeNorm = buildGlyphPoints(glyph);
       currentPalette = currentPalette.map((cur, i) => {
         const tgt = targetPalette[i] || targetPalette[targetPalette.length - 1];
         return {
-          r: Math.floor(cur.r + (tgt.r - cur.r) * 0.10),
-          g: Math.floor(cur.g + (tgt.g - cur.g) * 0.10),
-          b: Math.floor(cur.b + (tgt.b - cur.b) * 0.10),
+          r: Math.floor(cur.r + (tgt.r - cur.r) * 0.1),
+          g: Math.floor(cur.g + (tgt.g - cur.g) * 0.1),
+          b: Math.floor(cur.b + (tgt.b - cur.b) * 0.1),
         };
       });
 
-      const hovered = hoveredRef.current;
+      const hovered = interactive ? hoveredRef.current : false;
       const speedMul = hovered ? 3.0 : 1.0;
 
       ctx.clearRect(0, 0, sizePx, sizePx);
 
       drawPortalBase();
 
-      clipRing();
-      if (skinRef.current === 'juleskin') drawSnow();
-      for (const p of ringParticles) {
-        p.update(speedMul);
-        p.draw(speedMul, hovered);
-      }
-      unclip();
+      if (variant === 'default') {
+  if (!hideRingParticles) {
+    clipRing();
+    if (skinRef.current === 'juleskin') drawSnow();
+    for (const p of ringParticles) {
+      p.update(speedMul);
+      p.draw(speedMul, hovered);
+    }
+    unclip();
+  }
 
-      clipOrb();
-      updateGoldDots(speedMul, hovered);
-      drawGoldDots();
-      unclip();
+  clipOrb();
+  updateGoldDots(speedMul, hovered);
+  drawGoldDots();
+  unclip();
+}
+
+      if (variant === 'chatHeader') {
+        clipOrb();
+        drawMiniOrbs();
+        unclip();
+      }
 
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -605,7 +633,7 @@ const runeNorm = buildGlyphPoints(glyph);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       ro.disconnect();
     };
-  }, [colorPalettes, glyph]);
+  }, [colorPalettes, glyph, glyphFont, variant, interactive, forceGlyphReveal, hideRingParticles]);
 
   const portalBackground =
     'radial-gradient(circle at 50% 50%, ' +
@@ -623,18 +651,21 @@ const runeNorm = buildGlyphPoints(glyph);
     <div
       ref={containerRef}
       className={className}
+      onClick={onClick}
       onPointerEnter={() => {
+        if (!interactive) return;
         setIsHovered(true);
         hoveredRef.current = true;
       }}
       onPointerLeave={() => {
+        if (!interactive) return;
         setIsHovered(false);
         hoveredRef.current = false;
         mouseRef.current.x = null;
         mouseRef.current.y = null;
       }}
       onPointerMove={(e) => {
-        if (!containerRef.current) return;
+        if (!interactive || !containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         mouseRef.current.x = e.clientX - rect.left;
         mouseRef.current.y = e.clientY - rect.top;
@@ -644,7 +675,7 @@ const runeNorm = buildGlyphPoints(glyph);
         background: 'none',
         width: style?.width || `${size}px`,
         height: style?.height || `${size}px`,
-        cursor: 'pointer',
+        cursor: onClick ? 'pointer' : 'default',
         ...style,
       }}
     >
@@ -668,6 +699,7 @@ const runeNorm = buildGlyphPoints(glyph);
           left: 0,
           width: '100%',
           height: '100%',
+          pointerEvents: 'none',
         }}
       />
     </div>
