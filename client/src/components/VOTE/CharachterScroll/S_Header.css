@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap");
 
 :root {
   --parchment: #f2e8c9;
@@ -14,10 +14,10 @@
 }
 
 .hero-page {
-  min-height: 4000px;
-  background: var(--dark-wood);
+  min-height: 1000px;
+  background: transparent;
   color: var(--parchment);
-  font-family: 'IM Fell English', serif;
+  font-family: "IM Fell English", serif;
   overflow-x: hidden;
   position: relative;
 }
@@ -30,64 +30,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 55%, #3a1400 0%, #0a0500 70%);
+  background: transparent;
   z-index: 2;
-}
-
-.hero-stars {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.star {
-  position: absolute;
-  border-radius: 50%;
-  background: white;
-  animation: starTwinkle ease-in-out infinite alternate;
-}
-
-@keyframes starTwinkle {
-  from {
-    opacity: 0.1;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 0.7;
-    transform: scale(1.2);
-  }
-}
-
-.hero-runes {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.rune-float {
-  position: absolute;
-  color: var(--rune-gold);
-  opacity: 0;
-  text-shadow: 0 0 14px var(--rune-gold);
-  animation: runeFloat linear infinite;
-}
-
-@keyframes runeFloat {
-  0% {
-    opacity: 0;
-    transform: translateY(0) rotate(0deg) scale(0.8);
-  }
-  15% {
-    opacity: 0.5;
-  }
-  85% {
-    opacity: 0.2;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-140px) rotate(180deg) scale(1.2);
-  }
 }
 
 .hero-emblem {
@@ -103,7 +47,7 @@
     transform: scale(0.97);
   }
   to {
-    filter: drop-shadow(0 0 55px rgba(217, 79, 0, 0.6));
+    filter: drop-shadow(0 0 55px rgba(217, 0, 0, 0.6));
     transform: scale(1.03);
   }
 }
@@ -125,15 +69,18 @@
 }
 
 .hero-header h1 {
-  font-family: 'Cinzel Decorative', serif;
+  font-family: "Cinzel Decorative", serif;
   font-size: clamp(2.2rem, 6vw, 5rem);
   font-weight: 900;
   color: var(--rune-gold);
   text-align: center;
   letter-spacing: 0.1em;
   line-height: 1.15;
-  text-shadow: 0 0 80px rgba(200, 146, 42, 0.4), 3px 3px 0 rgba(122, 21, 21, 0.5);
+  text-shadow:
+    0 0 80px rgba(200, 146, 42, 0.4),
+    3px 3px 0 rgba(122, 21, 21, 0.5);
   animation: titleReveal 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  margin: 0;
 }
 
 @keyframes titleReveal {
@@ -150,7 +97,7 @@
 }
 
 .hero-header p {
-  font-family: 'Cinzel', serif;
+  font-family: "Cinzel", serif;
   font-size: clamp(0.75rem, 1.8vw, 1rem);
   color: var(--frost);
   letter-spacing: 0.35em;
@@ -170,29 +117,6 @@
     transform: translateY(0);
   }
 }
-.goldenOrb {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 30;
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.2);
-  background: radial-gradient(
-    circle,
-    #ffd37a 0%,
-    #c8922a 58%,
-    #8f4e00 78%,
-    rgba(0, 0, 0, 0) 100%
-  );
-  box-shadow:
-    0 0 12px 5px   rgba(200, 146, 42, 0.95),
-    0 0 30px 10px rgba(200, 146, 42, 0.45),
-    0 0 70px 20px rgba(217, 79, 0, 0.22);
-}
 
 .scroll-cue {
   position: absolute;
@@ -206,7 +130,7 @@
 }
 
 .scroll-cue span {
-  font-family: 'Cinzel', serif;
+  font-family: "Cinzel", serif;
   font-size: 0.65rem;
   letter-spacing: 0.3em;
   color: rgba(200, 146, 42, 0.6);

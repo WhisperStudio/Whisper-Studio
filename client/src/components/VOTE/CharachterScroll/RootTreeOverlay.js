@@ -1,379 +1,445 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useRef, forwardRef } from "react";
+import h73ts01 from './zZqar01.svg';
+import './ShowRoom.css';
 
-function mulberry32(a) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeInOutCubic = (t) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+const easeInCubic = (t) => t * t * t;
+const easeOutBack = (t) => {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+};
+
+// Leaf anchor points on the tree (normalized 0-1 within tree bounding box)
+const LEAF_POINTS = [
+  { x: 0.18, y: 0.26 },
+  { x: 0.26, y: 0.18 },
+  { x: 0.36, y: 0.13 },
+  { x: 0.49, y: 0.11 },
+  { x: 0.62, y: 0.14 },
+  { x: 0.74, y: 0.20 },
+  { x: 0.82, y: 0.28 },
+  { x: 0.84, y: 0.38 },
+  { x: 0.75, y: 0.44 },
+  { x: 0.63, y: 0.40 },
+  { x: 0.54, y: 0.33 },
+  { x: 0.45, y: 0.31 },
+  { x: 0.35, y: 0.34 },
+  { x: 0.26, y: 0.40 },
+  { x: 0.20, y: 0.47 },
+  { x: 0.30, y: 0.28 },
+  { x: 0.41, y: 0.20 },
+  { x: 0.56, y: 0.20 },
+  { x: 0.68, y: 0.26 },
+  { x: 0.72, y: 0.37 },
+];
+
+// Spiral orbit path around tree — particles travel these and then converge at trunk base
+const ORBIT_PATH_POINTS = [
+  { x: 0.50, y: 0.30 },
+  { x: 0.70, y: 0.25 },
+  { x: 0.85, y: 0.40 },
+  { x: 0.80, y: 0.58 },
+  { x: 0.65, y: 0.68 },
+  { x: 0.50, y: 0.72 },
+  { x: 0.35, y: 0.68 },
+  { x: 0.20, y: 0.58 },
+  { x: 0.15, y: 0.40 },
+  { x: 0.28, y: 0.26 },
+  { x: 0.50, y: 0.20 },
+];
+
+function pointInRect(rect, px, py) {
+  return {
+    x: rect.left + rect.width * px,
+    y: rect.top + rect.height * py,
   };
 }
 
-function clamp(v, min, max) {
-  return Math.min(Math.max(v, min), max);
+// Sample a closed loop path — t goes 0..1 for full loop
+function sampleOrbitPath(rect, t) {
+  const pts = ORBIT_PATH_POINTS;
+  const n = pts.length;
+  const scaled = ((t % 1) + 1) % 1 * n;
+  const i = Math.floor(scaled);
+  const lt = scaled - i;
+  const p1 = pointInRect(rect, pts[i % n].x, pts[i % n].y);
+  const p2 = pointInRect(rect, pts[(i + 1) % n].x, pts[(i + 1) % n].y);
+  return { x: lerp(p1.x, p2.x, lt), y: lerp(p1.y, p2.y, lt) };
 }
 
-function buildRootPath({
-  startX,
-  startY,
-  endY,
-  drift = 0,
-  segments = 8,
-  seedRand,
-}) {
-  let d = `M ${startX} ${startY}`;
-  let x = startX;
-  let y = startY;
-
-  const totalH = endY - startY;
-
-  for (let i = 1; i <= segments; i++) {
-    const t = i / segments;
-    const nextY = startY + totalH * t;
-
-    const sway =
-      Math.sin(t * Math.PI * 1.4 + drift) * (18 + t * 36) +
-      (seedRand() - 0.5) * (18 + t * 30);
-
-    const nextX = startX + sway + drift * 8;
-
-    const cp1x = x + (nextX - x) * 0.35 + (seedRand() - 0.5) * 24;
-    const cp1y = y + (nextY - y) * 0.3;
-
-    const cp2x = x + (nextX - x) * 0.7 + (seedRand() - 0.5) * 24;
-    const cp2y = y + (nextY - y) * 0.72;
-
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${nextX} ${nextY}`;
-
-    x = nextX;
-    y = nextY;
-  }
-
-  return d;
+// Cubic bezier for smooth interpolation
+function cubicBezier(p0, p1, p2, p3, t) {
+  const mt = 1 - t;
+  return {
+    x: mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x,
+    y: mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y,
+  };
 }
 
-function buildBranchPath({
-  rootX,
-  rootY,
-  direction = 1,
-  length = 160,
-  bend = 70,
-  seedRand,
-}) {
-  const x2 = rootX + direction * length * 0.35;
-  const y2 = rootY + length * 0.35;
+const RootTreeOverlay = forwardRef(function RootTreeOverlay({ opacity = 1 }, ref) {
+  const canvasRef = useRef(null);
+  const orbRef = useRef(null);
+  const sectionProgressRef = useRef(0);
 
-  const x3 = rootX + direction * length * 0.75 + (seedRand() - 0.5) * 20;
-  const y3 = rootY + length * 0.78;
+  // 28 particles, each tied to a leaf point
+  const particles = React.useMemo(() => {
+    return Array.from({ length: 28 }, (_, i) => ({
+      id: i,
+      leaf: i % LEAF_POINTS.length,
+      // stagger so they don't all move at once
+      stagger: (i / 28) * 0.18,
+      // orbit offset so they spread around the tree
+      orbitOffset: (i / 28),
+      // speed multiplier for orbit loop (slight variation)
+      orbitSpeed: 0.8 + (i % 5) * 0.08,
+      size: 2.2 + (i % 4) * 0.6,
+      // which direction they wobble
+      wobble: (i % 7) * 0.9,
+    }));
+  }, []);
 
-  const x4 = rootX + direction * length + (seedRand() - 0.5) * 20;
-  const y4 = rootY + length;
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    const treeEl = ref?.current;
+    const orb = orbRef.current;
+    if (!canvas || !treeEl || !orb) return;
 
-  const c1x = rootX + direction * bend * 0.4;
-  const c1y = rootY + length * 0.12;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const c2x = x2 + direction * bend * 0.5;
-  const c2y = y2;
+    let rafId = null;
+    let time = 0;
 
-  const c3x = x2 + direction * bend * 0.45;
-  const c3y = y2 + length * 0.15;
+    const setCanvasSize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
 
-  const c4x = x3 + direction * bend * 0.2;
-  const c4y = y3 - length * 0.08;
+    // Liquid metaball-style glow dot
+    const drawGlowDot = (x, y, r, alpha, colorShift = 0) => {
+      const outerR = r * 6;
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, outerR);
+      const h = 38 + colorShift * 8;
+      gradient.addColorStop(0, `hsla(${h + 5}, 100%, 88%, ${0.98 * alpha})`);
+      gradient.addColorStop(0.15, `hsla(${h}, 90%, 70%, ${0.9 * alpha})`);
+      gradient.addColorStop(0.4, `hsla(${h - 10}, 80%, 50%, ${0.45 * alpha})`);
+      gradient.addColorStop(1, `hsla(${h - 20}, 70%, 30%, 0)`);
 
-  return `M ${rootX} ${rootY}
-    C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}
-    C ${c3x} ${c3y}, ${c4x} ${c4y}, ${x4} ${y4}`;
-}
+      ctx.beginPath();
+      ctx.fillStyle = gradient;
+      ctx.arc(x, y, outerR, 0, Math.PI * 2);
+      ctx.fill();
 
-export default function RootTreeOverlay({
-  height = 2200,
-  width = 420,
-  className = "",
-  style = {},
-  trunkX = 210,
-  topY = 60,
-  glow = true,
-  opacity = 1,
-}) {
-  const {
-    mainRoots,
-    sideRoots,
-    canopyBranches,
-    leaves,
-  } = useMemo(() => {
-    const rand = mulberry32(42);
+      // Bright core
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(50, 100%, 92%, ${alpha})`;
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
 
-    const trunkBaseY = 270;
-    const bottomY = height - 40;
+    // Draw liquid merge blob at center — metaball illusion using layered glows
+    const drawMergeBlob = (cx, cy, radius, alpha, liquidT) => {
+      // Outer glow ring
+      const ringG = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius * 2.5);
+      ringG.addColorStop(0, `rgba(255, 220, 100, ${0.6 * alpha})`);
+      ringG.addColorStop(0.5, `rgba(220, 130, 20, ${0.3 * alpha})`);
+      ringG.addColorStop(1, `rgba(180, 80, 10, 0)`);
+      ctx.beginPath();
+      ctx.fillStyle = ringG;
+      ctx.arc(cx, cy, radius * 2.5, 0, Math.PI * 2);
+      ctx.fill();
 
-    const mainRoots = [
-      {
-        d: buildRootPath({
-          startX: trunkX,
-          startY: trunkBaseY,
-          endY: bottomY,
-          drift: 0,
-          segments: 9,
-          seedRand: rand,
-        }),
-        strokeWidth: 13,
-      },
-      {
-        d: buildRootPath({
-          startX: trunkX - 20,
-          startY: trunkBaseY + 10,
-          endY: height - 180,
-          drift: -1.6,
-          segments: 8,
-          seedRand: rand,
-        }),
-        strokeWidth: 8,
-      },
-      {
-        d: buildRootPath({
-          startX: trunkX + 18,
-          startY: trunkBaseY + 8,
-          endY: height - 210,
-          drift: 1.45,
-          segments: 8,
-          seedRand: rand,
-        }),
-        strokeWidth: 8,
-      },
-      {
-        d: buildRootPath({
-          startX: trunkX - 8,
-          startY: trunkBaseY + 18,
-          endY: height - 320,
-          drift: -2.3,
-          segments: 7,
-          seedRand: rand,
-        }),
-        strokeWidth: 6,
-      },
-      {
-        d: buildRootPath({
-          startX: trunkX + 8,
-          startY: trunkBaseY + 18,
-          endY: height - 300,
-          drift: 2.15,
-          segments: 7,
-          seedRand: rand,
-        }),
-        strokeWidth: 6,
-      },
-    ];
+      // Liquid blob shape using bezier curves — organic squish
+      const squish = Math.sin(liquidT * Math.PI * 2) * 0.18 + 1;
+      const stretch = 1 / squish;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(squish, stretch);
+      
+      const blobG = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+      blobG.addColorStop(0, `rgba(255, 238, 160, ${alpha})`);
+      blobG.addColorStop(0.4, `rgba(255, 200, 60, ${0.95 * alpha})`);
+      blobG.addColorStop(0.75, `rgba(220, 120, 20, ${0.8 * alpha})`);
+      blobG.addColorStop(1, `rgba(160, 60, 10, 0)`);
 
-    const sideRoots = [];
-    const attachPoints = [
-      420, 520, 640, 760, 900, 1040, 1180, 1340, 1500, 1660, 1820,
-    ];
-
-    attachPoints.forEach((y, i) => {
-      const side = i % 2 === 0 ? -1 : 1;
-      const offsetX =
-        trunkX + Math.sin(i * 0.9) * 34 + (rand() - 0.5) * 20;
-
-      const branchCount = i < 4 ? 2 : 3;
-
-      for (let j = 0; j < branchCount; j++) {
-        const direction = j % 2 === 0 ? side : -side * 0.55;
-        const length = 90 + rand() * 110 + i * 4;
-        const bend = 35 + rand() * 60;
-
-        sideRoots.push({
-          d: buildBranchPath({
-            rootX: offsetX + (rand() - 0.5) * 16,
-            rootY: y + j * 6,
-            direction,
-            length,
-            bend,
-            seedRand: rand,
-          }),
-          strokeWidth: clamp(4.4 - i * 0.18, 1.4, 4.4),
-        });
+      ctx.beginPath();
+      // Organic blob path — perturbed circle
+      const pts = 8;
+      for (let i = 0; i <= pts; i++) {
+        const angle = (i / pts) * Math.PI * 2;
+        const wobbleAmt = 1 + 0.12 * Math.sin(liquidT * 6 + angle * 3);
+        const r = radius * wobbleAmt;
+        const px = Math.cos(angle) * r;
+        const py = Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
-    });
+      ctx.closePath();
+      ctx.fillStyle = blobG;
+      ctx.fill();
+      ctx.restore();
 
-    const canopyBranches = [
-      `M ${trunkX} 245 C ${trunkX - 14} 170, ${trunkX - 34} 120, ${trunkX - 70} 70`,
-      `M ${trunkX} 245 C ${trunkX + 16} 178, ${trunkX + 32} 124, ${trunkX + 76} 72`,
-      `M ${trunkX - 8} 208 C ${trunkX - 66} 180, ${trunkX - 110} 150, ${trunkX - 128} 104`,
-      `M ${trunkX + 8} 208 C ${trunkX + 66} 180, ${trunkX + 110} 150, ${trunkX + 128} 104`,
-      `M ${trunkX} 198 C ${trunkX - 34} 146, ${trunkX - 48} 102, ${trunkX - 44} 40`,
-      `M ${trunkX} 198 C ${trunkX + 28} 146, ${trunkX + 44} 98, ${trunkX + 38} 34`,
-      `M ${trunkX - 34} 155 C ${trunkX - 88} 132, ${trunkX - 142} 112, ${trunkX - 162} 70`,
-      `M ${trunkX + 34} 155 C ${trunkX + 92} 132, ${trunkX + 148} 110, ${trunkX + 166} 68`,
-    ];
+      // Surface highlight
+      const hlX = cx - radius * 0.25;
+      const hlY = cy - radius * 0.3;
+      const hlG = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, radius * 0.45);
+      hlG.addColorStop(0, `rgba(255, 248, 200, ${0.55 * alpha})`);
+      hlG.addColorStop(1, `rgba(255, 220, 120, 0)`);
+      ctx.beginPath();
+      ctx.fillStyle = hlG;
+      ctx.arc(hlX, hlY, radius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    };
 
-    const leaves = Array.from({ length: 78 }, (_, i) => {
-      const angle = (i / 78) * Math.PI * 2;
-      const radius = 70 + rand() * 70;
-      const x = trunkX + Math.cos(angle) * radius * (0.95 + rand() * 0.45);
-      const y = 115 + Math.sin(angle) * radius * (0.62 + rand() * 0.35);
-      const rotate = rand() * 360;
-      const scale = 0.8 + rand() * 0.9;
-      return { x, y, rotate, scale, id: i };
-    });
+    // Draw a droplet "stretching" toward target — liquid drip effect
+    const drawLiquidStretch = (fromX, fromY, toX, toY, t, r, alpha) => {
+      if (t < 0.05) return;
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 2) return;
 
-    return { mainRoots, sideRoots, canopyBranches, leaves };
-  }, [height, trunkX]);
+      const nx = dx / dist;
+      const ny = dy / dist;
+
+      // Stretched ellipse from "from" toward "to" — liquid tendril
+      const stretchLen = dist * t * 0.5;
+      const midX = lerp(fromX, toX, t * 0.5);
+      const midY = lerp(fromY, toY, t * 0.5);
+
+      ctx.save();
+      ctx.translate(midX, midY);
+      ctx.rotate(Math.atan2(dy, dx));
+      
+      const necking = 1 - t * 0.7; // gets thinner as it stretches
+      const tendrG = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(stretchLen, 1));
+      tendrG.addColorStop(0, `rgba(255, 210, 80, ${0.35 * alpha * (1 - t)})`);
+      tendrG.addColorStop(1, `rgba(255, 160, 30, 0)`);
+
+      ctx.scale(1, necking * r / Math.max(stretchLen * 0.15, 1));
+      ctx.beginPath();
+      ctx.ellipse(0, 0, stretchLen, r * necking * 2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = tendrG;
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const getTreeRect = () => treeEl.getBoundingClientRect();
+
+    const draw = () => {
+      time += 0.016;
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+      const p = sectionProgressRef.current;
+      const rect = getTreeRect();
+      const trunkBase = pointInRect(rect, 0.50, 0.79); // where particles merge
+
+      // The final merged orb follows the viewport center after full merge
+      const viewCenterX = window.innerWidth / 2;
+      const viewCenterY = window.innerHeight * 0.55;
+
+      // Hide CSS orb (we draw everything on canvas)
+      orb.style.opacity = "0";
+
+      // ---- Phase breakdown (p = 0..1) ----
+      // 0.00 - 0.20: particles appear at leaf points (fade in)
+      // 0.20 - 0.65: particles travel orbit paths around tree
+      // 0.65 - 0.85: particles converge to trunk base — liquid droplet merge
+      // 0.85 - 1.00: final merged orb scales up and floats to viewport center
+
+      particles.forEach((particle) => {
+        const leaf = pointInRect(rect, LEAF_POINTS[particle.leaf].x, LEAF_POINTS[particle.leaf].y);
+        
+        // Each particle has a small stagger
+        const ps = clamp(p - particle.stagger * 0.3, 0, 1);
+
+        let x = leaf.x;
+        let y = leaf.y;
+        let alpha = 0;
+        let r = particle.size;
+
+        if (ps <= 0) return;
+
+        if (ps < 0.20) {
+          // Phase 1: Appear at leaf — pulse gently
+          const t = ps / 0.20;
+          alpha = easeOutCubic(t) * 0.8;
+          r = particle.size * lerp(0.3, 1.0, easeOutBack(t));
+          x = leaf.x;
+          y = leaf.y;
+          // Gentle pulse glow at leaf
+          drawGlowDot(x, y, r, alpha, particle.leaf * 0.5);
+          return;
+
+        } else if (ps < 0.65) {
+          // Phase 2: Orbit around tree
+          const orbitT = (ps - 0.20) / 0.45;
+          
+          // How far into orbit (0 = at leaf, 1 = full orbit)
+          const enterT = clamp(orbitT / 0.2, 0, 1);
+          
+          // Orbit position: goes around the tree
+          const loop = orbitT * particle.orbitSpeed + particle.orbitOffset;
+          const orbitPos = sampleOrbitPath(rect, loop);
+          
+          // Blend from leaf to orbit path
+          x = lerp(leaf.x, orbitPos.x, easeInOutCubic(enterT));
+          y = lerp(leaf.y, orbitPos.y, easeInOutCubic(enterT));
+          
+          alpha = 0.75 + Math.sin(time * 2 + particle.wobble) * 0.15;
+          r = particle.size * (1 + Math.sin(time * 3 + particle.id) * 0.2);
+
+          // Draw connecting thread back to leaf while close
+          if (enterT < 0.5) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(255, 160, 40, ${0.12 * (1 - enterT * 2)})`;
+            ctx.lineWidth = 0.8;
+            ctx.moveTo(leaf.x, leaf.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+
+          drawGlowDot(x, y, r, alpha, particle.id % 5);
+          return;
+
+        } else if (ps < 0.85) {
+          // Phase 3: Converge to trunk base — liquid stretching
+          const convergeT = (ps - 0.65) / 0.20;
+          
+          // Last orbit position
+          const loop = 0.45 * particle.orbitSpeed + particle.orbitOffset;
+          const lastOrbitPos = sampleOrbitPath(rect, loop);
+
+          const pull = easeInCubic(convergeT);
+          x = lerp(lastOrbitPos.x, trunkBase.x, pull);
+          y = lerp(lastOrbitPos.y, trunkBase.y, pull);
+
+          alpha = lerp(0.85, 0.0, convergeT * convergeT);
+          r = lerp(particle.size, particle.size * 1.8, convergeT);
+
+          // Liquid stretch visual
+          if (convergeT > 0.1 && convergeT < 0.85) {
+            drawLiquidStretch(lastOrbitPos.x, lastOrbitPos.y, trunkBase.x, trunkBase.y, pull, r, 0.5);
+          }
+
+          drawGlowDot(x, y, r, alpha, 2);
+
+          // Draw merged blob at trunk growing as particles arrive
+          const blobAlpha = easeInOutCubic(convergeT) * 0.6;
+          const blobR = lerp(4, 18, easeOutCubic(convergeT));
+          if (blobAlpha > 0.05) {
+            drawMergeBlob(trunkBase.x, trunkBase.y, blobR, blobAlpha, time * 1.2);
+          }
+          return;
+
+        } else {
+          // Phase 4: merged — don't draw individual particles
+          return;
+        }
+      });
+
+      // Phase 4: Draw the final merged orb
+      if (p >= 0.75) {
+        const mergeT = clamp((p - 0.75) / 0.25, 0, 1);
+        
+        // Orb position: from trunk base to viewport center
+        const orbX = lerp(trunkBase.x, viewCenterX, easeInOutCubic(mergeT));
+        const orbY = lerp(trunkBase.y, viewCenterY, easeInOutCubic(mergeT));
+        
+        // Orb size: liquid swell as it forms
+        const baseR = lerp(6, 22, easeOutBack(Math.min(mergeT * 1.5, 1)));
+        
+        // Liquid pulse as it forms
+        const liquidTime = time + mergeT * Math.PI;
+        
+        drawMergeBlob(orbX, orbY, baseR, easeOutCubic(mergeT), liquidTime);
+
+        // Splash ring when merging
+        if (mergeT < 0.35) {
+          const splashT = mergeT / 0.35;
+          const splashR = lerp(20, 65, splashT);
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(255, 190, 80, ${0.3 * (1 - splashT)})`;
+          ctx.lineWidth = lerp(8, 1, splashT);
+          ctx.arc(trunkBase.x, trunkBase.y, splashR, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Secondary ambient glow following orb
+        if (mergeT > 0.4) {
+          const ambientAlpha = (mergeT - 0.4) / 0.6;
+          const ambientG = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, 80);
+          ambientG.addColorStop(0, `rgba(255, 200, 80, ${0.08 * ambientAlpha})`);
+          ambientG.addColorStop(1, `rgba(200, 100, 20, 0)`);
+          ctx.beginPath();
+          ctx.fillStyle = ambientG;
+          ctx.arc(orbX, orbY, 80, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      rafId = requestAnimationFrame(draw);
+    };
+
+    const updateProgress = () => {
+      const treeLayer = treeEl.parentElement;
+      if (!treeLayer) return;
+
+      const rect = treeEl.getBoundingClientRect();
+      // Animation starts when top of tree is 200px from top of viewport
+      // Animation ends (fully merged) when tree top is at -50% of tree height
+      const triggerStart = window.innerHeight - 200; // tree top is 200px above bottom? No:
+      // Actually: triggerStart = when rect.top == viewport - 200 (tree is scrolled up to 200px from top)
+      // triggerEnd = when rect.top == -rect.height * 0.5 (tree is half scrolled away)
+      
+      const start = window.innerHeight - 200; // tree top is at this Y in viewport → progress=0
+      const end = -rect.height * 0.4;         // tree top is at this Y → progress=1
+
+      const progress = clamp((start - rect.top) / (start - end), 0, 1);
+      sectionProgressRef.current = progress;
+    };
+
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    window.addEventListener('resize', updateProgress);
+    
+    setCanvasSize();
+    draw();
+
+    window.addEventListener('resize', setCanvasSize);
+    return () => {
+      window.removeEventListener('scroll', updateProgress);
+      window.removeEventListener('resize', updateProgress);
+      window.removeEventListener('resize', setCanvasSize);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [particles]);
 
   return (
-    <svg
-      className={className}
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      style={{
-        display: "block",
-        overflow: "visible",
-        pointerEvents: "none",
-        opacity,
-        ...style,
-      }}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="treeGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#b96d12" />
-          <stop offset="22%" stopColor="#f0b73c" />
-          <stop offset="48%" stopColor="#ffe483" />
-          <stop offset="72%" stopColor="#e6ad2d" />
-          <stop offset="100%" stopColor="#9c5a08" />
-        </linearGradient>
-
-        <linearGradient id="rootGoldGradient" x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#f2c24c" />
-          <stop offset="40%" stopColor="#ffd973" />
-          <stop offset="100%" stopColor="#b86d11" />
-        </linearGradient>
-
-        <filter id="treeGlow" x="-50%" y="-20%" width="200%" height="140%">
-          <feGaussianBlur stdDeviation="4.5" result="blur" />
-          <feColorMatrix
-            in="blur"
-            type="matrix"
-            values="
-              1 0 0 0 0
-              0 0.82 0 0 0
-              0 0.38 0 0 0
-              0 0 0 0.95 0"
-          />
-        </filter>
-
-        <filter id="softGlow" x="-80%" y="-20%" width="260%" height="160%">
-          <feGaussianBlur stdDeviation="8" />
-        </filter>
-
-        <symbol id="leafShape" viewBox="0 0 20 28">
-          <path
-            d="M10 1
-               C 15 4, 18 10, 16.2 16
-               C 14.5 22, 10.8 25.5, 10 27
-               C 9.2 25.4, 5.5 22, 3.8 16
-               C 2 10, 5 4, 10 1 Z"
-            fill="url(#treeGoldGradient)"
-          />
-        </symbol>
-      </defs>
-
-      {glow && (
-        <g opacity="0.45" filter="url(#softGlow)">
-          <path
-            d={`M ${trunkX} 34 C ${trunkX - 40} 72, ${trunkX - 36} 166, ${trunkX} 260`}
-            fill="none"
-            stroke="#f4b63f"
-            strokeWidth="18"
-            strokeLinecap="round"
-          />
-          {mainRoots.map((r, i) => (
-            <path
-              key={`glow-main-${i}`}
-              d={r.d}
-              fill="none"
-              stroke="#ecb13c"
-              strokeWidth={r.strokeWidth + 4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ))}
-        </g>
-      )}
-
-      <g>
-        {canopyBranches.map((d, i) => (
-          <path
-            key={`branch-${i}`}
-            d={d}
-            fill="none"
-            stroke="url(#treeGoldGradient)"
-            strokeWidth={i < 2 ? 7 : 4.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-
-        {leaves.map((leaf) => (
-          <use
-            key={leaf.id}
-            href="#leafShape"
-            x={leaf.x}
-            y={leaf.y}
-            width={12 * leaf.scale}
-            height={16 * leaf.scale}
-            transform={`rotate(${leaf.rotate} ${leaf.x + 6} ${leaf.y + 8})`}
-            opacity="0.95"
-          />
-        ))}
-
-        <path
-          d={`
-            M ${trunkX} 262
-            C ${trunkX - 14} 210, ${trunkX - 22} 152, ${trunkX - 10} 102
-            C ${trunkX - 6} 74, ${trunkX - 12} 52, ${trunkX - 4} 28
-            C ${trunkX + 4} 50, ${trunkX + 10} 74, ${trunkX + 8} 102
-            C ${trunkX + 2} 156, ${trunkX + 6} 212, ${trunkX} 262
-          `}
-          fill="url(#treeGoldGradient)"
-        />
-
-        <path
-          d={`
-            M ${trunkX - 26} 262
-            C ${trunkX - 12} 236, ${trunkX + 12} 236, ${trunkX + 26} 262
-            C ${trunkX + 18} 286, ${trunkX - 18} 286, ${trunkX - 26} 262
-          `}
-          fill="url(#treeGoldGradient)"
-        />
-
-        {mainRoots.map((r, i) => (
-          <path
-            key={`main-root-${i}`}
-            d={r.d}
-            fill="none"
-            stroke="url(#rootGoldGradient)"
-            strokeWidth={r.strokeWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-
-        {sideRoots.map((r, i) => (
-          <path
-            key={`side-root-${i}`}
-            d={r.d}
-            fill="none"
-            stroke="url(#rootGoldGradient)"
-            strokeWidth={r.strokeWidth}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.96"
-          />
-        ))}
-      </g>
-    </svg>
+    <div ref={ref} className="showroom-tree-wrap">
+      <img
+        src={h73ts01}
+        alt="Root Tree Overlay"
+        className="showroom-tree-image"
+        style={{ opacity }}
+      />
+      
+      {/* Canvas overlay for magic effects */}
+      <div className="showroom-magic-overlay" aria-hidden="true">
+        <canvas ref={canvasRef} className="showroom-magic-canvas" />
+        <div ref={orbRef} className="showroom-core-orb is-hidden" />
+      </div>
+    </div>
   );
-}
+});
+
+export default RootTreeOverlay;

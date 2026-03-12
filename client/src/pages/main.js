@@ -3,6 +3,7 @@ import styled, { createGlobalStyle, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import Header from '../components/header';
 import Footer from '../components/footer';
+import OptimizedImage from '../components/OptimizedImage';
 import backgroundImage from '../bilder/BoyDramatic.mp4';
 import placeholderImage1 from '../bilder/1.webp';
 import placeholderImage2 from '../bilder/smart_gnome.png';
@@ -512,21 +513,16 @@ const SmallCardContainer = styled.div`
 
 const SmallCard = styled(Card)``;
 
-const CardImage = styled.div`
-  width: 100%;
-  padding-top: ${p => (p.$large ? 'clamp(40%, 30vw, 60%)' : 'clamp(50%, 40vw, 65%)')}; 
-  background-image: url(${p => p.image});
-  background-size: cover; 
-  background-position: center;
-  position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%);
-  }
-`;
+const CardImage = ({ image, $large }) => {
+  return (
+    <OptimizedImage 
+      src={image} 
+      alt="Card image" 
+      className={$large ? "card-image-large" : "card-image"}
+      preload={$large} // Preload large cards
+    />
+  );
+};
 
 const CardContent = styled.div`
   padding: ${p => (p.$large ? 'clamp(25px, 5vw, 50px)' : 'clamp(20px, 4vw, 35px)')}; 
