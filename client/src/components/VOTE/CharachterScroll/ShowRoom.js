@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, forwardRef } from "react";
-import S_Header from "./S_Header";
+import SHeader from "./S_Header";
 import "./ShowRoom.css";
 
 import placeholderImage2 from "../../../bilder/smart_gnome.png";
@@ -483,7 +483,7 @@ export default function ShowRoom() {
         <canvas ref={canvasRef} className="showroom-magic-canvas" />
       </div>
 
-      <S_Header />
+      <SHeader />
 
       <div className="showroom-tree-layer" ref={treeLayerRef}>
         <RootTreeOverlay ref={treeRef} opacity={0.42} />
