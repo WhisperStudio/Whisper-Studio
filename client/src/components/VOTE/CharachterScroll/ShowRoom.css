@@ -23,7 +23,7 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 1;
+  z-index: 0;
   transform: none !important;
 }
 
@@ -86,13 +86,13 @@
   z-index: 4;
 }
 
-/* Tree under header */
 .showroom-tree-layer {
   display: flex;
   align-items: flex-start;
   justify-content: center;
   width: 100%;
-  margin-top: 8rem;
+  margin-top: -200px;
+  margin-bottom: 400px;
   pointer-events: none;
   z-index: 2;
   overflow: visible;
@@ -136,127 +136,6 @@
   display: block;
 }
 
-.creature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  padding: 8rem 2rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 5;
-}
-
-.creature-card {
-  background: rgba(200, 146, 42, 0.1);
-  border: 1px solid rgba(200, 146, 42, 0.3);
-  border-radius: 12px;
-  padding: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
-}
-
-.creature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(200, 146, 42, 0.2);
-}
-
-.creature-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.creature-card h3 {
-  margin: 0 0 0.5rem 0;
-  color: #c8922a;
-  font-family: "Cinzel Decorative", serif;
-}
-
-.sub-tag {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.sub-tag.friendly {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-  border: 1px solid #4caf50;
-}
-
-.sub-tag.unfriendly {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-  border: 1px solid #f44336;
-}
-
-.creature-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.82);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #1a1a1a;
-  border: 2px solid #c8922a;
-  border-radius: 15px;
-  padding: 2rem;
-  max-width: 500px;
-  width: 90%;
-  position: relative;
-}
-
-.close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: #c8922a;
-  font-size: 2rem;
-  cursor: pointer;
-}
-
-.modal-content img {
-  width: 100%;
-  height: 300px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 1rem;
-}
-
-.modal-content h2 {
-  margin: 0 0 1rem 0;
-  color: #c8922a;
-  font-family: "Cinzel Decorative", serif;
-}
-
-.tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.tag {
-  background: rgba(200, 146, 42, 0.2);
-  color: #c8922a;
-  padding: 0.25rem 0.5rem;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  border: 1px solid #c8922a;
-}
-
 @media (max-width: 900px) {
   .showroom-tree-layer {
     margin-top: 5rem;
@@ -264,9 +143,5 @@
 
   .showroom-tree-wrap {
     width: 96vw;
-  }
-
-  .creature-grid {
-    padding-top: 6rem;
   }
 }

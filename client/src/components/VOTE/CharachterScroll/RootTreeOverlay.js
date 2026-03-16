@@ -1,20 +1,23 @@
-import React, { useEffect, useRef, forwardRef } from "react";
-import h73ts01 from './zZqar01.svg';
-import './ShowRoom.css';
+import React, { useEffect, useMemo, useRef } from "react";
+import zZqar01 from "./zZqar01.svg";
+import "./ShowRoom.css";
+
+const BREAKPOINT_TOP = 200;
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const lerp = (a, b, t) => a + (b - a) * t;
+
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-const easeInCubic = (t) => t * t * t;
+
 const easeOutBack = (t) => {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 };
 
-// Leaf anchor points on the tree (normalized 0-1 within tree bounding box)
 const LEAF_POINTS = [
   { x: 0.18, y: 0.26 },
   { x: 0.26, y: 0.18 },
@@ -38,21 +41,6 @@ const LEAF_POINTS = [
   { x: 0.72, y: 0.37 },
 ];
 
-// Spiral orbit path around tree — particles travel these and then converge at trunk base
-const ORBIT_PATH_POINTS = [
-  { x: 0.50, y: 0.30 },
-  { x: 0.70, y: 0.25 },
-  { x: 0.85, y: 0.40 },
-  { x: 0.80, y: 0.58 },
-  { x: 0.65, y: 0.68 },
-  { x: 0.50, y: 0.72 },
-  { x: 0.35, y: 0.68 },
-  { x: 0.20, y: 0.58 },
-  { x: 0.15, y: 0.40 },
-  { x: 0.28, y: 0.26 },
-  { x: 0.50, y: 0.20 },
-];
-
 function pointInRect(rect, px, py) {
   return {
     x: rect.left + rect.width * px,
@@ -60,56 +48,293 @@ function pointInRect(rect, px, py) {
   };
 }
 
-// Sample a closed loop path — t goes 0..1 for full loop
-function sampleOrbitPath(rect, t) {
-  const pts = ORBIT_PATH_POINTS;
-  const n = pts.length;
-  const scaled = ((t % 1) + 1) % 1 * n;
-  const i = Math.floor(scaled);
-  const lt = scaled - i;
-  const p1 = pointInRect(rect, pts[i % n].x, pts[i % n].y);
-  const p2 = pointInRect(rect, pts[(i + 1) % n].x, pts[(i + 1) % n].y);
-  return { x: lerp(p1.x, p2.x, lt), y: lerp(p1.y, p2.y, lt) };
-}
-
-// Cubic bezier for smooth interpolation
-function cubicBezier(p0, p1, p2, p3, t) {
+function cubicBezierPoint(p0, p1, p2, p3, t) {
   const mt = 1 - t;
   return {
-    x: mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x,
-    y: mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y,
+    x:
+      mt * mt * mt * p0.x +
+      3 * mt * mt * t * p1.x +
+      3 * mt * t * t * p2.x +
+      t * t * t * p3.x,
+    y:
+      mt * mt * mt * p0.y +
+      3 * mt * mt * t * p1.y +
+      3 * mt * t * t * p2.y +
+      t * t * t * p3.y,
   };
 }
 
-const RootTreeOverlay = forwardRef(function RootTreeOverlay({ opacity = 1 }, ref) {
-  const canvasRef = useRef(null);
-  const orbRef = useRef(null);
-  const sectionProgressRef = useRef(0);
+function catmullRomPoint(points, t) {
+  if (points.length < 2) return points[0] ?? { x: 0, y: 0 };
 
-  // 28 particles, each tied to a leaf point
-  const particles = React.useMemo(() => {
-    return Array.from({ length: 28 }, (_, i) => ({
+  if (points.length === 2) {
+    return {
+      x: lerp(points[0].x, points[1].x, t),
+      y: lerp(points[0].y, points[1].y, t),
+    };
+  }
+
+  const segCount = points.length - 1;
+  const scaled = clamp(t, 0, 1) * segCount;
+  const seg = Math.min(Math.floor(scaled), segCount - 1);
+  const localT = scaled - seg;
+
+  const p0 = points[Math.max(0, seg - 1)];
+  const p1 = points[seg];
+  const p2 = points[Math.min(points.length - 1, seg + 1)];
+  const p3 = points[Math.min(points.length - 1, seg + 2)];
+
+  const tt = localT * localT;
+  const ttt = tt * localT;
+
+  return {
+    x:
+      0.5 *
+      ((2 * p1.x) +
+        (-p0.x + p2.x) * localT +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * tt +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * ttt),
+    y:
+      0.5 *
+      ((2 * p1.y) +
+        (-p0.y + p2.y) * localT +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * tt +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * ttt),
+  };
+}
+
+function makeEvenPathSampler(points, samples = 180) {
+  const table = [];
+  let prev = catmullRomPoint(points, 0);
+  let totalLength = 0;
+
+  table.push({ t: 0, len: 0 });
+
+  for (let i = 1; i <= samples; i++) {
+    const t = i / samples;
+    const p = catmullRomPoint(points, t);
+    totalLength += Math.hypot(p.x - prev.x, p.y - prev.y);
+    table.push({ t, len: totalLength });
+    prev = p;
+  }
+
+  return function sample(u) {
+    const target = clamp(u, 0, 1) * totalLength;
+
+    let low = 0;
+    let high = table.length - 1;
+
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (table[mid].len < target) low = mid + 1;
+      else high = mid;
+    }
+
+    const curr = table[low];
+    const prevEntry = table[Math.max(0, low - 1)];
+    const segLen = Math.max(curr.len - prevEntry.len, 0.0001);
+    const local = (target - prevEntry.len) / segLen;
+    const t = lerp(prevEntry.t, curr.t, local);
+
+    return catmullRomPoint(points, t);
+  };
+}
+
+function drawGlowDot(ctx, x, y, r, alpha = 1) {
+  const gradient = ctx.createRadialGradient(x, y, 0, x, y, r * 6.2);
+  gradient.addColorStop(0, `rgba(255, 241, 188, ${0.95 * alpha})`);
+  gradient.addColorStop(0.16, `rgba(255, 217, 120, ${0.9 * alpha})`);
+  gradient.addColorStop(0.38, `rgba(233, 174, 63, ${0.55 * alpha})`);
+  gradient.addColorStop(0.68, `rgba(201, 126, 24, ${0.22 * alpha})`);
+  gradient.addColorStop(1, "rgba(201, 126, 24, 0)");
+
+  ctx.beginPath();
+  ctx.fillStyle = gradient;
+  ctx.arc(x, y, r * 6.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.fillStyle = `rgba(255, 241, 188, ${alpha})`;
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawMergeBlob(ctx, cx, cy, radius, alpha, liquidT) {
+  const ringG = ctx.createRadialGradient(
+    cx,
+    cy,
+    radius * 0.2,
+    cx,
+    cy,
+    radius * 2.8
+  );
+  ringG.addColorStop(0, `rgba(255, 223, 136, ${0.45 * alpha})`);
+  ringG.addColorStop(0.45, `rgba(232, 164, 51, ${0.22 * alpha})`);
+  ringG.addColorStop(1, `rgba(180, 88, 10, 0)`);
+
+  ctx.beginPath();
+  ctx.fillStyle = ringG;
+  ctx.arc(cx, cy, radius * 2.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  const squishX = 1 + Math.sin(liquidT * 4.5) * 0.08;
+  const squishY = 1 - Math.sin(liquidT * 4.5) * 0.06;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(squishX, squishY);
+
+  const blobG = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+  blobG.addColorStop(0, `rgba(255, 245, 196, ${alpha})`);
+  blobG.addColorStop(0.3, `rgba(255, 214, 112, ${0.96 * alpha})`);
+  blobG.addColorStop(0.75, `rgba(219, 139, 29, ${0.82 * alpha})`);
+  blobG.addColorStop(1, `rgba(160, 72, 10, 0)`);
+
+  ctx.beginPath();
+  for (let i = 0; i <= 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const wobble = 1 + Math.sin(liquidT * 6 + a * 3) * 0.08;
+    const rr = radius * wobble;
+    const px = Math.cos(a) * rr;
+    const py = Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = blobG;
+  ctx.fill();
+  ctx.restore();
+}
+
+function getScrollState(el, mergeOffsetPx) {
+  const rect = el.getBoundingClientRect();
+  const viewportH = window.innerHeight;
+  const scrollY = window.scrollY;
+
+  const absTop = rect.top + scrollY;
+  const absBottom = rect.bottom + scrollY;
+
+  const startScrollY = absTop - BREAKPOINT_TOP;
+
+  // Merge-punktet ligger et visst antall px under SVG-en
+  const mergeAbsY = absBottom + mergeOffsetPx;
+
+  // Dette er punktet der merge-punktet treffer midten av viewporten
+  const mergeScrollY = mergeAbsY - viewportH / 2;
+
+  const span = Math.max(mergeScrollY - startScrollY, 1);
+
+  // Progress for små orbsa: 0 når toppen når 200px, 1 når merge-punktet er i viewport-midten
+  const orbProgress = clamp((scrollY - startScrollY) / span, 0, 1);
+
+  // Etter at merge-punktet har nådd midten av skjermen, kan stor orb følge videre
+  const followProgress = Math.max(scrollY - mergeScrollY, 0);
+
+  return {
+    rect,
+    absBottom,
+    mergeAbsY,
+    startScrollY,
+    mergeScrollY,
+    orbProgress,
+    followProgress,
+  };
+}
+
+function buildHalfArcPath(rect, home, targetPoint) {
+  const centerX = rect.left + rect.width / 2;
+  const isLeft = home.x < centerX;
+  const dir = isLeft ? -1 : 1;
+
+  // Tydeligere sidebue så de ikke faller rett ned
+  return [
+    home,
+    {
+      x: home.x + dir * rect.width * 0.06,
+      y: home.y + rect.height * 0.08,
+    },
+    {
+      x: centerX + dir * rect.width * 0.34,
+      y: rect.top + rect.height * 0.40,
+    },
+    {
+      x: centerX + dir * rect.width * 0.38,
+      y: rect.top + rect.height * 0.68,
+    },
+    {
+      x: centerX + dir * rect.width * 0.24,
+      y: rect.bottom + rect.height * 0.03,
+    },
+    targetPoint,
+  ];
+}
+
+export default function RootTreeOverlay({ opacity = 1 }) {
+  const treeRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const orbProgressRef = useRef(0);
+  const followProgressRef = useRef(0);
+  const mergePointRef = useRef({ x: 0, y: 0 });
+
+  const particles = useMemo(() => {
+    return Array.from({ length: 26 }, (_, i) => ({
       id: i,
-      leaf: i % LEAF_POINTS.length,
-      // stagger so they don't all move at once
-      stagger: (i / 28) * 0.18,
-      // orbit offset so they spread around the tree
-      orbitOffset: (i / 28),
-      // speed multiplier for orbit loop (slight variation)
-      orbitSpeed: 0.8 + (i % 5) * 0.08,
-      size: 2.2 + (i % 4) * 0.6,
-      // which direction they wobble
-      wobble: (i % 7) * 0.9,
+      leafIndex: i % LEAF_POINTS.length,
+      size: 2.4 + (i % 4) * 0.55,
+      delay: (i % 8) * 0.016,
+      wobble: Math.random() * Math.PI * 2,
     }));
   }, []);
 
-  React.useEffect(() => {
-    const canvas = canvasRef.current;
-    const treeEl = ref?.current;
-    const orb = orbRef.current;
-    if (!canvas || !treeEl || !orb) return;
+  useEffect(() => {
+    const MERGE_OFFSET_PX = 140;
+    let ticking = false;
 
-    const ctx = canvas.getContext('2d');
+    const updateState = () => {
+      const treeEl = treeRef.current;
+      if (!treeEl) {
+        ticking = false;
+        return;
+      }
+
+      const state = getScrollState(treeEl, MERGE_OFFSET_PX);
+
+      orbProgressRef.current = state.orbProgress;
+      followProgressRef.current = state.followProgress;
+
+      mergePointRef.current = {
+        x: state.rect.left + state.rect.width / 2,
+        y: state.rect.bottom + MERGE_OFFSET_PX,
+      };
+
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateState);
+      }
+    };
+
+    updateState();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", updateState);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const treeEl = treeRef.current;
+    if (!canvas || !treeEl) return;
+
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let rafId = null;
@@ -124,322 +349,160 @@ const RootTreeOverlay = forwardRef(function RootTreeOverlay({ opacity = 1 }, ref
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    // Liquid metaball-style glow dot
-    const drawGlowDot = (x, y, r, alpha, colorShift = 0) => {
-      const outerR = r * 6;
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, outerR);
-      const h = 38 + colorShift * 8;
-      gradient.addColorStop(0, `hsla(${h + 5}, 100%, 88%, ${0.98 * alpha})`);
-      gradient.addColorStop(0.15, `hsla(${h}, 90%, 70%, ${0.9 * alpha})`);
-      gradient.addColorStop(0.4, `hsla(${h - 10}, 80%, 50%, ${0.45 * alpha})`);
-      gradient.addColorStop(1, `hsla(${h - 20}, 70%, 30%, 0)`);
-
-      ctx.beginPath();
-      ctx.fillStyle = gradient;
-      ctx.arc(x, y, outerR, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Bright core
-      ctx.beginPath();
-      ctx.fillStyle = `hsla(50, 100%, 92%, ${alpha})`;
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
-    // Draw liquid merge blob at center — metaball illusion using layered glows
-    const drawMergeBlob = (cx, cy, radius, alpha, liquidT) => {
-      // Outer glow ring
-      const ringG = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius * 2.5);
-      ringG.addColorStop(0, `rgba(255, 220, 100, ${0.6 * alpha})`);
-      ringG.addColorStop(0.5, `rgba(220, 130, 20, ${0.3 * alpha})`);
-      ringG.addColorStop(1, `rgba(180, 80, 10, 0)`);
-      ctx.beginPath();
-      ctx.fillStyle = ringG;
-      ctx.arc(cx, cy, radius * 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Liquid blob shape using bezier curves — organic squish
-      const squish = Math.sin(liquidT * Math.PI * 2) * 0.18 + 1;
-      const stretch = 1 / squish;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(squish, stretch);
-      
-      const blobG = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-      blobG.addColorStop(0, `rgba(255, 238, 160, ${alpha})`);
-      blobG.addColorStop(0.4, `rgba(255, 200, 60, ${0.95 * alpha})`);
-      blobG.addColorStop(0.75, `rgba(220, 120, 20, ${0.8 * alpha})`);
-      blobG.addColorStop(1, `rgba(160, 60, 10, 0)`);
-
-      ctx.beginPath();
-      // Organic blob path — perturbed circle
-      const pts = 8;
-      for (let i = 0; i <= pts; i++) {
-        const angle = (i / pts) * Math.PI * 2;
-        const wobbleAmt = 1 + 0.12 * Math.sin(liquidT * 6 + angle * 3);
-        const r = radius * wobbleAmt;
-        const px = Math.cos(angle) * r;
-        const py = Math.sin(angle) * r;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fillStyle = blobG;
-      ctx.fill();
-      ctx.restore();
-
-      // Surface highlight
-      const hlX = cx - radius * 0.25;
-      const hlY = cy - radius * 0.3;
-      const hlG = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, radius * 0.45);
-      hlG.addColorStop(0, `rgba(255, 248, 200, ${0.55 * alpha})`);
-      hlG.addColorStop(1, `rgba(255, 220, 120, 0)`);
-      ctx.beginPath();
-      ctx.fillStyle = hlG;
-      ctx.arc(hlX, hlY, radius * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
-    // Draw a droplet "stretching" toward target — liquid drip effect
-    const drawLiquidStretch = (fromX, fromY, toX, toY, t, r, alpha) => {
-      if (t < 0.05) return;
-      const dx = toX - fromX;
-      const dy = toY - fromY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 2) return;
-
-      const nx = dx / dist;
-      const ny = dy / dist;
-
-      // Stretched ellipse from "from" toward "to" — liquid tendril
-      const stretchLen = dist * t * 0.5;
-      const midX = lerp(fromX, toX, t * 0.5);
-      const midY = lerp(fromY, toY, t * 0.5);
-
-      ctx.save();
-      ctx.translate(midX, midY);
-      ctx.rotate(Math.atan2(dy, dx));
-      
-      const necking = 1 - t * 0.7; // gets thinner as it stretches
-      const tendrG = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(stretchLen, 1));
-      tendrG.addColorStop(0, `rgba(255, 210, 80, ${0.35 * alpha * (1 - t)})`);
-      tendrG.addColorStop(1, `rgba(255, 160, 30, 0)`);
-
-      ctx.scale(1, necking * r / Math.max(stretchLen * 0.15, 1));
-      ctx.beginPath();
-      ctx.ellipse(0, 0, stretchLen, r * necking * 2, 0, 0, Math.PI * 2);
-      ctx.fillStyle = tendrG;
-      ctx.fill();
-      ctx.restore();
-    };
-
-    const getTreeRect = () => treeEl.getBoundingClientRect();
-
     const draw = () => {
       time += 0.016;
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-      const p = sectionProgressRef.current;
-      const rect = getTreeRect();
-      const trunkBase = pointInRect(rect, 0.50, 0.79); // where particles merge
+      const rect = treeEl.getBoundingClientRect();
+      const orbProgress = orbProgressRef.current;
+      const followProgress = followProgressRef.current;
+      const mergePoint = mergePointRef.current;
 
-      // The final merged orb follows the viewport center after full merge
-      const viewCenterX = window.innerWidth / 2;
-      const viewCenterY = window.innerHeight * 0.55;
-
-      // Hide CSS orb (we draw everything on canvas)
-      orb.style.opacity = "0";
-
-      // ---- Phase breakdown (p = 0..1) ----
-      // 0.00 - 0.20: particles appear at leaf points (fade in)
-      // 0.20 - 0.65: particles travel orbit paths around tree
-      // 0.65 - 0.85: particles converge to trunk base — liquid droplet merge
-      // 0.85 - 1.00: final merged orb scales up and floats to viewport center
+      const travelPhaseEnd = 0.82;
+      const mergePhaseEnd = 1.0;
 
       particles.forEach((particle) => {
-        const leaf = pointInRect(rect, LEAF_POINTS[particle.leaf].x, LEAF_POINTS[particle.leaf].y);
-        
-        // Each particle has a small stagger
-        const ps = clamp(p - particle.stagger * 0.3, 0, 1);
+        const leafDef = LEAF_POINTS[particle.leafIndex];
+        const home = pointInRect(rect, leafDef.x, leafDef.y);
 
-        let x = leaf.x;
-        let y = leaf.y;
-        let alpha = 0;
-        let r = particle.size;
+        const pathPoints = buildHalfArcPath(rect, home, mergePoint);
+        const samplePath = makeEvenPathSampler(pathPoints);
 
-        if (ps <= 0) return;
+        const local = clamp(
+          (orbProgress - particle.delay) / Math.max(1 - particle.delay, 0.0001),
+          0,
+          1
+        );
 
-        if (ps < 0.20) {
-          // Phase 1: Appear at leaf — pulse gently
-          const t = ps / 0.20;
-          alpha = easeOutCubic(t) * 0.8;
-          r = particle.size * lerp(0.3, 1.0, easeOutBack(t));
-          x = leaf.x;
-          y = leaf.y;
-          // Gentle pulse glow at leaf
-          drawGlowDot(x, y, r, alpha, particle.leaf * 0.5);
+        if (local <= 0) {
+          const pulse = 0.95 + Math.sin(time * 2 + particle.id * 0.7) * 0.04;
+          drawGlowDot(ctx, home.x, home.y, particle.size * pulse, 0.92);
           return;
+        }
 
-        } else if (ps < 0.65) {
-          // Phase 2: Orbit around tree
-          const orbitT = (ps - 0.20) / 0.45;
-          
-          // How far into orbit (0 = at leaf, 1 = full orbit)
-          const enterT = clamp(orbitT / 0.2, 0, 1);
-          
-          // Orbit position: goes around the tree
-          const loop = orbitT * particle.orbitSpeed + particle.orbitOffset;
-          const orbitPos = sampleOrbitPath(rect, loop);
-          
-          // Blend from leaf to orbit path
-          x = lerp(leaf.x, orbitPos.x, easeInOutCubic(enterT));
-          y = lerp(leaf.y, orbitPos.y, easeInOutCubic(enterT));
-          
-          alpha = 0.75 + Math.sin(time * 2 + particle.wobble) * 0.15;
-          r = particle.size * (1 + Math.sin(time * 3 + particle.id) * 0.2);
+        let x;
+        let y;
+        let r;
+        let alpha;
 
-          // Draw connecting thread back to leaf while close
-          if (enterT < 0.5) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(255, 160, 40, ${0.12 * (1 - enterT * 2)})`;
-            ctx.lineWidth = 0.8;
-            ctx.moveTo(leaf.x, leaf.y);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-          }
+        if (local < travelPhaseEnd) {
+          const travelT = local / travelPhaseEnd;
+          const pos = samplePath(travelT * 0.88);
 
-          drawGlowDot(x, y, r, alpha, particle.id % 5);
+          x = pos.x;
+          y = pos.y + Math.sin(time * 1.2 + particle.wobble) * (1 - travelT) * 1.0;
+          r = lerp(particle.size, particle.size * 1.14, travelT);
+          alpha = 0.95;
+
+          drawGlowDot(ctx, x, y, r, alpha);
           return;
+        }
 
-        } else if (ps < 0.85) {
-          // Phase 3: Converge to trunk base — liquid stretching
-          const convergeT = (ps - 0.65) / 0.20;
-          
-          // Last orbit position
-          const loop = 0.45 * particle.orbitSpeed + particle.orbitOffset;
-          const lastOrbitPos = sampleOrbitPath(rect, loop);
+        const mergeT = (local - travelPhaseEnd) / (mergePhaseEnd - travelPhaseEnd);
+        const easedMergeT = easeInOutCubic(mergeT);
 
-          const pull = easeInCubic(convergeT);
-          x = lerp(lastOrbitPos.x, trunkBase.x, pull);
-          y = lerp(lastOrbitPos.y, trunkBase.y, pull);
+        const startPos = samplePath(0.88);
+        const isLeft = home.x < rect.left + rect.width / 2;
+        const sidePull = isLeft ? -1 : 1;
 
-          alpha = lerp(0.85, 0.0, convergeT * convergeT);
-          r = lerp(particle.size, particle.size * 1.8, convergeT);
+        const cp1 = {
+          x: startPos.x + sidePull * rect.width * 0.08,
+          y: startPos.y + rect.height * 0.02,
+        };
 
-          // Liquid stretch visual
-          if (convergeT > 0.1 && convergeT < 0.85) {
-            drawLiquidStretch(lastOrbitPos.x, lastOrbitPos.y, trunkBase.x, trunkBase.y, pull, r, 0.5);
-          }
+        const cp2 = {
+          x: mergePoint.x + sidePull * rect.width * 0.045,
+          y: mergePoint.y - rect.height * 0.05,
+        };
 
-          drawGlowDot(x, y, r, alpha, 2);
+        const pos = cubicBezierPoint(startPos, cp1, cp2, mergePoint, easedMergeT);
 
-          // Draw merged blob at trunk growing as particles arrive
-          const blobAlpha = easeInOutCubic(convergeT) * 0.6;
-          const blobR = lerp(4, 18, easeOutCubic(convergeT));
-          if (blobAlpha > 0.05) {
-            drawMergeBlob(trunkBase.x, trunkBase.y, blobR, blobAlpha, time * 1.2);
-          }
-          return;
+        x = pos.x;
+        y = pos.y;
+        r = lerp(particle.size * 1.08, particle.size * 1.48, easedMergeT);
+        alpha = lerp(0.95, 0, easedMergeT);
 
-        } else {
-          // Phase 4: merged — don't draw individual particles
-          return;
+        if (alpha > 0.01) {
+          drawGlowDot(ctx, x, y, r, alpha);
         }
       });
 
-      // Phase 4: Draw the final merged orb
-      if (p >= 0.75) {
-        const mergeT = clamp((p - 0.75) / 0.25, 0, 1);
-        
-        // Orb position: from trunk base to viewport center
-        const orbX = lerp(trunkBase.x, viewCenterX, easeInOutCubic(mergeT));
-        const orbY = lerp(trunkBase.y, viewCenterY, easeInOutCubic(mergeT));
-        
-        // Orb size: liquid swell as it forms
-        const baseR = lerp(6, 22, easeOutBack(Math.min(mergeT * 1.5, 1)));
-        
-        // Liquid pulse as it forms
-        const liquidTime = time + mergeT * Math.PI;
-        
-        drawMergeBlob(orbX, orbY, baseR, easeOutCubic(mergeT), liquidTime);
+      // Stor orb vises først når små orbsa er ferdige
+      if (orbProgress >= 0.999) {
+        const appearT = clamp((orbProgress - 0.999) / 0.001, 0, 1);
 
-        // Splash ring when merging
-        if (mergeT < 0.35) {
-          const splashT = mergeT / 0.35;
-          const splashR = lerp(20, 65, splashT);
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(255, 190, 80, ${0.3 * (1 - splashT)})`;
-          ctx.lineWidth = lerp(8, 1, splashT);
-          ctx.arc(trunkBase.x, trunkBase.y, splashR, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        // Følger ikke med skjermen før etter overtakelsen
+        const followT = clamp(followProgress / 220, 0, 1);
 
-        // Secondary ambient glow following orb
-        if (mergeT > 0.4) {
-          const ambientAlpha = (mergeT - 0.4) / 0.6;
-          const ambientG = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, 80);
-          ambientG.addColorStop(0, `rgba(255, 200, 80, ${0.08 * ambientAlpha})`);
-          ambientG.addColorStop(1, `rgba(200, 100, 20, 0)`);
-          ctx.beginPath();
-          ctx.fillStyle = ambientG;
-          ctx.arc(orbX, orbY, 80, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        const mergedOrbX = lerp(
+          mergePoint.x,
+          window.innerWidth / 2,
+          easeInOutCubic(followT)
+        );
+
+        const mergedOrbY = lerp(
+          mergePoint.y,
+          window.innerHeight * 0.62,
+          easeInOutCubic(followT)
+        );
+
+        const mergedOrbRadius =
+          followT <= 0
+            ? lerp(8, 24, easeOutBack(appearT))
+            : lerp(24, 20, easeOutCubic(followT));
+
+        const mergedOrbAlpha = 1;
+
+        drawMergeBlob(
+          ctx,
+          mergedOrbX,
+          mergedOrbY,
+          mergedOrbRadius,
+          mergedOrbAlpha,
+          time + followT * 0.8
+        );
       }
 
       rafId = requestAnimationFrame(draw);
     };
 
-    const updateProgress = () => {
-      const treeLayer = treeEl.parentElement;
-      if (!treeLayer) return;
-
-      const rect = treeEl.getBoundingClientRect();
-      // Animation starts when top of tree is 200px from top of viewport
-      // Animation ends (fully merged) when tree top is at -50% of tree height
-      const triggerStart = window.innerHeight - 200; // tree top is 200px above bottom? No:
-      // Actually: triggerStart = when rect.top == viewport - 200 (tree is scrolled up to 200px from top)
-      // triggerEnd = when rect.top == -rect.height * 0.5 (tree is half scrolled away)
-      
-      const start = window.innerHeight - 200; // tree top is at this Y in viewport → progress=0
-      const end = -rect.height * 0.4;         // tree top is at this Y → progress=1
-
-      const progress = clamp((start - rect.top) / (start - end), 0, 1);
-      sectionProgressRef.current = progress;
-    };
-
-    updateProgress();
-    window.addEventListener('scroll', updateProgress, { passive: true });
-    window.addEventListener('resize', updateProgress);
-    
     setCanvasSize();
     draw();
 
-    window.addEventListener('resize', setCanvasSize);
+    window.addEventListener("resize", setCanvasSize);
+
     return () => {
-      window.removeEventListener('scroll', updateProgress);
-      window.removeEventListener('resize', updateProgress);
-      window.removeEventListener('resize', setCanvasSize);
+      window.removeEventListener("resize", setCanvasSize);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [particles]);
 
   return (
-    <div ref={ref} className="showroom-tree-wrap">
-      <img
-        src={h73ts01}
-        alt="Root Tree Overlay"
-        className="showroom-tree-image"
-        style={{ opacity }}
-      />
-      
-      {/* Canvas overlay for magic effects */}
-      <div className="showroom-magic-overlay" aria-hidden="true">
-        <canvas ref={canvasRef} className="showroom-magic-canvas" />
-        <div ref={orbRef} className="showroom-core-orb is-hidden" />
+    <>
+      <div className="showroom-tree-wrap" ref={treeRef}>
+        <img
+          src={zZqar01}
+          alt="Root Tree Overlay"
+          className="showroom-tree-image"
+          style={{ opacity }}
+        />
       </div>
-    </div>
-  );
-});
 
-export default RootTreeOverlay;
+      <div
+        className="showroom-magic-overlay"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 9999,
+        }}
+      >
+        <canvas ref={canvasRef} className="showroom-magic-canvas" />
+      </div>
+    </>
+  );
+}
