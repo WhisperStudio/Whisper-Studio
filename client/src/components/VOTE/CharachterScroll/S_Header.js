@@ -83,10 +83,10 @@ export default function HeroHeader() {
         <h1>
           Saga of
           <br />
-          the Norse
+          VOTE
         </h1>
 
-        <p>A chronicle of the Viking age</p>
+        <p>A short introduction <br /> to the world of VOTE</p>
 
       </section>
     </div>

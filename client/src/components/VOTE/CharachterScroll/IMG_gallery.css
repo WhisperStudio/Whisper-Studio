@@ -4,6 +4,7 @@
   flex-direction: row;
   justify-content: center;
   align-content: center;
+  margin-top: 60rem;
   width: 100%;
   gap: 1rem;
 }
@@ -11,12 +12,12 @@
 .creature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(680px, 4fr));
-  gap: 24rem;
+  gap: 44rem;
   padding: 2rem;
   width: 100%;
   background: rgba(0, 0, 0, 0);
   border-radius: 12px;
-  margin: 2rem 2rem 2rem 2rem;
+  margin: 10rem 2rem 2rem 2rem;
 }
 
 /* Creature Cards */
@@ -32,15 +33,16 @@
 }
 
 .creature-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, 
-    transparent 30%, 
-    rgba(255, 217, 120, 0.1) 50%, 
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 217, 120, 0.1) 50%,
     transparent 70%
   );
   opacity: 0;
@@ -57,9 +59,8 @@
   transition: transform 0.3s ease;
 }
 
-
 /* Creature Card Text */
-.creature-title{
+.creature-title {
   color: #ffda75;
   font-size: 3rem;
   font-weight: 600;
@@ -129,7 +130,7 @@
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 
+  box-shadow:
     0 25px 50px rgba(0, 0, 0, 0.6),
     0 0 30px rgba(255, 217, 120, 0.2);
   animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -172,6 +173,28 @@
   transform: rotate(90deg);
 }
 
+.creature-morph-zone {
+  display: flex;
+  flex-direction: column;
+}
+
+.creature-info-block {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.creature-info-block.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.creature-info-block:not(.is-active) {
+  opacity: 0.94;
+}
+
 /* Modal Image */
 .modal-content img {
   width: 100%;
@@ -200,7 +223,11 @@
 
 /* Individual Tags */
 .tag {
-  background: linear-gradient(135deg, rgba(255, 217, 120, 0.2), rgba(255, 241, 188, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 217, 120, 0.2),
+    rgba(255, 241, 188, 0.1)
+  );
   border: 1px solid rgba(255, 217, 120, 0.4);
   color: #ffd975;
   padding: 0.4rem 0.8rem;
@@ -211,7 +238,11 @@
 }
 
 .tag:hover {
-  background: linear-gradient(135deg, rgba(255, 217, 120, 0.3), rgba(255, 241, 188, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 217, 120, 0.3),
+    rgba(255, 241, 188, 0.2)
+  );
   border-color: rgba(255, 217, 120, 0.6);
   transform: translateY(-2px);
 }
@@ -265,4 +296,37 @@
   .modal-content img {
     height: 180px;
   }
+}
+
+.morph-line {
+  margin-top: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transform: translateZ(0);
+}
+
+.morph-single-char {
+  display: inline-block;
+  vertical-align: baseline;
+  transition:
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 140ms ease,
+    opacity 140ms ease,
+    color 140ms ease;
+  will-change: transform, filter, opacity;
+  color: #f3d59a;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.morph-single-char.is-changing {
+  color: #e8bf75;
+}
+
+.creature-desc {
+  font-size: 1.9rem;
+  line-height: 1.6;
+  color: #f3d59a;
+  margin-top: 40px;
 }

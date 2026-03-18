@@ -185,10 +185,10 @@ function drawMergeBlob(ctx, cx, cy, radius, alpha, liquidT) {
   ctx.scale(squishX, squishY);
 
   const blobG = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-  blobG.addColorStop(0, `rgba(255, 245, 196, ${alpha})`);
-  blobG.addColorStop(0.3, `rgba(255, 214, 112, ${0.96 * alpha})`);
-  blobG.addColorStop(0.75, `rgba(219, 139, 29, ${0.82 * alpha})`);
-  blobG.addColorStop(1, `rgba(160, 72, 10, 0)`);
+  blobG.addColorStop(0, `rgba(255, 245, 196, ${0.60 * alpha})`);
+  blobG.addColorStop(0.3, `rgba(255, 214, 112, ${0.50 * alpha})`);
+  blobG.addColorStop(0.75, `rgba(219, 139, 29, ${0.42 * alpha})`);
+  blobG.addColorStop(1, `rgba(160, 102, 10, ${0.12 * alpha})`);
 
   ctx.beginPath();
   for (let i = 0; i <= 10; i++) {
@@ -276,14 +276,17 @@ export default function RootTreeOverlay({ opacity = 1 }) {
   const orbProgressRef = useRef(0);
   const followProgressRef = useRef(0);
   const mergePointRef = useRef({ x: 0, y: 0 });
+  const lastOrbUpdateRef = useRef(0);
 
   const particles = useMemo(() => {
-    return Array.from({ length: 26 }, (_, i) => ({
+    return Array.from({ length: 16 }, (_, i) => ({
       id: i,
       leafIndex: i % LEAF_POINTS.length,
       size: 2.4 + (i % 4) * 0.55,
       delay: (i % 8) * 0.016,
       wobble: Math.random() * Math.PI * 2,
+      // Cache path calculation for each particle
+      pathCache: null,
     }));
   }, []);
 
@@ -453,14 +456,31 @@ export default function RootTreeOverlay({ opacity = 1 }) {
 
         const mergedOrbAlpha = 1;
 
+        // Legg til sveveanimasjon
+        const hoverOffsetX = Math.sin(time * 1.5 + followT * 2) * 8;
+        const hoverOffsetY = Math.cos(time * 1.8 + followT * 1.5) * 6;
+
         drawMergeBlob(
           ctx,
-          mergedOrbX,
-          mergedOrbY,
+          mergedOrbX + hoverOffsetX,
+          mergedOrbY + hoverOffsetY,
           mergedOrbRadius,
           mergedOrbAlpha,
           time + followT * 0.8
         );
+
+        const now = Date.now();
+        if (now - lastOrbUpdateRef.current > 66) { // Maks 15fps for å ikke påvirke animasjoner
+          lastOrbUpdateRef.current = now;
+          window.dispatchEvent(new CustomEvent('orbPosition', {
+            detail: {
+              x: mergedOrbX,
+              y: mergedOrbY,
+              radius: mergedOrbRadius,
+              isFollowing: followT > 0
+            }
+          }));
+        }
       }
 
       rafId = requestAnimationFrame(draw);

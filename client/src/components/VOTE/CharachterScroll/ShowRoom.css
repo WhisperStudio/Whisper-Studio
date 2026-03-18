@@ -61,7 +61,16 @@
   font-family: serif;
   text-shadow: 0 0 14px rgba(200, 146, 42, 0.45);
   animation: runeFloat linear infinite;
-  will-change: transform, opacity;
+  animation-play-state: running;
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* Isolate rune animations when orb is active */
+.showroom--with-orb-active .rune-float {
+  animation-play-state: running !important;
+  will-change: opacity !important;
+  transform: translateZ(0) !important;
 }
 
 @keyframes runeFloat {
@@ -121,6 +130,34 @@
     contrast(1.15);
   opacity: 0.42;
 }
+
+.orb-light-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition: none;
+}
+
+.gallery-dark-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: none;
+}
+.gallery-dark-mask::before {
+  content: "";
+  position: absolute;
+  top: -440px;  
+  left: 0;
+  right: 0;
+  height: 500px;  
+  background: linear-gradient(to bottom,transparent 0%,rgba(35, 13, 0, 0.7) 30%,rgba(14, 6, 0, 0.8) 70%, rgba(14, 6, 0, 0.9) 90%, transparent 100%);
+  pointer-events: none;
+  z-index: -10; 
+}
+
 
 .showroom-magic-overlay {
   position: fixed;
