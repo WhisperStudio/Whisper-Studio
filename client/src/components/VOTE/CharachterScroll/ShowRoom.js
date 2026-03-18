@@ -76,6 +76,7 @@ export default function ShowRoom() {
   useEffect(() => {
     let lastUpdateRef = 0;
     
+    
     const handleOrbPosition = (event) => {
       const { x, y, radius, isFollowing } = event.detail;
       
