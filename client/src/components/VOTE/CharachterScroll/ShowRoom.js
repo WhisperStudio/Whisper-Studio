@@ -76,7 +76,7 @@ export default function ShowRoom() {
   useEffect(() => {
     let lastUpdateRef = 0;
     
-    
+
     const handleOrbPosition = (event) => {
       const { x, y, radius, isFollowing } = event.detail;
       
@@ -248,8 +248,13 @@ export default function ShowRoom() {
         const transition = shapeTransitionRef.current;
         // Bruk smooth transition verdier
         const baseRadius = orbLight.radius * 30;
-        const maskWidth = baseRadius * transition.currentWidth;
-        const maskHeight = baseRadius * transition.currentHeight;
+        
+        // Legg til pustende animasjon
+        const breathScale = 1 + Math.sin(Date.now() * 0.002) * 0.08; // Puster med ca 0.5Hz
+        const animatedRadius = baseRadius * breathScale;
+        
+        const maskWidth = animatedRadius * transition.currentWidth;
+        const maskHeight = animatedRadius * transition.currentHeight;
         
         // Bestem form basert på hvor nær vi er sirkel vs ellipse
         const widthRatio = transition.currentWidth;
@@ -362,7 +367,6 @@ if (isFollowing && galleryContainer) {
       </div>
 
       {/* Orb Light Overlay - varm gullglød under (z-index: 5) */}
-      <div className="orb-light-overlay" ref={orbOverlayRef} aria-hidden="true" />
 
       {/* Gallery Container with relative positioning for mask */}
       <div style={{ position: 'relative' }} data-gallery-container>

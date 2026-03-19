@@ -168,9 +168,11 @@ function drawMergeBlob(ctx, cx, cy, radius, alpha, liquidT) {
     cy,
     radius * 2.8
   );
-  ringG.addColorStop(0, `rgba(255, 223, 136, ${0.45 * alpha})`);
-  ringG.addColorStop(0.45, `rgba(232, 164, 51, ${0.22 * alpha})`);
-  ringG.addColorStop(1, `rgba(180, 88, 10, 0)`);
+  ringG.addColorStop(0, `rgba(255, 248, 220, ${0.35 * alpha})`);
+  ringG.addColorStop(0.16, `rgba(255, 235, 160, ${0.25 * alpha})`);
+  ringG.addColorStop(0.38, `rgba(255, 220, 100, ${0.18 * alpha})`);
+  ringG.addColorStop(0.68, `rgba(255, 200, 80, ${0.08 * alpha})`);
+  ringG.addColorStop(1, `rgba(255, 180, 60, 0)`);
 
   ctx.beginPath();
   ctx.fillStyle = ringG;
@@ -185,10 +187,10 @@ function drawMergeBlob(ctx, cx, cy, radius, alpha, liquidT) {
   ctx.scale(squishX, squishY);
 
   const blobG = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-  blobG.addColorStop(0, `rgba(255, 245, 196, ${0.60 * alpha})`);
-  blobG.addColorStop(0.3, `rgba(255, 214, 112, ${0.50 * alpha})`);
-  blobG.addColorStop(0.75, `rgba(219, 139, 29, ${0.42 * alpha})`);
-  blobG.addColorStop(1, `rgba(160, 102, 10, ${0.12 * alpha})`);
+  blobG.addColorStop(0, `rgba(255, 248, 220, ${0.95 * alpha})`);
+  blobG.addColorStop(0.3, `rgba(255, 235, 160, ${0.45 * alpha})`);
+  blobG.addColorStop(0.75, `rgba(255, 220, 100, ${0.20 * alpha})`);
+  blobG.addColorStop(1, `rgba(255, 200, 80, ${0.18 * alpha})`);
 
   ctx.beginPath();
   for (let i = 0; i <= 10; i++) {
