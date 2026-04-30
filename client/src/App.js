@@ -1,26 +1,25 @@
 // src/App.js
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Firebase
 import { db, collection, addDoc, serverTimestamp } from './firebase';
 
 // Pages
-import Home        from './pages/main';
-import AboutUs     from './pages/AboutUs';
-import Careers     from './pages/Careers';
-import VotePage    from './pages/Vote';
-import ContactPage from './pages/ContactPage';
-import Admin       from './pages/admin';
-import Login       from './pages/login';
-import Artwork     from './pages/artwork';
-import PostLogin   from './pages/PostLogin';
-import BugReportPage from './pages/BugReportPage';
-import TestLanding from './pages/TestLanding';
+import Home from './pages/main';
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const Careers = lazy(() => import('./pages/Careers'));
+const VotePage = lazy(() => import('./pages/Vote'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const Admin = lazy(() => import('./pages/admin'));
+const Login = lazy(() => import('./pages/login'));
+const Artwork = lazy(() => import('./pages/artwork'));
+const PostLogin = lazy(() => import('./pages/PostLogin'));
+const BugReportPage = lazy(() => import('./pages/BugReportPage'));
+const TestLanding = lazy(() => import('./pages/TestLanding'));
 
 // NEW: Web development promo + estimator page
-// Make sure this file exists, e.g. src/pages/WebDevPromoPage.jsx
-import WebDevPromoPage from './pages/Website/WebDevPromoPage';
+const WebDevPromoPage = lazy(() => import('./pages/Website/WebDevPromoPage'));
 
 // Components
 import Header from './components/header';
@@ -74,31 +73,33 @@ function App() {
       <ChatWidget />
 
       <BrowserRouter>
-        <Routes>
-          <Route path="/"               element={<MainLayout><Home /></MainLayout>} />
-          <Route path="/vote"           element={<MainLayout><VotePage /></MainLayout>} />
-          <Route path="/contact"        element={<MainLayout><ContactPage /></MainLayout>} />
-          <Route path="/bug-report"     element={<MainLayout><BugReportPage /></MainLayout>} />
-          <Route path="/admin"          element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout><Admin /></AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/about-us"       element={<MainLayout><AboutUs /></MainLayout>} />
-          <Route path="/careers"        element={<MainLayout><Careers /></MainLayout>} />
-          <Route path="/artwork"        element={<MainLayout><Artwork /></MainLayout>} />
-          <Route path="/post-login"     element={<MainLayout><PostLogin /></MainLayout>} />
-          <Route path="/test-landing"    element={<TestLanding />} />
-          
-          {/* NEW route: Websites promo + estimator */}
-          <Route
-            path="/services/websites"
-            element={<MainLayout><WebDevPromoPage /></MainLayout>}
-          />
+        <Suspense fallback={<div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading…</div>}>
+          <Routes>
+            <Route path="/"               element={<MainLayout><Home /></MainLayout>} />
+            <Route path="/vote"           element={<MainLayout><VotePage /></MainLayout>} />
+            <Route path="/contact"        element={<MainLayout><ContactPage /></MainLayout>} />
+            <Route path="/bug-report"     element={<MainLayout><BugReportPage /></MainLayout>} />
+            <Route path="/admin"          element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout><Admin /></AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/about-us"       element={<MainLayout><AboutUs /></MainLayout>} />
+            <Route path="/careers"        element={<MainLayout><Careers /></MainLayout>} />
+            <Route path="/artwork"        element={<MainLayout><Artwork /></MainLayout>} />
+            <Route path="/post-login"     element={<MainLayout><PostLogin /></MainLayout>} />
+            <Route path="/test-landing"    element={<TestLanding />} />
 
-          {/* Login without Header */}
-          <Route path="/login"          element={<Login />} />
-        </Routes>
+            {/* NEW route: Websites promo + estimator */}
+            <Route
+              path="/services/websites"
+              element={<MainLayout><WebDevPromoPage /></MainLayout>}
+            />
+
+            {/* Login without Header */}
+            <Route path="/login"          element={<Login />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </>
   );

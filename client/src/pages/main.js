@@ -699,7 +699,8 @@ function App() {
           src={backgroundImage}
           muted
           playsInline
-          preload="auto"
+          preload="none"
+          poster={placeholderImage1}
           $parallax={heroState.parallax}
           $scale={heroState.videoScale}
         />
