@@ -133,6 +133,10 @@ const Atmosphere = styled.div`
     mix-blend-mode: screen;
     opacity: 0.9;
   }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const smokeDrift = keyframes`
@@ -154,6 +158,10 @@ const SmokeLayer = styled.div`
     radial-gradient(closest-side at 32% 82%, rgba(255,255,255,0.05), transparent 62%);
   filter: blur(22px) contrast(110%);
   animation: ${smokeDrift} 14s ease-in-out infinite;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 /* ---------- Animations ---------- */
@@ -589,6 +597,7 @@ function App() {
     parallax: 0,
     videoScale: 1.05,
   });
+  const [videoReady, setVideoReady] = useState(false);
   const titleRef = useRef(null);
   const largeRef = useRef(null);
   const smallRefs = useRef([]);
@@ -602,15 +611,29 @@ function App() {
 
   /* Video setup */
   useEffect(() => {
+    const idleHandle = ('requestIdleCallback' in window)
+      ? window.requestIdleCallback(() => setVideoReady(true), { timeout: 1200 })
+      : window.setTimeout(() => setVideoReady(true), 1200);
+
+    return () => {
+      if ('cancelIdleCallback' in window && typeof idleHandle === 'number') {
+        window.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const v = vidRef.current;
-    if (!v) return;
+    if (!v || !videoReady) return;
 
     const attemptPlay = () => {
       v.loop = true;
       v.muted = true;
       v.playsInline = true;
       v.preload = 'auto';
-      v.play().catch(e => {
+      v.play().catch(() => {
         v.pause();
       });
     };
@@ -626,7 +649,7 @@ function App() {
       v.removeEventListener('loadeddata', attemptPlay);
       v.removeEventListener('canplaythrough', attemptPlay);
     };
-  }, []);
+  }, [videoReady]);
 
   /* Scroll handler med throttling og requestAnimationFrame */
   useEffect(() => {
@@ -696,7 +719,7 @@ function App() {
       <FixedBackground $fallbackImage={placeholderImage1}>
         <BackgroundVideo
           ref={vidRef}
-          src={backgroundImage}
+          src={videoReady ? backgroundImage : undefined}
           muted
           playsInline
           preload="none"
