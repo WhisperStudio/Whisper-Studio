@@ -7,6 +7,10 @@ import { db, collection, addDoc, serverTimestamp } from './firebase';
 
 // Pages
 import Home from './pages/main';
+import Header from './components/header';
+import ProtectedRoute from './components/ProtectedRoute';
+import BugReportButton from './components/ADMIN/BugReportButton';
+
 const AboutUs = lazy(() => import('./pages/AboutUs'));
 const Careers = lazy(() => import('./pages/Careers'));
 const VotePage = lazy(() => import('./pages/Vote'));
@@ -19,11 +23,8 @@ const BugReportPage = lazy(() => import('./pages/BugReportPage'));
 const TestLanding = lazy(() => import('./pages/TestLanding'));
 
 // Components
-import Header from './components/header';
 const Cursor = lazy(() => import('./components/Cursor'));
-import ProtectedRoute from './components/ProtectedRoute';
 // import ChatBot from './components/ChatBot'; // Old chatbot
-import BugReportButton from './components/ADMIN/BugReportButton';
 const ChatWidget = lazy(() => import('./components/ChatWidget').then(module => ({ default: module.ChatWidget })));
 
 // Wrapper with Header
