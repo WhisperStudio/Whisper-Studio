@@ -565,6 +565,7 @@ const SCROLL_THRESHOLD = 50;
 const SCROLL_RANGE     = 80;
 const FOLLOW_SLOW      = 0.035;
 const FOLLOW_COMPLETE  = 0.055;
+const WEBSITE_LANDING_URL = 'https://chat.vintrastudio.com/landings/guest/websites';
 
 const Header = () => {
   const location = useLocation();
@@ -738,7 +739,7 @@ const Header = () => {
   const textColor = 'white';
   const items = [
     { href: '/vote',              label: 'Vote'     },
-    { href: '/services/websites', label: 'Websites' },
+    { href: WEBSITE_LANDING_URL,  label: 'Websites' },
     { href: '/about-us',          label: 'About Us' },
     { href: '/careers',           label: 'Careers'  },
     { href: '/contact',           label: 'Support'  },

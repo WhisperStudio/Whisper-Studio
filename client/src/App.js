@@ -18,9 +18,6 @@ const PostLogin = lazy(() => import('./pages/PostLogin'));
 const BugReportPage = lazy(() => import('./pages/BugReportPage'));
 const TestLanding = lazy(() => import('./pages/TestLanding'));
 
-// NEW: Web development promo + estimator page
-const WebDevPromoPage = lazy(() => import('./pages/Website/WebDevPromoPage'));
-
 // Components
 import Header from './components/header';
 const Cursor = lazy(() => import('./components/Cursor'));
@@ -45,6 +42,20 @@ const AdminLayout = ({ children }) => (
     <BugReportButton />
   </>
 );
+
+const WEBSITE_LANDING_URL = 'https://chat.vintrastudio.com/landings/guest/websites';
+
+const ExternalRedirect = ({ to }) => {
+  useEffect(() => {
+    window.location.replace(to);
+  }, [to]);
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      Redirecting...
+    </div>
+  );
+};
 
 function App() {
   const [showCursor, setShowCursor] = useState(false);
@@ -124,10 +135,9 @@ function App() {
             <Route path="/post-login"     element={<MainLayout><PostLogin /></MainLayout>} />
             <Route path="/test-landing"    element={<TestLanding />} />
 
-            {/* NEW route: Websites promo + estimator */}
             <Route
               path="/services/websites"
-              element={<MainLayout><WebDevPromoPage /></MainLayout>}
+              element={<ExternalRedirect to={WEBSITE_LANDING_URL} />}
             />
 
             {/* Login without Header */}
