@@ -573,6 +573,7 @@ const Header = () => {
   const [menuState, setMenuState] = useState({ isOpen: false, isVisible: false });
   const [isScrolled, setIsScrolled] = useState(() => window.scrollY >= SCROLL_THRESHOLD);
   const [showTop, setShowTop]       = useState(() => window.scrollY >= 200);
+  const [portalReady, setPortalReady] = useState(false);
 
   const [scrollTopPortalEl] = useState(() => {
     const el = document.createElement('div');
@@ -721,8 +722,18 @@ const Header = () => {
   /* ===================== Portal ===================== */
 
   useEffect(() => {
-    document.body.appendChild(scrollTopPortalEl);
-    return () => { scrollTopPortalEl.remove(); };
+    const mountTarget = document.body || document.documentElement;
+    if (!mountTarget) return undefined;
+
+    mountTarget.appendChild(scrollTopPortalEl);
+    setPortalReady(true);
+
+    return () => {
+      setPortalReady(false);
+      if (scrollTopPortalEl.parentNode) {
+        scrollTopPortalEl.parentNode.removeChild(scrollTopPortalEl);
+      }
+    };
   }, [scrollTopPortalEl]);
 
   /* ===================== Nav ===================== */
@@ -917,7 +928,7 @@ const Header = () => {
         </MenuItemsWrap>
       </MobileNavMenu>
 
-      {createPortal(
+      {portalReady && createPortal(
         <ScrollTopButton
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           $visible={showTop}

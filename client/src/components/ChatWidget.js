@@ -10,7 +10,9 @@ export function ChatWidget() {
     script.async = true;
 
     const loadScript = () => {
-      document.body.appendChild(script);
+      const mountTarget = document.body || document.head || document.documentElement;
+      if (!mountTarget || script.isConnected) return;
+      mountTarget.appendChild(script);
     };
 
     if ('requestIdleCallback' in window) {
@@ -25,8 +27,8 @@ export function ChatWidget() {
       } else {
         window.clearTimeout(idleHandle);
       }
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
     };
   }, []);
