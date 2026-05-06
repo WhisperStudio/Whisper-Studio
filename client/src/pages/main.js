@@ -457,6 +457,86 @@ const CardContainer = styled.div`
   }
 `;
 
+const ContactSection = styled.section`
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding: 0 5% clamp(70px, 10vw, 110px);
+  box-sizing: border-box;
+`;
+
+const ContactCard = styled.div`
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 42px);
+  border-radius: var(--radius-soft);
+  background:
+    linear-gradient(145deg, rgba(28, 31, 36, 0.92), rgba(11, 15, 20, 0.94));
+  border: 1px solid rgba(199, 164, 76, 0.18);
+  box-shadow: 0 18px 80px rgba(0,0,0,0.45);
+  backdrop-filter: blur(20px);
+`;
+
+const ContactTitle = styled.h2`
+  margin: 0 0 14px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+`;
+
+const ContactIntro = styled.p`
+  margin: 0 0 26px;
+  max-width: 58ch;
+  color: var(--color-text-dim);
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.7;
+`;
+
+const ContactGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ContactItem = styled.a`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 22px;
+  text-decoration: none;
+  color: var(--color-text);
+  border-radius: var(--radius-hard);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(199, 164, 76, 0.16);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 90, 31, 0.45);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+`;
+
+const ContactLabel = styled.span`
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(199, 164, 76, 0.88);
+`;
+
+const ContactValue = styled.span`
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-word;
+`;
+
 const Card = styled(Link)`
   text-decoration: none; 
   background:
@@ -824,6 +904,25 @@ function App() {
             </SmallCardContainer>
           </CardContainer>
         </NewsSection>
+
+        <ContactSection aria-labelledby="home-contact-title">
+          <ContactCard>
+            <ContactTitle id="home-contact-title">Contact Vintra Studio</ContactTitle>
+            <ContactIntro>
+              Need help with AI chatbots, websites, or digital solutions? Reach us directly by phone or email.
+            </ContactIntro>
+            <ContactGrid>
+              <ContactItem href="tel:+4741761252">
+                <ContactLabel>Phone</ContactLabel>
+                <ContactValue>+47 417 61 252</ContactValue>
+              </ContactItem>
+              <ContactItem href="mailto:support@vintrastudio.com">
+                <ContactLabel>Email</ContactLabel>
+                <ContactValue>support@vintrastudio.com</ContactValue>
+              </ContactItem>
+            </ContactGrid>
+          </ContactCard>
+        </ContactSection>
 
         <Footer />
       </AppContainer>
